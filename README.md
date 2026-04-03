@@ -1,5 +1,4 @@
 DeepSkill - Modern E-Learning Platform
-
 DeepSkill is a premium web-based e-learning platform built with  React  and  Styled Components . It offers a seamless, interactive experience for students to browse, enroll in, and manage their professional courses.
 
 ✨ Core Features
