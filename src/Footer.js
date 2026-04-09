@@ -2,7 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { Link as RouterLink } from "react-router-dom";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import footerBg from "./assets/footer-bg.png";
 import footerLogo from "./assets/footer-logo.svg";
 
@@ -239,10 +239,10 @@ const Footer = () => {
             Empowering the next generation of digital professionals with industry-relevant skills and hands-on training. Join our community and build your future today.
           </Description>
           <Socials>
-            <SocialIcon href="#" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaFacebookF /></SocialIcon>
-            <SocialIcon href="#" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaInstagram /></SocialIcon>
-            <SocialIcon href="#" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaLinkedinIn /></SocialIcon>
-            <SocialIcon href="#" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaTwitter /></SocialIcon>
+            <SocialIcon href="https://www.facebook.com/people/Deep-Skills/61585681437310/" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaFacebookF /></SocialIcon>
+            <SocialIcon href="https://www.instagram.com/deepskills.pk" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaInstagram /></SocialIcon>
+            <SocialIcon href="https://www.linkedin.com/company/deep-skills-pk" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaLinkedinIn /></SocialIcon>
+            <SocialIcon href="https://www.tiktok.com/@deep.skills" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaTiktok /></SocialIcon>
           </Socials>
         </Column>
 
@@ -277,11 +277,11 @@ const Footer = () => {
           <Title>Location</Title>
           <MapOuterWrapper>
             <MapContainer>
-              <iframe 
+              <iframe
                 title="Deep Skills Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3401.530331002447!2d74.33924377545025!3d31.503144574213032!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3919046033d6232d%3A0x6295535560946761!2s58%20A2%2C%20Tipu%20Road%20Gulberg%20III%2C%20Lahore%2C%20Pakistan!5e0!3m2!1sen!2s!4v1709614400000!5m2!1sen!2s" 
-                allowFullScreen="" 
-                loading="lazy" 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3401.530331002447!2d74.33924377545025!3d31.503144574213032!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3919046033d6232d%3A0x6295535560946761!2s58%20A2%2C%20Tipu%20Road%20Gulberg%20III%2C%20Lahore%2C%20Pakistan!5e0!3m2!1sen!2s!4v1709614400000!5m2!1sen!2s"
+                allowFullScreen=""
+                loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
             </MapContainer>

@@ -1,15 +1,16 @@
 import React from 'react';
 import styled from 'styled-components';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import wpressBg from '../assets/wpress-bg.png';
 import phpCard from '../assets/php-card.svg';
+import CourseEnrollCard from './CourseEnrollCard';
 
 const HeroSection = styled.section`
   width: 100%;
   min-height: 90vh;
-  padding: 90px 0 50px;
+  padding: 100px 0 50px;
   background: url(${wpressBg});
   background-size: cover;
   background-position: center;
@@ -153,146 +154,11 @@ const StartButton = styled(motion.button)`
   }
 `;
 
-const CardColumn = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  perspective: 1000px;
-`;
-
-const EnrollCard = styled(motion.div)`
-  background: #E0E0E0;
-  border-radius: 24px;
-  overflow: hidden;
-  max-width: 480px;
-  width: 100%;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
-  color: #000;
-  transform-style: preserve-3d;
-`;
-
-const CardImage = styled.img`
-  width: 100%;
-  height: auto;
-  display: block;
-`;
-
-const CardFooter = styled.div`
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const CreatorText = styled.p`
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #666;
-  text-transform: uppercase;
-  margin: 0;
-  
-  span {
-    color: #444;
-  }
-`;
-
-const FeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-`;
-
-const FeatureItem = styled.li`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 700;
-  color: #333;
-  font-size: 1rem;
-
-  &::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    background-color: #8B1D2F;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-`;
-
-const EnrollBtn = styled.button`
-  width: 100%;
-  padding: 16px;
-  background-color: #8B1D2F;
-  color: #fff;
-  font-weight: 800;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  box-shadow: 0 10px 20px rgba(139, 29, 47, 0.3);
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: #a32237;
-    transform: translateY(-2px);
-  }
-`;
-
-const BenefitsSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 700;
-  color: #333;
-  padding-top: 20px;
-  border-top: 1px solid #ccc;
-  font-size: 1rem;
-
-  &::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    background-color: #8B1D2F;
-    border-radius: 50%;
-  }
-`;
+// CourseEnrollCard handles the card column and its internal styling
 
 const LaravelHero = () => {
   const { user, enrollCourse } = useAuth();
   const navigate = useNavigate();
-
-  // 3D Tilt Effect for Card
-  const cardX = useMotionValue(0);
-  const cardY = useMotionValue(0);
-  const cardRotateX = useSpring(useTransform(cardY, [-0.5, 0.5], ["10deg", "-10deg"]), { stiffness: 300, damping: 30 });
-  const cardRotateY = useSpring(useTransform(cardX, [-0.5, 0.5], ["-10deg", "10deg"]), { stiffness: 300, damping: 30 });
-
-  // Mouse Tracking for Grid Background
-  const handleHeroMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Card Tilt logic
-    const xPct = x / rect.width - 0.5;
-    const yPct = y / rect.height - 0.5;
-    cardX.set(xPct);
-    cardY.set(yPct);
-
-    // Grid Mask logic
-    e.currentTarget.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
-    e.currentTarget.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
-  };
-
-  const handleMouseLeave = () => {
-    cardX.set(0);
-    cardY.set(0);
-  };
 
   const handleEnroll = () => {
     if (!user) {
@@ -308,11 +174,11 @@ const LaravelHero = () => {
   };
 
   return (
-    <HeroSection onMouseMove={handleHeroMouseMove}>
+    <HeroSection>
       <FloatingCode size="4rem" style={{ top: '15%', left: '10%' }} animate={{ y: [0, 50, 0] }} transition={{ duration: 6, repeat: Infinity }}>&lt;?php</FloatingCode>
       <FloatingCode size="6rem" style={{ bottom: '15%', left: '5%' }} animate={{ x: [0, 40, 0] }} transition={{ duration: 8, repeat: Infinity }}>Eloquent</FloatingCode>
       <FloatingCode size="5rem" style={{ top: '20%', right: '10%' }} animate={{ rotate: [0, 360] }} transition={{ duration: 25, repeat: Infinity }}>&#123; &#125;</FloatingCode>
-      
+
       <Container>
         <ContentColumn
           initial={{ opacity: 0, x: -50 }}
@@ -338,29 +204,20 @@ const LaravelHero = () => {
             Start Learning
           </StartButton>
         </ContentColumn>
- 
-        <CardColumn
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <EnrollCard
-            onMouseLeave={handleMouseLeave}
-            style={{ rotateX: cardRotateX, rotateY: cardRotateY }}
-          >
-            <CardImage src={phpCard} alt="PHP Laravel Course" />
-            <CardFooter>
-              <CreatorText>Created by: DEEPSKILLS</CreatorText>
-              <FeatureList>
-                <FeatureItem>Join</FeatureItem>
-                <FeatureItem>Learn</FeatureItem>
-                <FeatureItem>Get Experience from Real-Time Projects</FeatureItem>
-              </FeatureList>
-              <EnrollBtn onClick={handleEnroll}>Enroll Now</EnrollBtn>
-              <BenefitsSection>Benefits</BenefitsSection>
-            </CardFooter>
-          </EnrollCard>
-        </CardColumn>
+
+        <CourseEnrollCard
+          image={phpCard}
+          courseId="laravel-mastery"
+          title="Full Stack (Laravel)"
+          accentColor="#05BAFD"
+          features={[
+            'Advanced Backend Development',
+            'Database Design Mastery',
+            'Scalable Web Architecture',
+            'Job-Ready Interview Prep'
+          ]}
+          iconType="laravel"
+        />
       </Container>
     </HeroSection>
   );

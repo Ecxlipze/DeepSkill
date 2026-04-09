@@ -265,6 +265,14 @@ const HeroSection = () => {
 
 
 
+  const scrollToCourses = (e) => {
+    e.preventDefault();
+    const coursesSection = document.getElementById('courses');
+    if (coursesSection) {
+      coursesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <Section id="hero">
       <CodeParticles />
@@ -362,8 +370,9 @@ const HeroSection = () => {
           transition={{ duration: 0.8, delay: 0.8 }}
         >
           <RegisterButton
-            to="/register"
             variant="primary"
+            to={null}
+            onClick={scrollToCourses}
             style={{ minWidth: isMobile ? "100%" : "220px" }}
           >
             <img src={btnIcon} alt="" style={{ width: "20px", height: "20px" }} />
@@ -371,7 +380,7 @@ const HeroSection = () => {
           </RegisterButton>
 
           <RegisterButton
-            to="/contact"
+            to="/register"
             variant="secondary"
             style={{ minWidth: isMobile ? "100%" : "220px" }}
           >

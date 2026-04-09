@@ -158,7 +158,7 @@ const GraphicOutcomes = () => {
     { text: "Perform advanced photo editing and manipulation" },
     { text: "Design complete website and mobile app interfaces" },
     { text: "Build a strong, portfolio-ready project collection" },
-    { text: "Qualify for roles such as Graphic , Visual , UI , or Social Media Designer" },
+    { text: "Qualify for roles such as Graphic, Visual, UI or Social Media Designer" },
     { text: "Start freelancing and handle real client projects confidently" }
   ];
 
@@ -169,9 +169,9 @@ const GraphicOutcomes = () => {
 
   const cardVariants = {
     hidden: { opacity: 0, scale: 0.8, y: 20 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
+    visible: {
+      opacity: 1,
+      scale: 1,
       y: 0,
       transition: { type: "spring", stiffness: 100, damping: 15 }
     }
@@ -199,7 +199,7 @@ const GraphicOutcomes = () => {
             <OutcomeCard
               key={index}
               variants={cardVariants}
-              whileHover={{ 
+              whileHover={{
                 y: -10,
                 rotateX: 5,
                 rotateY: index % 2 === 0 ? 5 : -5,

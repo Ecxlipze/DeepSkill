@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import GlobalStyle from './GlobalStyle';
 import Header from './Header';
@@ -33,8 +33,10 @@ import GoToTopButton from './components/GoToTopButton';
 import { AnimatePresence } from 'framer-motion';
 import GlobalOverlay from './components/GlobalOverlay';
 import PageTransition from './components/PageTransition';
-import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ResetPasswordModal from './components/ResetPasswordModal';
+import PremiumLoader from './components/PremiumLoader';
 
 
 function ScrollToTop() {
@@ -67,65 +69,97 @@ function ScrollToTop() {
   return null;
 }
 
+function AppContent() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [isAppLoading, setIsAppLoading] = useState(true);
+
+  // Initial Splash Screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsAppLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Route Change Transitions
+  useEffect(() => {
+    // Only trigger for navigation, not for the very first load which is handled above
+    if (location.pathname !== '/') {
+      setIsAppLoading(true);
+      const timer = setTimeout(() => {
+        setIsAppLoading(false);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
+
+  return (
+    <>
+      <PremiumLoader loading={isAppLoading} />
+      <ResetPasswordModal user={user} isOpen={user?.is_first_login} />
+      <ScrollToTop />
+      <GlobalStyle />
+      <GlobalOverlay />
+      <ScrollProgressBar />
+      <GoToTopButton />
+      <CustomCursor />
+      
+      <Header />
+      
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+          <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+          <Route path="/media" element={<PageTransition><MediaPage /></PageTransition>} />
+          <Route path="/full-stack-react" element={<PageTransition><FullStackPage /></PageTransition>} />
+          <Route path="/wordpress-mastery" element={<PageTransition><WordPressPage /></PageTransition>} />
+          <Route path="/laravel-mastery" element={<PageTransition><LaravelPage /></PageTransition>} />
+          <Route path="/graphic-design" element={<PageTransition><GraphicPage /></PageTransition>} />
+          <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
+          <Route path="/founder-message" element={<PageTransition><FounderMessage /></PageTransition>} />
+          <Route path="/trainers" element={<PageTransition><TraineePage /></PageTransition>} />
+          <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+          <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <PageTransition><DashboardPage /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <PageTransition><ProfilePage /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<PageTransition><AdminLogin /></PageTransition>} />
+          <Route path="/admin/dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
+          <Route path="/admin/media" element={<PageTransition><MediaLibrary /></PageTransition>} />
+          <Route path="/admin/courses" element={<PageTransition><CourseManager /></PageTransition>} />
+          <Route path="/admin/testimonials" element={<PageTransition><TestimonialManager /></PageTransition>} />
+          <Route path="/admin/content" element={<PageTransition><ContentManager /></PageTransition>} />
+          <Route path="/admin/instructors" element={<PageTransition><InstructorManager /></PageTransition>} />
+          <Route path="/admin/media-page" element={<PageTransition><MediaPageManager /></PageTransition>} />
+        </Routes>
+      </AnimatePresence>
+
+      <Footer />
+    </>
+  );
+}
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <ScrollToTop />
-        <GlobalStyle />
-        <GlobalOverlay />
-        <ScrollProgressBar />
-        <GoToTopButton />
-        <CustomCursor />
-        
-        <Header />
-        
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-            <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
-            <Route path="/media" element={<PageTransition><MediaPage /></PageTransition>} />
-            <Route path="/full-stack-react" element={<PageTransition><FullStackPage /></PageTransition>} />
-            <Route path="/wordpress-mastery" element={<PageTransition><WordPressPage /></PageTransition>} />
-            <Route path="/laravel-mastery" element={<PageTransition><LaravelPage /></PageTransition>} />
-            <Route path="/graphic-design" element={<PageTransition><GraphicPage /></PageTransition>} />
-            <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
-            <Route path="/founder-message" element={<PageTransition><FounderMessage /></PageTransition>} />
-            <Route path="/trainers" element={<PageTransition><TraineePage /></PageTransition>} />
-            <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
-            <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <PageTransition><DashboardPage /></PageTransition>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <PageTransition><ProfilePage /></PageTransition>
-                </ProtectedRoute>
-              } 
-            />
-
-            {/* Admin Routes */}
-            <Route path="/admin" element={<PageTransition><AdminLogin /></PageTransition>} />
-            <Route path="/admin/dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
-            <Route path="/admin/media" element={<PageTransition><MediaLibrary /></PageTransition>} />
-            <Route path="/admin/courses" element={<PageTransition><CourseManager /></PageTransition>} />
-            <Route path="/admin/testimonials" element={<PageTransition><TestimonialManager /></PageTransition>} />
-            <Route path="/admin/content" element={<PageTransition><ContentManager /></PageTransition>} />
-            <Route path="/admin/instructors" element={<PageTransition><InstructorManager /></PageTransition>} />
-            <Route path="/admin/media-page" element={<PageTransition><MediaPageManager /></PageTransition>} />
-          </Routes>
-        </AnimatePresence>
-
-        <Footer />
-      </Router>
-    </AuthProvider>
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

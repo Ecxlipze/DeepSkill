@@ -440,14 +440,13 @@ const TraineePage = () => {
     { icon: <FaLeaf />, text: "Stress-free for beginners" }
   ];
 
-  if (loading) return <div style={{ color: '#fff', padding: '100px', textAlign: 'center' }}>Loading Instructors...</div>;
-
   return (
-    <PageContainer
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+    <>
+      <PageContainer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: loading ? 0 : 1 }}
+        transition={{ duration: 0.6 }}
+      >
       <InstructorSection>
         <ContentWrapper>
           <SectionHeader
@@ -574,7 +573,8 @@ const TraineePage = () => {
           REGISTER NOW
         </RegisterButton>
       </FinalCTASection>
-    </PageContainer>
+      </PageContainer>
+    </>
   );
 };
 

@@ -128,7 +128,7 @@ const NavLink = styled(motion.a)`
   &::after {
     content: '';
     position: absolute;
-    bottom: -15px;
+    bottom: -10px;
     left: 50%;
     transform: translateX(-50%);
     width: ${props => props.$active ? "100%" : "0"};

@@ -3,16 +3,17 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import { 
-  FaUser, FaEnvelope, FaGraduationCap, FaPhone, 
-  FaChevronDown, FaCheckCircle, FaFacebook, 
-  FaInstagram, FaLinkedin, FaGlobe, FaUsers, FaUniversity 
+import {
+  FaUser, FaEnvelope, FaGraduationCap, FaPhone,
+  FaChevronDown, FaCheckCircle, FaFacebook,
+  FaInstagram, FaLinkedin, FaGlobe, FaUsers, FaUniversity,
+  FaCode, FaLaptop, FaPaintBrush, FaWordpress
 } from "react-icons/fa";
 
 const PageContainer = styled(motion.div)`
   background-color: #000;
   min-height: 100vh;
-  padding: 80px 20px 40px;
+  padding: 100px 20px 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73,7 +74,7 @@ const FormCard = styled(motion.div)`
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
-  z-index: ${props => props.$isDropdownOpen ? 100 : 1};
+  z-index: ${props => props.$active ? 100 : 1};
 
   &:hover {
     border-color: rgba(255, 255, 255, 0.3);
@@ -168,8 +169,8 @@ const DropdownList = styled(motion.ul)`
   padding: 8px 0;
   list-style: none;
   z-index: 1000;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(15px);
 `;
 
 const DropdownItem = styled.li`
@@ -407,42 +408,113 @@ const RegisterPage = () => {
     mobileNo: "",
     age: "18", // Default age for slider
     gender: "",
-    source: ""
+    source: "",
+    selectedCourse: "",
+    'bot-field': "" // Honeypot
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
+  const [isEducationDropdownOpen, setIsEducationDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const courseDropdownRef = useRef(null);
+  const educationDropdownRef = useRef(null);
+
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
+
     // Close dropdown on click outside
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target)) {
+        setIsCourseDropdownOpen(false);
+      }
+      if (educationDropdownRef.current && !educationDropdownRef.current.contains(event.target)) {
+        setIsEducationDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const validate = () => {
-    let newErrors = {};
-    if (!formData.firstName) newErrors.firstName = "First name is required";
-    if (!formData.lastName) newErrors.lastName = "Last name is required";
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
+  // Success Countdown Timer
+  useEffect(() => {
+    let timer;
+    if (isSuccess && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (isSuccess && countdown === 0) {
+      navigate('/login');
     }
-    if (!formData.lastEducation) newErrors.lastEducation = "Education is required";
-    if (!formData.mobileNo) newErrors.mobileNo = "Mobile number is required";
-    if (!formData.age) newErrors.age = "Age selection is required";
-    if (!formData.gender) newErrors.gender = "Gender selection is required";
-    if (!formData.source) newErrors.source = "Please tell us how you heard about us";
+    return () => clearInterval(timer);
+  }, [isSuccess, countdown]);
+
+  const validateField = (name, value) => {
+    let error = '';
+
+    switch (name) {
+      case 'firstName':
+      case 'lastName':
+        if (!value.trim()) {
+          error = `${name === 'firstName' ? 'First' : 'Last'} name is required`;
+        } else if (!/^[a-zA-Z\s.-]+$/.test(value)) {
+          error = 'Only letters, spaces, hyphens and dots allowed';
+        }
+        break;
+      case 'email':
+        if (!value.trim()) {
+          error = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+      case 'mobileNo':
+        if (!value.trim()) {
+          error = 'Mobile number is required';
+        } else if (!/^\+?\d+$/.test(value)) {
+          error = 'Only digits and + allowed';
+        }
+        break;
+      case 'lastEducation':
+        if (!value) error = 'Education selection is required';
+        break;
+      case 'age':
+        if (!value) error = 'Age selection is required';
+        break;
+      case 'gender':
+        if (!value) error = 'Gender selection is required';
+        break;
+      case 'source':
+        if (!value) error = 'Please tell us how you heard about us';
+        break;
+      case 'selectedCourse':
+        if (!value) error = "Please select a course";
+        break;
+      default:
+        break;
+    }
+
+    return error;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+      if (key !== 'bot-field') {
+        const error = validateField(key, formData[key]);
+        if (error) newErrors[key] = error;
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -450,53 +522,49 @@ const RegisterPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
-    }
+
+    // Live validation
+    const error = validateField(name, value);
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
   };
 
   const handleSourceSelect = (val) => {
-    setFormData({ ...formData, source: val });
+    setFormData(prev => ({ ...prev, source: val }));
     setIsDropdownOpen(false);
-    if (errors.source) {
-      setErrors({ ...errors, source: "" });
-    }
+    setErrors(prev => ({ ...prev, source: validateField('source', val) }));
   };
 
-  const { register } = useAuth();
-  const navigate = useNavigate();
+  const handleCourseSelect = (val) => {
+    setFormData(prev => ({ ...prev, selectedCourse: val }));
+    setIsCourseDropdownOpen(false);
+    setErrors(prev => ({ ...prev, selectedCourse: validateField('selectedCourse', val) }));
+  };
+
+  const handleEducationSelect = (val) => {
+    setFormData(prev => ({ ...prev, lastEducation: val }));
+    setIsEducationDropdownOpen(false);
+    setErrors(prev => ({ ...prev, lastEducation: validateField('lastEducation', val) }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
+    if (validateForm()) {
       setIsSubmitting(true);
       try {
-        // Netlify form submission via AJAX
-        const encodedData = Object.keys(formData)
-          .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(formData[key]))
-          .join("&") + "&form-name=registration";
-
-        await fetch("/", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: encodedData
-        });
-
-        // Local registration logic
-        await register({
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phone: formData.mobileNo
-        });
-        
+        await register(formData);
         setIsSuccess(true);
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000); // 3 second delay to see success message
       } catch (err) {
         console.error("Registration failed", err);
-        alert('There was an error with your registration. Please try again.');
+        alert(err.message || 'There was an error with your registration. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
@@ -510,6 +578,22 @@ const RegisterPage = () => {
     { label: "Website", icon: <FaGlobe /> },
     { label: "Friend", icon: <FaUsers /> },
     { label: "Your Institute", icon: <FaUniversity /> }
+  ];
+
+  const courseOptions = [
+    { label: "Full Stack React JS", icon: <FaCode /> },
+    { label: "Laravel PHP Development", icon: <FaLaptop /> },
+    { label: "Graphic Design Mastery", icon: <FaPaintBrush /> },
+    { label: "WordPress Mastery", icon: <FaWordpress /> }
+  ];
+
+  const educationOptions = [
+    { label: "Matriculation / O-Levels", icon: <FaUniversity /> },
+    { label: "Intermediate (FSc / FA / ICS / A-Levels)", icon: <FaUniversity /> },
+    { label: "Bachelor's Degree (BS / BA / Graduation)", icon: <FaGraduationCap /> },
+    { label: "Master's Degree (MS / MA / Post-Graduation)", icon: <FaGraduationCap /> },
+    { label: "PhD / Doctorate", icon: <FaGraduationCap /> },
+    { label: "Other / Diploma", icon: <FaGlobe /> }
   ];
 
   /* Calculate slider percentage for age values 5 to 65 (60+) */
@@ -529,36 +613,42 @@ const RegisterPage = () => {
         Deepskills Admission Form
       </FormTitle>
 
-      <FormGrid 
+      <FormGrid
         name="registration"
-        method="POST"
-        data-netlify="true"
-        data-netlify-honeypot="bot-field"
         onSubmit={handleSubmit}
       >
-        <input type="hidden" name="form-name" value="registration" />
-        <p hidden>
-          <label>Don't fill this out if you're human: <input name="bot-field" /></label>
-        </p>
+        {/* Honeypot field - hidden from users */}
+        <input
+          type="text"
+          name="bot-field"
+          value={formData['bot-field']}
+          onChange={handleChange}
+          style={{ display: 'none' }}
+          tabIndex="-1"
+          autoComplete="off"
+        />
+
         {/* First Name */}
         <FormCard
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
         >
           <Label><FaUser /> First Name*</Label>
-          <Input 
+          <Input
             name="firstName"
-            placeholder="e.g. John" 
+            placeholder="e.g. John"
             value={formData.firstName}
             onChange={handleChange}
+            maxLength={50}
+            className={errors.firstName ? 'error' : ''}
           />
           <AnimatePresence>
             {errors.firstName && (
               <ErrorMsg
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
               >{errors.firstName}</ErrorMsg>
@@ -571,15 +661,17 @@ const RegisterPage = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
         >
           <Label><FaUser /> Last Name*</Label>
-          <Input 
+          <Input
             name="lastName"
-            placeholder="e.g. Doe" 
+            placeholder="e.g. Doe"
             value={formData.lastName}
             onChange={handleChange}
+            maxLength={50}
+            className={errors.lastName ? 'error' : ''}
           />
           <AnimatePresence>
             {errors.lastName && (
@@ -597,16 +689,17 @@ const RegisterPage = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
         >
           <Label><FaEnvelope /> Email*</Label>
-          <Input 
+          <Input
             name="email"
             type="email"
-            placeholder="e.g. johndoe@example.com" 
+            placeholder="e.g. johndoe@example.com"
             value={formData.email}
             onChange={handleChange}
+            className={errors.email ? 'error' : ''}
           />
           <AnimatePresence>
             {errors.email && (
@@ -619,21 +712,55 @@ const RegisterPage = () => {
           </AnimatePresence>
         </FormCard>
 
-        {/* Last Education */}
+        {/* Last Education Milestone */}
         <FormCard
+          $active={isEducationDropdownOpen}
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
+          ref={educationDropdownRef}
         >
-          <Label><FaGraduationCap /> Last Education*</Label>
-          <Input 
-            name="lastEducation"
-            placeholder="e.g. Bachelor's Degree" 
-            value={formData.lastEducation}
-            onChange={handleChange}
-          />
+          <Label><FaGraduationCap /> Last Education Milestone*</Label>
+          <CustomDropdownContainer>
+            <DropdownHeader
+              $isOpen={isEducationDropdownOpen}
+              onClick={() => setIsEducationDropdownOpen(!isEducationDropdownOpen)}
+              className={errors.lastEducation ? 'error' : ''}
+            >
+              {formData.lastEducation ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {educationOptions.find(o => o.label === formData.lastEducation)?.icon}
+                  {formData.lastEducation}
+                </span>
+              ) : (
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Choose Milestone</span>
+              )}
+              <FaChevronDown className="chevron" />
+            </DropdownHeader>
+
+            <AnimatePresence>
+              {isEducationDropdownOpen && (
+                <DropdownList
+                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                >
+                  {educationOptions.map((opt) => (
+                    <DropdownItem
+                      key={opt.label}
+                      onClick={() => handleEducationSelect(opt.label)}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </DropdownItem>
+                  ))}
+                </DropdownList>
+              )}
+            </AnimatePresence>
+          </CustomDropdownContainer>
           <AnimatePresence>
             {errors.lastEducation && (
               <ErrorMsg
@@ -650,16 +777,18 @@ const RegisterPage = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
         >
           <Label><FaPhone /> Mobile No.*</Label>
-          <Input 
+          <Input
             name="mobileNo"
             type="tel"
-            placeholder="e.g. +92 300 1234567" 
+            placeholder="e.g. +923001234567"
             value={formData.mobileNo}
             onChange={handleChange}
+            maxLength={15}
+            className={errors.mobileNo ? 'error' : ''}
           />
           <AnimatePresence>
             {errors.mobileNo && (
@@ -672,17 +801,17 @@ const RegisterPage = () => {
           </AnimatePresence>
         </FormCard>
 
-        {/* Interactive Age Slider */}
+        {/* Age */}
         <FormCard
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.6 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
         >
           <Label>Age*</Label>
           <SliderContainer>
-            <ValueLabel 
+            <ValueLabel
               $percent={agePercent}
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ repeat: Infinity, duration: 2 }}
@@ -691,7 +820,7 @@ const RegisterPage = () => {
             </ValueLabel>
             <SliderTrack>
               <SliderProgress $percent={agePercent} />
-              <SliderInput 
+              <SliderInput
                 type="range"
                 name="age"
                 min="5"
@@ -722,26 +851,26 @@ const RegisterPage = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.7 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
         >
           <Label>Gender*</Label>
           <RadioGroup>
             <RadioLabel>
-              <input 
-                type="radio" 
-                name="gender" 
-                value="Male" 
+              <input
+                type="radio"
+                name="gender"
+                value="Male"
                 checked={formData.gender === "Male"}
                 onChange={handleChange}
               />
               Male
             </RadioLabel>
             <RadioLabel>
-              <input 
-                type="radio" 
-                name="gender" 
-                value="Female" 
+              <input
+                type="radio"
+                name="gender"
+                value="Female"
                 checked={formData.gender === "Female"}
                 onChange={handleChange}
               />
@@ -761,18 +890,18 @@ const RegisterPage = () => {
 
         {/* Source Dropdown with Icons */}
         <FormCard
-          $isDropdownOpen={isDropdownOpen}
+          $active={isDropdownOpen}
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.8 }}
+          transition={{ duration: 0.5 }}
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
           ref={dropdownRef}
         >
           <Label>How did you hear deepskill?*</Label>
           <CustomDropdownContainer>
-            <DropdownHeader 
-              $isOpen={isDropdownOpen} 
+            <DropdownHeader
+              $isOpen={isDropdownOpen}
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               {formData.source ? (
@@ -785,7 +914,7 @@ const RegisterPage = () => {
               )}
               <FaChevronDown className="chevron" />
             </DropdownHeader>
-            
+
             <AnimatePresence>
               {isDropdownOpen && (
                 <DropdownList
@@ -795,8 +924,8 @@ const RegisterPage = () => {
                   transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 >
                   {sourceOptions.map((opt) => (
-                    <DropdownItem 
-                      key={opt.label} 
+                    <DropdownItem
+                      key={opt.label}
                       onClick={() => handleSourceSelect(opt.label)}
                     >
                       {opt.icon}
@@ -814,6 +943,66 @@ const RegisterPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
               >{errors.source}</ErrorMsg>
+            )}
+          </AnimatePresence>
+        </FormCard>
+
+        {/* Select Course Dropdown */}
+        <FormCard
+          $active={isCourseDropdownOpen}
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
+          ref={courseDropdownRef}
+          className="full-width"
+        >
+          <Label><FaGraduationCap /> Select Course*</Label>
+          <CustomDropdownContainer>
+            <DropdownHeader
+              $isOpen={isCourseDropdownOpen}
+              onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
+            >
+              {formData.selectedCourse ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {courseOptions.find(o => o.label === formData.selectedCourse)?.icon}
+                  {formData.selectedCourse}
+                </span>
+              ) : (
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Choose Course</span>
+              )}
+              <FaChevronDown className="chevron" />
+            </DropdownHeader>
+
+            <AnimatePresence>
+              {isCourseDropdownOpen && (
+                <DropdownList
+                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                >
+                  {courseOptions.map((opt) => (
+                    <DropdownItem
+                      key={opt.label}
+                      onClick={() => handleCourseSelect(opt.label)}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </DropdownItem>
+                  ))}
+                </DropdownList>
+              )}
+            </AnimatePresence>
+          </CustomDropdownContainer>
+          <AnimatePresence>
+            {errors.selectedCourse && (
+              <ErrorMsg
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >{errors.selectedCourse}</ErrorMsg>
             )}
           </AnimatePresence>
         </FormCard>
@@ -852,33 +1041,45 @@ const RegisterPage = () => {
               transition={{ delay: 0.3 }}
               style={{ color: '#fff', fontSize: '2.5rem', marginBottom: '20px' }}
             >
-              Application Received!
+              Admission Confirmed!
             </motion.h2>
             <motion.p
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
-              style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', maxWidth: '500px' }}
+              style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', maxWidth: '600px', textAlign: 'center' }}
             >
-              Thank you for applying to Deepskills. Our admissions team will contact you shortly to guide you on your journey.
+              Welcome to DeepSkills, <strong>{formData.firstName}</strong>! <br /><br />
+              A <strong>Welcome Email</strong> has been sent to your address with your
+              <strong> auto-generated login password</strong>. <br /><br />
+              Please check your inbox (and spam folder) to find your credentials.
             </motion.p>
+            <motion.div
+               initial={{ y: 20, opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               transition={{ delay: 0.5 }}
+               style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '10px' }}
+            >
+              Redirecting to Sign In Page in {countdown}...
+            </motion.div>
             <motion.button
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              onClick={() => window.location.href = '/'}
-              style={{ 
-                marginTop: '40px',
-                background: '#fff',
-                color: '#7B1F2E',
-                border: 'none',
-                padding: '12px 30px',
-                borderRadius: '8px',
+              transition={{ delay: 0.6 }}
+              onClick={() => navigate('/login')}
+              style={{
+                marginTop: '30px',
+                background: '#7B1F2E',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.2)',
+                padding: '15px 40px',
+                borderRadius: '12px',
                 fontWeight: 'bold',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontSize: '1.1rem'
               }}
             >
-              Back to Home
+              Go to Sign In Page Now
             </motion.button>
           </SuccessOverlay>
         )}

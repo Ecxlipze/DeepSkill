@@ -541,7 +541,7 @@ const FormGroup = styled(motion.div)`
 `;
 
 const SubmitBtn = styled.button`
-  background: #7a2136;
+  background: ${props => props.$success ? '#22c55e' : '#7a2136'};
   color: #fff;
   border: none;
   padding: 12px 35px;
@@ -552,17 +552,35 @@ const SubmitBtn = styled.button`
   transition: all 0.3s ease;
   font-family: 'Inter', sans-serif;
   margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 
   &:hover {
-    background: #9a2842;
+    background: ${props => props.$success ? '#16a34a' : '#9a2842'};
     transform: translateY(-2px);
   }
 
   &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
+    opacity: ${props => props.$success ? 1 : 0.7};
+    cursor: ${props => props.$success ? 'default' : 'not-allowed'};
     transform: none;
   }
+`;
+
+const StatusMessage = styled(motion.div)`
+  margin-top: 15px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: ${props => props.$type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
+  border: 1px solid ${props => props.$type === 'success' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'};
+  color: ${props => props.$type === 'success' ? '#4ade80' : '#f87171'};
 `;
 
 // SubmitButton removed
@@ -594,41 +612,66 @@ const ContactPage = () => {
     name: '',
     email: '',
     phone: '',
-    message: ''
+    message: '',
+    'bot-field': '' // Honeypot field
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  const validateField = (name, value) => {
+    let error = '';
+    
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          error = 'Name is required';
+        } else if (!/^[a-zA-Z\s.-]+$/.test(value)) {
+          error = 'Only letters, spaces, hyphens and dots allowed';
+        }
+        break;
+      case 'email':
+        if (!value.trim()) {
+          error = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+      case 'phone':
+        if (!value.trim()) {
+          error = 'Phone number is required';
+        } else if (!/^\+?\d+$/.test(value)) {
+          error = 'Only digits and + allowed';
+        }
+        break;
+      case 'message':
+        if (!value.trim()) {
+          error = 'Message is required';
+        } else if (value.trim().length < 10) {
+          error = 'Message must be at least 10 characters';
+        }
+        break;
+      default:
+        break;
+    }
+    
+    return error;
+  };
+
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[\d\s-()]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
-    }
+    Object.keys(formData).forEach(key => {
+      if (key !== 'bot-field') {
+        const error = validateField(key, formData[key]);
+        if (error) newErrors[key] = error;
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -636,17 +679,19 @@ const ContactPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Live validation
+    const error = validateField(name, value);
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -659,38 +704,38 @@ const ContactPage = () => {
     setIsSubmitting(true);
 
     try {
-      // Encode form data for Netlify
-      const encodedData = Object.keys(formData)
-        .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(formData[key]))
-        .join("&") + "&form-name=contact";
-
-      const response = await fetch("/", {
+      const response = await fetch("/api/contact.php", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: encodedData
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.status === "success") {
         setSubmitSuccess(true);
-        // Reset form data
+        setSubmitError(null);
         setFormData({
           name: '',
           email: '',
           phone: '',
-          message: ''
+          message: '',
+          'bot-field': ''
         });
+
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setSubmitSuccess(false);
+        }, 5000);
       } else {
-        throw new Error('Form submission failed');
+        throw new Error(result.message || 'Form submission failed');
       }
     } catch (error) {
       console.error('Submission error:', error);
-      alert('There was an error sending your message. Please try again.');
+      setSubmitError(error.message || 'There was an error sending your message. Please try again.');
+      setSubmitSuccess(false);
     } finally {
-      setIsSubmitting(true); // Keep it true for the success message delay or set to false
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setSubmitSuccess(false);
-      }, 5000);
+      setIsSubmitting(false);
     }
   };
 
@@ -858,38 +903,17 @@ const ContactPage = () => {
             <h3>Send a Message:</h3>
             <p className="subtitle">We're here to help you</p>
 
-            {submitSuccess && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.2)',
-                  border: '1px solid rgba(34, 197, 94, 0.5)',
-                  padding: '15px',
-                  borderRadius: '10px',
-                  marginBottom: '20px',
-                  color: '#22c55e',
-                  textAlign: 'center'
-                }}
-              >
-                Message sent successfully! We'll get back to you soon.
-              </motion.div>
-            )}
-
-            <form 
-              name="contact" 
-              method="POST" 
-              data-netlify="true" 
-              data-netlify-honeypot="bot-field"
-              onSubmit={handleSubmit}
-            >
-              {/* Hidden input for Netlify bot detection */}
-              <input type="hidden" name="form-name" value="contact" />
-              <p hidden>
-                <label>
-                  Don't fill this out if you're human: <input name="bot-field" />
-                </label>
-              </p>
+            <form onSubmit={handleSubmit}>
+              {/* Honeypot field - hidden from users */}
+              <input 
+                type="text" 
+                name="bot-field" 
+                value={formData['bot-field']} 
+                onChange={handleChange} 
+                style={{ display: 'none' }} 
+                tabIndex="-1" 
+                autocomplete="off" 
+              />
 
               <FormGroup
                 initial={{ y: 20, opacity: 0 }}
@@ -905,6 +929,7 @@ const ContactPage = () => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Name"
+                  maxLength={50}
                   className={errors.name ? 'error' : ''}
                 />
                 {errors.name && <div className="error-message">{errors.name}</div>}
@@ -943,6 +968,7 @@ const ContactPage = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone"
+                  maxLength={15}
                   className={errors.phone ? 'error' : ''}
                 />
                 {errors.phone && <div className="error-message">{errors.phone}</div>}
@@ -961,6 +987,7 @@ const ContactPage = () => {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Message"
+                  maxLength={500}
                   className={errors.message ? 'error' : ''}
                 />
                 {errors.message && <div className="error-message">{errors.message}</div>}
@@ -969,9 +996,30 @@ const ContactPage = () => {
               <SubmitBtn
                 type="submit"
                 disabled={isSubmitting}
+                $success={submitSuccess}
               >
-                {isSubmitting ? 'Sending...' : 'Submit'}
+                {isSubmitting ? 'Sending...' : (submitSuccess ? 'Success!' : 'Submit')}
               </SubmitBtn>
+
+              {submitSuccess && (
+                <StatusMessage
+                  $type="success"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <FaBullseye /> Message sent successfully! We'll get back to you soon.
+                </StatusMessage>
+              )}
+
+              {submitError && (
+                <StatusMessage
+                  $type="error"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  {submitError}
+                </StatusMessage>
+              )}
             </form>
           </FormContainer>
 

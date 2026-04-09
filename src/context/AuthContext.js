@@ -15,45 +15,74 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
-    // Mock login logic
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Any email/pass works for this mock demo, but let's simulate a check
-        if (email && password) {
-          const userData = {
-            id: '123',
-            email: email,
-            name: email.split('@')[0],
-            role: 'student',
-            enrolledCourses: [], // Start with empty list as requested
-            totalLearningTime: '0h'
-          };
-          setUser(userData);
-          localStorage.setItem('deepskill_user', JSON.stringify(userData));
-          resolve(userData);
-        } else {
-          reject(new Error('Invalid credentials'));
-        }
-      }, 1000);
-    });
+  const login = async (email, password) => {
+    try {
+      const response = await fetch("/api/login.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === "success") {
+        const userData = result.user;
+        setUser(userData);
+        localStorage.setItem('deepskill_user', JSON.stringify(userData));
+        return userData;
+      } else {
+        throw new Error(result.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  const register = (userData) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newUser = {
-          ...userData,
-          id: Date.now().toString(),
-          role: 'student',
-          enrolledCourses: [],
-          totalLearningTime: '0h'
-        };
-        setUser(newUser);
-        localStorage.setItem('deepskill_user', JSON.stringify(newUser));
-        resolve(newUser);
-      }, 1000);
-    });
+  const register = async (admissionData) => {
+    try {
+      const response = await fetch("/api/register.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(admissionData)
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === "success") {
+        return result;
+      } else {
+        throw new Error(result.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  const updatePassword = async (email, newPassword) => {
+    try {
+      const response = await fetch("/api/update-password.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, newPassword })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.status === "success") {
+        // Update local user state
+        const updatedUser = { ...user, is_first_login: false };
+        setUser(updatedUser);
+        localStorage.setItem('deepskill_user', JSON.stringify(updatedUser));
+        return result;
+      } else {
+        throw new Error(result.message || 'Password update failed');
+      }
+    } catch (error) {
+      console.error('Password update error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -98,7 +127,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, enrollCourse, unenrollCourse, loading }}>
+    <AuthContext.Provider value={{ 
+      user, login, register, updatePassword, logout, updateProfile, enrollCourse, unenrollCourse, loading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

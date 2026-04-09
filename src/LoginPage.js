@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaArrowRight, FaGoogle, FaGithub } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaArrowRight } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 
 const PageContainer = styled(motion.div)`
@@ -160,48 +160,7 @@ const SubmitButton = styled(motion.button)`
   }
 `;
 
-const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin: 30px 0;
-  color: rgba(255, 255, 255, 0.2);
-  font-size: 0.85rem;
 
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-  }
-`;
-
-const SocialGroup = styled.div`
-  display: flex;
-  gap: 15px;
-`;
-
-const SocialButton = styled(motion.button)`
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 12px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 500;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-`;
 
 const FooterText = styled.p`
   color: rgba(255, 255, 255, 0.5);
@@ -229,11 +188,50 @@ const ErrorMessage = styled(motion.div)`
   border-radius: 4px;
 `;
 
+const ModalOverlay = styled(motion.div)`
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 20px;
+`;
+
+const ModalCard = styled(motion.div)`
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 40px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+`;
+
+const StatusMessage = styled.div`
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  background: ${props => props.$type === 'success' ? 'rgba(46, 125, 50, 0.15)' : 'rgba(198, 40, 40, 0.15)'};
+  border-left: 4px solid ${props => props.$type === 'success' ? '#4caf50' : '#f44336'};
+  color: ${props => props.$type === 'success' ? '#a5d6a7' : '#ef9a9a'};
+  line-height: 1.5;
+`;
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Forgot Password States
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetStatus, setResetStatus] = useState(null); // { type: 'success' | 'error', message: '' }
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -253,6 +251,37 @@ const LoginPage = () => {
       setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetStatus(null);
+
+    try {
+      const response = await fetch('/api/forgot-password.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.status === 'success') {
+        setResetStatus({ type: 'success', message: 'If an account exists for this email, we have sent a temporary password. Please check your inbox and spam folder.' });
+        // Set a timeout to close modal after 5s like other status messages
+        setTimeout(() => {
+          setShowResetModal(false);
+          setResetStatus(null);
+          setResetEmail('');
+        }, 5000);
+      } else {
+        setResetStatus({ type: 'error', message: data.message || 'There was an error processing your request.' });
+      }
+    } catch (err) {
+      setResetStatus({ type: 'error', message: 'Unable to connect to the server. Please try again later.' });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -320,7 +349,14 @@ const LoginPage = () => {
             </InputWrapper>
           </InputGroup>
 
-          <ForgotPassword href="#">Forgot Password?</ForgotPassword>
+          <ForgotPassword 
+            as="button" 
+            type="button" 
+            onClick={() => setShowResetModal(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Forgot Password?
+          </ForgotPassword>
 
           <SubmitButton
             type="submit"
@@ -332,21 +368,69 @@ const LoginPage = () => {
           </SubmitButton>
         </Form>
 
-        <Divider>or continue with</Divider>
-
-        <SocialGroup>
-          <SocialButton whileHover={{ y: -3 }}>
-            <FaGoogle /> Google
-          </SocialButton>
-          <SocialButton whileHover={{ y: -3 }}>
-            <FaGithub /> Github
-          </SocialButton>
-        </SocialGroup>
-
         <FooterText>
-          Don't have an account? <Link to="/register">Join Now</Link>
+          Don't have an account? <Link to="/register">Get Enrolled</Link>
         </FooterText>
       </LoginCard>
+
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showResetModal && (
+          <ModalOverlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalCard
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              <Title style={{ fontSize: '1.8rem' }}>Reset Password</Title>
+              <Subtitle>Enter your email address and we'll send you a temporary password to recover your account.</Subtitle>
+
+              {resetStatus && (
+                <StatusMessage $type={resetStatus.type}>
+                  {resetStatus.message}
+                </StatusMessage>
+              )}
+
+              <Form onSubmit={handleResetPassword}>
+                <InputGroup>
+                  <Label>Email Address</Label>
+                  <InputWrapper>
+                    <FaEnvelope />
+                    <Input 
+                      type="email" 
+                      placeholder="Enter your registered email" 
+                      required 
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                    />
+                  </InputWrapper>
+                </InputGroup>
+
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <SubmitButton
+                    type="button"
+                    onClick={() => { setShowResetModal(false); setResetStatus(null); }}
+                    style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}
+                  >
+                    Cancel
+                  </SubmitButton>
+                  <SubmitButton
+                    type="submit"
+                    disabled={resetLoading}
+                    style={{ flex: 1.5 }}
+                  >
+                    {resetLoading ? "Processing..." : "Send Password"}
+                  </SubmitButton>
+                </div>
+              </Form>
+            </ModalCard>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </PageContainer>
   );
 };

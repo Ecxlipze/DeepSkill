@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { FaUser, FaStar, FaUsers, FaProjectDiagram, FaWallet, FaClock, FaBriefcase, FaChalkboardTeacher, FaDatabase } from 'react-icons/fa';
@@ -14,6 +14,7 @@ import CourseOutline from './components/CourseOutline';
 import CourseRoadmap from './components/CourseRoadmap';
 import CertifySection from './components/CertifySection';
 import mernMap from './assets/mern-map.svg';
+import CourseEnrollCard from './components/CourseEnrollCard';
 
 
 const PageContainer = styled.div`
@@ -23,7 +24,7 @@ const PageContainer = styled.div`
   background: radial-gradient(circle at 20% 50%, rgba(151, 192, 73, 0.15) 0%, transparent 50%),
               radial-gradient(circle at 80% 80%, rgba(123, 31, 46, 0.15) 0%, transparent 50%);
   color: #fff;
-  padding-top: 80px;
+  padding-top: 100px;
   overflow-x: hidden;
   position: relative;
   display: flex;
@@ -129,104 +130,7 @@ const StartButton = styled(motion.button)`
   }
 `;
 
-const CardColumn = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  perspective: 1000px;
-`;
-
-const EnrollCard = styled(motion.div)`
-  background: white;
-  border-radius: 20px;
-  overflow: hidden;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  position: relative;
-  transform-style: preserve-3d;
-`;
-
-const CardImage = styled.img`
-  width: 100%;
-  height: auto;
-  display: block;
-`;
-
-const CardContent = styled.div`
-  padding: 24px;
-  color: #000;
-`;
-
-const CreatorText = styled.p`
-  font-size: 0.8rem;
-  color: #666;
-  font-weight: 700;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-`;
-
-const FeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0 0 24px 0;
-`;
-
-const FeatureItem = styled.li`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-weight: 600;
-  color: #333;
-
-  &::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #7B1F2E;
-    flex-shrink: 0;
-  }
-`;
-
-const EnrollButton = styled.button`
-  width: 100%;
-  padding: 14px;
-  background-color: #7B1F2E;
-  color: #fff;
-  font-weight: 700;
-  border-radius: 8px;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(123, 31, 46, 0.3);
-
-  &:hover {
-    background-color: #9b283b;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(123, 31, 46, 0.4);
-  }
-`;
-
-const AddedBenefit = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-
-  &::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #7B1F2E;
-  }
-`;
+// CourseEnrollCard handles the card column and its internal styling
 
 const FloatingShape = styled(motion.div)`
   position: absolute;
@@ -236,7 +140,8 @@ const FloatingShape = styled(motion.div)`
   background: ${props => props.color || 'rgba(255,255,255,0.03)'};
   z-index: 1;
   pointer-events: none;
-  filter: blur(40px);
+  filter: blur(30px);
+  will-change: transform;
 `;
 
 // New Sections Styled Components
@@ -524,8 +429,9 @@ const ProjectImage = styled(motion.img)`
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  filter: drop-shadow(0 0 40px rgba(151, 192, 73, 0.25));
+  filter: drop-shadow(0 0 30px rgba(151, 192, 73, 0.2));
   cursor: pointer;
+  will-change: transform;
 `;
 
 const TreeImage = styled(motion.img)`
@@ -563,31 +469,6 @@ const FullStackPage = () => {
   const { user, enrollCourse } = useAuth();
   const navigate = useNavigate();
 
-  // 3D Tilt Logic
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["7deg", "-7deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7deg", "7deg"]);
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
   const handleEnroll = () => {
     if (!user) {
       navigate('/login');
@@ -603,23 +484,23 @@ const FullStackPage = () => {
 
   return (
     <PageContainer>
-      <FloatingShape 
-        size="500px" 
-        color="rgba(151, 192, 73, 0.08)" 
-        style={{ top: '-10%', left: '-10%' }} 
-        animate={{ 
-          x: [0, 30, 0], 
+      <FloatingShape
+        size="500px"
+        color="rgba(151, 192, 73, 0.08)"
+        style={{ top: '-10%', left: '-10%' }}
+        animate={{
+          x: [0, 30, 0],
           y: [0, 40, 0],
           scale: [1, 1.1, 1]
         }}
         transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
       />
-      <FloatingShape 
-        size="400px" 
-        color="rgba(123, 31, 46, 0.08)" 
-        style={{ bottom: '10%', right: '-5%' }} 
-        animate={{ 
-          x: [0, -30, 0], 
+      <FloatingShape
+        size="400px"
+        color="rgba(123, 31, 46, 0.08)"
+        style={{ bottom: '10%', right: '-5%' }}
+        animate={{
+          x: [0, -30, 0],
           y: [0, -40, 0],
           scale: [1, 1.2, 1]
         }}
@@ -643,24 +524,24 @@ const FullStackPage = () => {
               Web Development with React (MERN Stack)
             </motion.span>
           </Heading>
-          
+
           <SubHeading>
             Learn how to Build Modern Web Applications Frontend and Backend
           </SubHeading>
 
           <Description>
-            The MERN stack is one of the most in-demand technology stacks in today's tech industry. 
-            This program is designed to help students move beyond basics and gain end-to-end web 
-            development skills, from creating interactive user interfaces to building secure backend 
+            The MERN stack is one of the most in-demand technology stacks in today's tech industry.
+            This program is designed to help students move beyond basics and gain end-to-end web
+            development skills, from creating interactive user interfaces to building secure backend
             APIs and deploying full applications online.
           </Description>
 
           <Description>
-            Whether your goal is employment, freelancing, or launching your own product, this course 
+            Whether your goal is employment, freelancing, or launching your own product, this course
             focuses on real-world development workflows and outcomes.
           </Description>
-          <StartButton 
-            whileHover={{ scale: 1.05 }} 
+          <StartButton
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -670,32 +551,21 @@ const FullStackPage = () => {
             Start Learning
           </StartButton>
         </TextColumn>
-
         {/* Right Column: Enroll Card */}
-        <CardColumn
-          initial={{ opacity: 0, x: 50, rotateY: 90 }}
-          animate={{ opacity: 1, x: 0, rotateY: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, type: "spring", stiffness: 100 }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-        >
-          <EnrollCard style={{ rotateX, rotateY }}>
-            <CardImage src={mernCard} alt="MERN Stack Web Development" />
-            <CardContent>
-              <CreatorText>Created by: DEEPSKILLS</CreatorText>
-              
-              <FeatureList>
-                <FeatureItem>JOIN</FeatureItem>
-                <FeatureItem>LEARN</FeatureItem>
-                <FeatureItem>GET HIRED</FeatureItem>
-              </FeatureList>
+        <CourseEnrollCard
+          image={mernCard}
+          courseId="full-stack-react"
+          title="Full Stack (React)"
+          accentColor="#97C049"
+          features={[
+            'Master React & Node.js',
+            'Build 5+ Real-World Projects',
+            'Advanced Portfolio Development',
+            'Career Growth Support'
+          ]}
+          iconType="react"
+        />
 
-              <EnrollButton onClick={handleEnroll}>ENROLL NOW</EnrollButton>
-              
-              <AddedBenefit>ADDED BENEFIT</AddedBenefit>
-            </CardContent>
-          </EnrollCard>
-        </CardColumn>
       </ContentWrapper>
 
 
@@ -718,12 +588,12 @@ const FullStackPage = () => {
             { icon: <FaBriefcase />, title: "Job-Ready", sub: "Industry Aligned" },
             { icon: <FaChalkboardTeacher />, title: "Onsite / Online", sub: "Lecture Mode" }
           ].map((feature, index) => (
-            <FeatureBox 
-              key={index} 
+            <FeatureBox
+              key={index}
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
             >
-              <IconWrapper 
+              <IconWrapper
                 bg="#fff"
                 whileHover={{ rotate: 360, backgroundColor: "#97C049", color: "#fff" }}
                 transition={{ duration: 0.5 }}
@@ -749,7 +619,7 @@ const FullStackPage = () => {
           viewport={{ once: true, margin: "-100px" }}
         >
           {/* Frontend Card */}
-          <LearningCard 
+          <LearningCard
             variants={itemVariants}
             gradient="linear-gradient(135deg, #FAC000 0%, #CF5F04 100%)"
             whileHover={{ y: -15, scale: 1.02 }}
@@ -764,7 +634,7 @@ const FullStackPage = () => {
           </LearningCard>
 
           {/* Backend Card */}
-          <LearningCard 
+          <LearningCard
             variants={itemVariants}
             gradient="linear-gradient(135deg, #275C8D 0%, #0C7BE2 100%)"
             whileHover={{ y: -15, scale: 1.02 }}
@@ -780,7 +650,7 @@ const FullStackPage = () => {
           </LearningCard>
 
           {/* Database Card */}
-          <LearningCard 
+          <LearningCard
             variants={itemVariants}
             gradient="linear-gradient(135deg, #FA9C8F 0%, #673E38 100%)"
             whileHover={{ y: -15, scale: 1.02 }}
@@ -800,7 +670,7 @@ const FullStackPage = () => {
       <SectionContainer style={{ marginBottom: 0 }}>
         <SectionTitle>Course Curriculum</SectionTitle>
       </SectionContainer>
-      
+
       <CurriculumBanner
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -831,9 +701,9 @@ const FullStackPage = () => {
           </BannerText>
         </InfoItem>
       </CurriculumBanner>
-            <div style={{ padding: '60px 0 100px' }}>
-        <StartButton 
-          whileHover={{ scale: 1.05 }} 
+      <div style={{ padding: '60px 0 100px' }}>
+        <StartButton
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleEnroll}
           style={{ fontSize: '1.2rem', padding: '18px 50px' }}
@@ -852,25 +722,25 @@ const FullStackPage = () => {
       >
         <SectionContainer>
           <SectionTitle>Projects You'll Build</SectionTitle>
-          <ProjectImage 
-            src={mernProject} 
+          <ProjectImage
+            src={mernProject}
             alt="Projects Map"
             initial={{ opacity: 0, scale: 0.8, y: 50 }}
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
             viewport={{ once: true }}
-            whileHover={{ 
-              scale: 1.05, 
-              rotateY: 5, 
+            whileHover={{
+              scale: 1.05,
+              rotateY: 5,
               rotateX: -5,
-              transition: { duration: 0.4 } 
+              transition: { duration: 0.4 }
             }}
-            animate={{ 
+            animate={{
               y: [0, -10, 0],
-              transition: { 
-                duration: 4, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              } 
+              transition: {
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }
             }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           />
@@ -888,24 +758,24 @@ const FullStackPage = () => {
         >
           By the end of this program, you'll be able to:
         </OutcomesTagline>
-        <TreeImage 
-          src={mernTree} 
+        <TreeImage
+          src={mernTree}
           alt="Career Tree"
           initial={{ opacity: 0, transform: "scale(0.9) rotate(-3deg)" }}
           whileInView={{ opacity: 1, transform: "scale(1) rotate(0deg)" }}
           viewport={{ once: true }}
-          whileHover={{ 
-            scale: 1.03, 
+          whileHover={{
+            scale: 1.03,
             filter: "drop-shadow(0 0 50px rgba(151, 192, 73, 0.3))",
             transition: { duration: 0.3 }
           }}
-          animate={{ 
+          animate={{
             y: [0, 8, 0],
-            transition: { 
-              duration: 5, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            } 
+            transition: {
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }
           }}
           transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
         />
@@ -920,7 +790,7 @@ const FullStackPage = () => {
       </SectionContainer>
 
       <VideoReviews />
-      
+
       <WhyChooseUs />
 
       <InstantDoubt />

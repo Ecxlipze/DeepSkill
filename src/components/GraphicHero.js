@@ -1,15 +1,15 @@
 import React from 'react';
 import styled from 'styled-components';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { FaCheckCircle } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import graphicsCard from '../assets/graphics-card.svg';
+import CourseEnrollCard from './CourseEnrollCard';
 
 const HeroSection = styled.section`
   width: 100%;
   min-height: 90vh;
-  padding: 90px 0 40px;
+  padding: 100px 0 40px;
   background: #000;
   display: flex;
   justify-content: center;
@@ -153,138 +153,11 @@ const StartButton = styled(motion.button)`
   }
 `;
 
-const CardColumn = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  perspective: 1000px;
-`;
-
-const EnrollCard = styled(motion.div)`
-  background: #fff;
-  border-radius: 24px;
-  overflow: hidden;
-  max-width: 480px;
-  width: 100%;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
-  color: #000;
-  transform-style: preserve-3d;
-`;
-
-const CardImage = styled.img`
-  width: 100%;
-  height: auto;
-  display: block;
-`;
-
-const CardFooter = styled.div`
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const CreatorText = styled.p`
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #666;
-  text-transform: uppercase;
-  margin: 0;
-  
-  span {
-    color: #444;
-  }
-`;
-
-const FeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-`;
-
-const FeatureItem = styled.li`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 700;
-  color: #333;
-  font-size: 1rem;
-
-  svg {
-    color: #9333EA;
-    font-size: 1.2rem;
-  }
-`;
-
-const EnrollBtn = styled.button`
-  width: 100%;
-  padding: 16px;
-  background-color: #7E22CE;
-  color: #fff;
-  font-weight: 800;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  box-shadow: 0 10px 20px rgba(126, 34, 206, 0.3);
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: #9333EA;
-    transform: translateY(-2px);
-  }
-`;
-
-const BenefitsSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 700;
-  color: #333;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  font-size: 1rem;
-
-  &::before {
-    content: '';
-    width: 10px;
-    height: 10px;
-    background-color: #9333EA;
-    border-radius: 50%;
-  }
-`;
+// CourseEnrollCard handles the card column and its internal styling
 
 const GraphicHero = () => {
   const { user, enrollCourse } = useAuth();
   const navigate = useNavigate();
-  
-  const cardX = useMotionValue(0);
-  const cardY = useMotionValue(0);
-  const cardRotateX = useSpring(useTransform(cardY, [-0.5, 0.5], ["10deg", "-10deg"]), { stiffness: 300, damping: 30 });
-  const cardRotateY = useSpring(useTransform(cardX, [-0.5, 0.5], ["-10deg", "10deg"]), { stiffness: 300, damping: 30 });
-
-  const handleHeroMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const xPct = x / rect.width - 0.5;
-    const yPct = y / rect.height - 0.5;
-    cardX.set(xPct);
-    cardY.set(yPct);
-
-    e.currentTarget.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
-    e.currentTarget.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
-  };
-
-  const handleMouseLeave = () => {
-    cardX.set(0);
-    cardY.set(0);
-  };
 
   const handleEnroll = () => {
     if (!user) {
@@ -300,7 +173,7 @@ const GraphicHero = () => {
   };
 
   return (
-    <HeroSection onMouseMove={handleHeroMouseMove}>
+    <HeroSection>
       <FloatingCode size="6rem" style={{ top: '10%', left: '5%', opacity: 0.1 }} animate={{ y: [0, 30, 0] }} transition={{ duration: 8, repeat: Infinity }}>Ps</FloatingCode>
       <FloatingCode size="5rem" style={{ bottom: '20%', left: '10%', opacity: 0.08 }} animate={{ rotate: [0, 360] }} transition={{ duration: 20, repeat: Infinity }}>Ai</FloatingCode>
       <FloatingCode size="4rem" style={{ top: '15%', right: '8%', opacity: 0.1 }} animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 6, repeat: Infinity }}>Id</FloatingCode>
@@ -332,28 +205,20 @@ const GraphicHero = () => {
           </StartButton>
         </ContentColumn>
 
-        <CardColumn
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <EnrollCard
-            onMouseLeave={handleMouseLeave}
-            style={{ rotateX: cardRotateX, rotateY: cardRotateY }}
-          >
-            <CardImage src={graphicsCard} alt="Graphic Designing Course" />
-            <CardFooter>
-              <CreatorText>Created by: DEEPSKILLS</CreatorText>
-              <FeatureList>
-                <FeatureItem><FaCheckCircle /> Join</FeatureItem>
-                <FeatureItem><FaCheckCircle /> Learn</FeatureItem>
-                <FeatureItem><FaCheckCircle /> Get Experience from Real-Time Projects</FeatureItem>
-              </FeatureList>
-              <EnrollBtn onClick={handleEnroll}>Enroll Now</EnrollBtn>
-              <BenefitsSection>Benefits</BenefitsSection>
-            </CardFooter>
-          </EnrollCard>
-        </CardColumn>
+        <CourseEnrollCard
+          image={graphicsCard}
+          courseId="graphic-design"
+          title="Graphic Designing"
+          accentColor="#9333EA"
+          features={[
+            'Photoshop & Illustrator Expert',
+            'Branding & Identity Design',
+            'Social Media Design Specialist',
+            'Freelancing Roadmap'
+          ]}
+          iconType="design"
+          useIcons={true}
+        />
       </Container>
     </HeroSection>
   );

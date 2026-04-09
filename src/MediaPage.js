@@ -367,10 +367,14 @@ const MediaPage = () => {
     ]
   };
 
-  if (loading) return <div style={{ color: '#fff', padding: '100px', textAlign: 'center' }}>Loading Media...</div>;
-
   return (
-    <PageContainer>
+    <>
+      <PageContainer
+        style={{ 
+          opacity: loading ? 0 : 1,
+          transition: 'opacity 0.6s ease'
+        }}
+      >
       <Spotlight style={{ '--x': spotlightX, '--y': spotlightY }} />
 
       <Banner>
@@ -584,7 +588,8 @@ const MediaPage = () => {
           </motion.div>
         </ContentWrapper>
       </VideoSection>
-    </PageContainer>
+      </PageContainer>
+    </>
   );
 };
 

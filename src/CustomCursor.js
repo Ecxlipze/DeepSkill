@@ -44,8 +44,8 @@ const CustomCursor = () => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  const springConfig = { damping: 25, stiffness: 250 };
-  const dotSpringConfig = { damping: 40, stiffness: 800 };
+  const springConfig = { damping: 20, stiffness: 400 };
+  const dotSpringConfig = { damping: 30, stiffness: 1000 };
 
   const cursorX = useSpring(mouseX, springConfig);
   const cursorY = useSpring(mouseY, springConfig);
@@ -54,6 +54,8 @@ const CustomCursor = () => {
   const dotY = useSpring(mouseY, dotSpringConfig);
 
   useEffect(() => {
+    let lastTarget = null;
+
     const moveMouse = (e) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
@@ -61,6 +63,9 @@ const CustomCursor = () => {
 
     const handleHover = (e) => {
       const target = e.target;
+      if (target === lastTarget) return;
+      lastTarget = target;
+
       const isClickable = 
         target.tagName === 'BUTTON' ||
         target.tagName === 'A' ||
@@ -71,8 +76,8 @@ const CustomCursor = () => {
       setIsHovering(isClickable);
     };
 
-    window.addEventListener('mousemove', moveMouse);
-    window.addEventListener('mouseover', handleHover);
+    window.addEventListener('mousemove', moveMouse, { passive: true });
+    window.addEventListener('mouseover', handleHover, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', moveMouse);
