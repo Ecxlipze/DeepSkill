@@ -627,27 +627,31 @@ const ContactPage = () => {
 
   const validateField = (name, value) => {
     let error = '';
-    
+
     switch (name) {
       case 'name':
         if (!value.trim()) {
           error = 'Name is required';
+        } else if (value.trim().length < 3) {
+          error = 'Name must be at least 3 characters';
         } else if (!/^[a-zA-Z\s.-]+$/.test(value)) {
-          error = 'Only letters, spaces, hyphens and dots allowed';
+          error = 'Please enter a valid name';
         }
         break;
       case 'email':
         if (!value.trim()) {
           error = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          error = 'Please enter a valid email address';
+        } else if (!/^[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)+$/.test(value)) {
+          error = 'Please enter valid email';
         }
         break;
       case 'phone':
         if (!value.trim()) {
           error = 'Phone number is required';
         } else if (!/^\+?\d+$/.test(value)) {
-          error = 'Only digits and + allowed';
+          error = 'Please enter a valid phone number';
+        } else if (value.trim().length < 10) {
+          error = 'Phone number must be at least 10 characters';
         }
         break;
       case 'message':
@@ -660,7 +664,7 @@ const ContactPage = () => {
       default:
         break;
     }
-    
+
     return error;
   };
 
@@ -679,10 +683,10 @@ const ContactPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Live validation
     const error = validateField(name, value);
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -772,13 +776,13 @@ const ContactPage = () => {
             transition={{ duration: 0.8 }}
           >
             <h1>Let’s Build Your Future Together</h1>
-            
+
             <div className="subheading-row">
               <div className="label">
                 HAVE <span className="icon-q">?</span>
               </div>
             </div>
-            
+
             <p className="para">
               about our courses,admissions,<br />
               or learning paths
@@ -789,15 +793,15 @@ const ContactPage = () => {
                 WE’RE HERE <FaMapMarkerAlt className="icon-pin" />
               </div>
             </div>
-            
+
             <p className="para">
               to help you take the next step<br />
               with confidence.
             </p>
 
             <p className="desc">
-              Whether you’re exploring your first tech skill or planning to specialize in areas 
-              like <strong>Data Science, Generative AI</strong>, or <strong>Web Development</strong>, 
+              Whether you’re exploring your first tech skill or planning to specialize in areas
+              like <strong>Data Science, Generative AI</strong>, or <strong>Web Development</strong>,
               the Deepskills team is just a message away.
             </p>
           </LeftSection>
@@ -827,7 +831,7 @@ const ContactPage = () => {
                   58 A2, Tipu Road Gulberg III, Lahore Pakistan
                 </div>
                 <p className="footer-text">
-                  Feel free to visit us for guidance, counseling, or to learn more about our 
+                  Feel free to visit us for guidance, counseling, or to learn more about our
                   programs in person.
                 </p>
               </AddressBox>
@@ -861,7 +865,7 @@ const ContactPage = () => {
               style={{ border: '1px solid rgba(245, 238, 238, 0.1)', height: '100%' }}
             >
               <FeatureCard style={{ background: 'transparent', border: 'none', transform: 'none', boxShadow: 'none' }}>
-                <motion.div 
+                <motion.div
                   className="card-icon"
                   whileHover={{ rotate: [0, -10, 10, 0], transition: { duration: 0.5 } }}
                 >
@@ -905,14 +909,14 @@ const ContactPage = () => {
 
             <form onSubmit={handleSubmit}>
               {/* Honeypot field - hidden from users */}
-              <input 
-                type="text" 
-                name="bot-field" 
-                value={formData['bot-field']} 
-                onChange={handleChange} 
-                style={{ display: 'none' }} 
-                tabIndex="-1" 
-                autocomplete="off" 
+              <input
+                type="text"
+                name="bot-field"
+                value={formData['bot-field']}
+                onChange={handleChange}
+                style={{ display: 'none' }}
+                tabIndex="-1"
+                autocomplete="off"
               />
 
               <FormGroup
@@ -929,6 +933,7 @@ const ContactPage = () => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Name"
+                  minLength={3}
                   maxLength={50}
                   className={errors.name ? 'error' : ''}
                 />
@@ -968,6 +973,7 @@ const ContactPage = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone"
+                  minLength={10}
                   maxLength={15}
                   className={errors.phone ? 'error' : ''}
                 />
@@ -987,6 +993,7 @@ const ContactPage = () => {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Message"
+                  minLength={10}
                   maxLength={500}
                   className={errors.message ? 'error' : ''}
                 />

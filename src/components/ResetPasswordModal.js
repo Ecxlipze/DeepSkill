@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+
 import { FaLock, FaShieldAlt, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 

@@ -226,18 +226,34 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   // Forgot Password States
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [resetEmailError, setResetEmailError] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetStatus, setResetStatus] = useState(null); // { type: 'success' | 'error', message: '' }
-  
+  const [resetSuccess, setResetSuccess] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const from = location.state?.from?.pathname || "/dashboard";
+
+  const validateResetEmail = (val) => {
+    if (!val.trim()) return 'Email is required';
+    if (!/^[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)+$/.test(val)) {
+      return 'Please enter valid email';
+    }
+    return '';
+  };
+
+  const handleResetEmailChange = (e) => {
+    const val = e.target.value;
+    setResetEmail(val);
+    setResetEmailError(validateResetEmail(val));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -254,8 +270,24 @@ const LoginPage = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowResetModal(false);
+    setResetEmail('');
+    setResetEmailError('');
+    setResetStatus(null);
+    setResetSuccess(false);
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
+
+    // Validate before submit
+    const emailErr = validateResetEmail(resetEmail);
+    if (emailErr) {
+      setResetEmailError(emailErr);
+      return;
+    }
+
     setResetLoading(true);
     setResetStatus(null);
 
@@ -267,19 +299,24 @@ const LoginPage = () => {
       });
 
       const data = await response.json();
+
       if (response.ok && data.status === 'success') {
-        setResetStatus({ type: 'success', message: 'If an account exists for this email, we have sent a temporary password. Please check your inbox and spam folder.' });
-        // Set a timeout to close modal after 5s like other status messages
-        setTimeout(() => {
-          setShowResetModal(false);
-          setResetStatus(null);
-          setResetEmail('');
-        }, 5000);
+        setResetStatus({
+          type: 'success',
+          message: 'We have sent a temporary password. Please check your inbox and spam folder.'
+        });
+        setResetSuccess(true);
       } else {
-        setResetStatus({ type: 'error', message: data.message || 'There was an error processing your request.' });
+        setResetStatus({
+          type: 'error',
+          message: data.message || 'This email is not registered. Please check and try again.'
+        });
       }
     } catch (err) {
-      setResetStatus({ type: 'error', message: 'Unable to connect to the server. Please try again later.' });
+      setResetStatus({
+        type: 'error',
+        message: 'Unable to connect to the server. Please try again later.'
+      });
     } finally {
       setResetLoading(false);
     }
@@ -291,12 +328,12 @@ const LoginPage = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <GlowingOrb color="rgba(123, 31, 46, 0.3)" size="500px" style={{ top: '-10%', left: '-10%' }} 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }} 
+      <GlowingOrb color="rgba(123, 31, 46, 0.3)" size="500px" style={{ top: '-10%', left: '-10%' }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 8, repeat: Infinity }}
       />
       <GlowingOrb color="rgba(123, 31, 46, 0.2)" size="400px" style={{ bottom: '10%', right: '0%' }}
-        animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }} 
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
         transition={{ duration: 10, repeat: Infinity }}
       />
 
@@ -325,10 +362,10 @@ const LoginPage = () => {
             <Label>Email Address</Label>
             <InputWrapper>
               <FaEnvelope />
-              <Input 
-                type="email" 
-                placeholder="john@example.com" 
-                required 
+              <Input
+                type="email"
+                placeholder="john@example.com"
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -339,19 +376,19 @@ const LoginPage = () => {
             <Label>Password</Label>
             <InputWrapper>
               <FaLock />
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
-                required 
+              <Input
+                type="password"
+                placeholder="••••••••"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </InputWrapper>
           </InputGroup>
 
-          <ForgotPassword 
-            as="button" 
-            type="button" 
+          <ForgotPassword
+            as="button"
+            type="button"
             onClick={() => setShowResetModal(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
           >
@@ -389,42 +426,80 @@ const LoginPage = () => {
               <Title style={{ fontSize: '1.8rem' }}>Reset Password</Title>
               <Subtitle>Enter your email address and we'll send you a temporary password to recover your account.</Subtitle>
 
-              {resetStatus && (
-                <StatusMessage $type={resetStatus.type}>
-                  {resetStatus.message}
-                </StatusMessage>
-              )}
+              <AnimatePresence>
+                {resetStatus && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <StatusMessage $type={resetStatus.type}>
+                      {resetStatus.message}
+                    </StatusMessage>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <Form onSubmit={handleResetPassword}>
                 <InputGroup>
                   <Label>Email Address</Label>
                   <InputWrapper>
                     <FaEnvelope />
-                    <Input 
-                      type="email" 
-                      placeholder="Enter your registered email" 
-                      required 
+                    <Input
+                      type="text"
+                      placeholder="Enter your registered email"
                       value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
+                      onChange={handleResetEmailChange}
+                      disabled={resetSuccess}
+                      style={resetEmailError ? { borderColor: '#ff4e4e', boxShadow: '0 0 10px rgba(255,78,78,0.2)' } : {}}
                     />
                   </InputWrapper>
+                  <AnimatePresence>
+                    {resetEmailError && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        style={{ color: '#ff9999', fontSize: '0.8rem', marginTop: '4px', marginLeft: '5px' }}
+                      >
+                        {resetEmailError}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </InputGroup>
 
                 <div style={{ display: 'flex', gap: '15px' }}>
                   <SubmitButton
                     type="button"
-                    onClick={() => { setShowResetModal(false); setResetStatus(null); }}
+                    onClick={handleCloseModal}
                     style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     Cancel
                   </SubmitButton>
-                  <SubmitButton
-                    type="submit"
-                    disabled={resetLoading}
-                    style={{ flex: 1.5 }}
-                  >
-                    {resetLoading ? "Processing..." : "Send Password"}
-                  </SubmitButton>
+
+                  {resetSuccess ? (
+                    <SubmitButton
+                      type="button"
+                      onClick={handleCloseModal}
+                      style={{ flex: 1.5, background: '#22c55e' }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Login Now <FaArrowRight />
+                    </SubmitButton>
+                  ) : (
+                    <SubmitButton
+                      type="submit"
+                      disabled={resetLoading || !!resetEmailError}
+                      style={{ flex: 1.5 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {resetLoading ? "Sending..." : "Send Password"}
+                    </SubmitButton>
+                  )}
                 </div>
               </Form>
             </ModalCard>
@@ -436,3 +511,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

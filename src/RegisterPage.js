@@ -457,6 +457,7 @@ const RegisterPage = () => {
       navigate('/login');
     }
     return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, countdown]);
 
   const validateField = (name, value) => {
@@ -467,22 +468,26 @@ const RegisterPage = () => {
       case 'lastName':
         if (!value.trim()) {
           error = `${name === 'firstName' ? 'First' : 'Last'} name is required`;
+        } else if (value.trim().length < 3) {
+          error = `${name === 'firstName' ? 'First' : 'Last'} name must be at least 3 characters`;
         } else if (!/^[a-zA-Z\s.-]+$/.test(value)) {
-          error = 'Only letters, spaces, hyphens and dots allowed';
+          error = 'Please enter a valid name';
         }
         break;
       case 'email':
         if (!value.trim()) {
           error = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          error = 'Please enter a valid email address';
+        } else if (!/^[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)+$/.test(value)) {
+          error = 'Please enter valid email';
         }
         break;
       case 'mobileNo':
         if (!value.trim()) {
           error = 'Mobile number is required';
         } else if (!/^\+?\d+$/.test(value)) {
-          error = 'Only digits and + allowed';
+          error = 'Please enter a valid phone number';
+        } else if (value.trim().length < 10) {
+          error = 'Mobile number must be at least 10 characters';
         }
         break;
       case 'lastEducation':
@@ -642,6 +647,7 @@ const RegisterPage = () => {
             placeholder="e.g. John"
             value={formData.firstName}
             onChange={handleChange}
+            minLength={3}
             maxLength={50}
             className={errors.firstName ? 'error' : ''}
           />
@@ -670,6 +676,7 @@ const RegisterPage = () => {
             placeholder="e.g. Doe"
             value={formData.lastName}
             onChange={handleChange}
+            minLength={3}
             maxLength={50}
             className={errors.lastName ? 'error' : ''}
           />
@@ -722,7 +729,7 @@ const RegisterPage = () => {
           whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
           ref={educationDropdownRef}
         >
-          <Label><FaGraduationCap /> Last Education Milestone*</Label>
+          <Label><FaGraduationCap /> Last Education*</Label>
           <CustomDropdownContainer>
             <DropdownHeader
               $isOpen={isEducationDropdownOpen}
@@ -735,7 +742,7 @@ const RegisterPage = () => {
                   {formData.lastEducation}
                 </span>
               ) : (
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Choose Milestone</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>Choose Education</span>
               )}
               <FaChevronDown className="chevron" />
             </DropdownHeader>
@@ -787,6 +794,7 @@ const RegisterPage = () => {
             placeholder="e.g. +923001234567"
             value={formData.mobileNo}
             onChange={handleChange}
+            minLength={10}
             maxLength={15}
             className={errors.mobileNo ? 'error' : ''}
           />
@@ -1055,10 +1063,10 @@ const RegisterPage = () => {
               Please check your inbox (and spam folder) to find your credentials.
             </motion.p>
             <motion.div
-               initial={{ y: 20, opacity: 0 }}
-               animate={{ y: 0, opacity: 1 }}
-               transition={{ delay: 0.5 }}
-               style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '10px' }}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '10px' }}
             >
               Redirecting to Sign In Page in {countdown}...
             </motion.div>

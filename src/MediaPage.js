@@ -299,14 +299,20 @@ const MediaPage = () => {
     };
 
     const fetchItems = async () => {
-      const { data, error } = await supabase.from('media_items').select('*').order('created_at', { ascending: true });
-      if (error) {
-        console.error(error);
+      try {
+        const { data, error } = await supabase.from('media_items').select('*').order('created_at', { ascending: true });
+        if (error) {
+          console.error('Supabase error:', error);
+          setItems(dummyData);
+        } else {
+          setItems([...(data || []), ...dummyData]);
+        }
+      } catch (err) {
+        console.error('Fetch failed, using fallback data:', err);
         setItems(dummyData);
-      } else {
-        setItems([...(data || []), ...dummyData]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -431,16 +437,27 @@ const MediaPage = () => {
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
+            animate="visible"
+            viewport={{ once: true, margin: "0px" }}
           >
-            {groupByType('project').map((item, idx) => (
-              <MediaCard 
-                key={item.id}
-                variants={itemVariants}
-                image={item.media_url || featureCard} 
-                title={item.title} 
-              />
-            ))}
+            {groupByType('project').length > 0
+              ? groupByType('project').map((item, idx) => (
+                  <MediaCard
+                    key={item.id}
+                    variants={itemVariants}
+                    image={item.media_url || featureCard}
+                    title={item.title}
+                  />
+                ))
+              : dummyData.filter(d => d.type === 'project').map((item) => (
+                  <MediaCard
+                    key={item.id}
+                    variants={itemVariants}
+                    image={item.media_url || featureCard}
+                    title={item.title}
+                  />
+                ))
+            }
           </CardGrid>
         </ContentWrapper>
       </FeaturedSection>

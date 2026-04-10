@@ -67,7 +67,7 @@ const Container = styled.div`
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
-    text-align: center;
+    text-align: left;
     gap: 80px;
   }
 
@@ -123,7 +123,7 @@ const Description = styled.p`
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 
   @media (max-width: 1100px) {
-    margin: 0 auto;
+    margin: 0;
   }
 
   @media (max-width: 768px) {
@@ -145,7 +145,7 @@ const StartButton = styled(motion.button)`
   transition: all 0.3s ease;
 
   @media (max-width: 1100px) {
-    margin: 0 auto;
+    margin: 0;
   }
 
   &:hover {
