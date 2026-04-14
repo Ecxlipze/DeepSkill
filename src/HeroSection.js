@@ -265,13 +265,6 @@ const HeroSection = () => {
 
 
 
-  const scrollToCourses = (e) => {
-    e.preventDefault();
-    const coursesSection = document.getElementById('courses');
-    if (coursesSection) {
-      coursesSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   return (
     <Section id="hero">
@@ -371,8 +364,7 @@ const HeroSection = () => {
         >
           <RegisterButton
             variant="primary"
-            to={null}
-            onClick={scrollToCourses}
+            to="/courses"
             style={{ minWidth: isMobile ? "100%" : "220px" }}
           >
             <img src={btnIcon} alt="" style={{ width: "20px", height: "20px" }} />

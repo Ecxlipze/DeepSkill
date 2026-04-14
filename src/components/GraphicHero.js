@@ -212,9 +212,9 @@ const GraphicHero = () => {
           accentColor="#9333EA"
           features={[
             'Photoshop & Illustrator Expert',
+            'UI/UX Design Fundamentals',
             'Branding & Identity Design',
-            'Social Media Design Specialist',
-            'Freelancing Roadmap'
+            'Social Media Design Specialist'
           ]}
           iconType="design"
           useIcons={true}

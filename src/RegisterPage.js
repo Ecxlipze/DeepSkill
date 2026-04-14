@@ -7,7 +7,7 @@ import {
   FaUser, FaEnvelope, FaGraduationCap, FaPhone,
   FaChevronDown, FaCheckCircle, FaFacebook,
   FaInstagram, FaLinkedin, FaGlobe, FaUsers, FaUniversity,
-  FaCode, FaLaptop, FaPaintBrush, FaWordpress
+  FaCode, FaLaptop, FaPaintBrush, FaWordpress, FaPenNib, FaChartLine
 } from "react-icons/fa";
 
 const PageContainer = styled(motion.div)`
@@ -589,7 +589,9 @@ const RegisterPage = () => {
     { label: "Full Stack React JS", icon: <FaCode /> },
     { label: "Laravel PHP Development", icon: <FaLaptop /> },
     { label: "Graphic Design Mastery", icon: <FaPaintBrush /> },
-    { label: "WordPress Mastery", icon: <FaWordpress /> }
+    { label: "WordPress Mastery", icon: <FaWordpress /> },
+    { label: "UI/UX Design", icon: <FaPenNib /> },
+    { label: "SEO & Digital Marketing", icon: <FaChartLine /> }
   ];
 
   const educationOptions = [

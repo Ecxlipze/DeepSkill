@@ -495,7 +495,7 @@ const Header = () => {
   const [coursesExpanded, setCoursesExpanded] = useState(false);
   const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  
+
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -512,16 +512,17 @@ const Header = () => {
   const links = React.useMemo(() => [
     { name: "Home", href: "/", isRoute: true, icon: <FaHome /> },
     { name: "About Us", href: "/about", isRoute: true, icon: <FaInfoCircle /> },
-    { 
-      name: "Courses", 
-      href: "#courses", 
-      icon: <FaBook />, 
+    {
+      name: "Courses",
+      href: "/courses",
+      isRoute: true,
+      icon: <FaBook />,
       hasDropdown: true,
       sublinks: [
-        { name: "Graphic Design", href: "/graphic-design", isRoute: true },
+        { name: "Graphic Designing", href: "/graphic-design", isRoute: true },
         { name: "Full Stack (Laravel)", href: "/laravel-mastery", isRoute: true },
         { name: "Full Stack (React)", href: "/full-stack-react", isRoute: true },
-        { name: "WordPress Mastery", href: "/wordpress-mastery", isRoute: true }
+        { name: "View All Courses", href: "/courses", isRoute: true }
       ]
     },
     { name: "Trainers", href: "/trainers", isRoute: true, icon: <FaUserTie /> },
@@ -552,7 +553,7 @@ const Header = () => {
         }
       });
     }
-    
+
     setActiveLink(active);
   }, [location.pathname, links]);
 
@@ -560,7 +561,7 @@ const Header = () => {
     if (link.isRoute) {
       setMobileMenuOpen(false);
       // setActiveLink will be handled by useEffect on route change
-      return; 
+      return;
     }
 
     if (isHomePage) {
@@ -602,30 +603,22 @@ const Header = () => {
           transition={{ delay: 0.3 }}
         >
           {links.slice(0, 7).map((link) => (
-            <NavPillContainer 
+            <NavPillContainer
               key={link.name}
               onMouseEnter={() => link.hasDropdown && setDesktopDropdownOpen(true)}
               onMouseLeave={() => link.hasDropdown && setDesktopDropdownOpen(false)}
             >
-              {link.isRoute ? (
-                <NavLink 
-                  as={Link}
-                  to={link.href}
-                  $active={activeLink === link.name.toUpperCase()}
-                  onClick={(e) => handleLinkClick(e, link)}
-                >
-                  {link.name}
-                </NavLink>
-              ) : (
-                <NavLink 
-                  href={link.href} 
-                  $active={activeLink === link.name.toUpperCase()}
-                  onClick={(e) => handleLinkClick(e, link)}
-                >
-                  {link.name}
-                  {link.hasDropdown && <FiChevronDown style={{ fontSize: "0.8rem", marginTop: "2px" }} />}
-                </NavLink>
-              )}
+              <NavLink
+                as={link.isRoute ? Link : "a"}
+                to={link.isRoute ? link.href : undefined}
+                href={link.isRoute ? undefined : link.href}
+                $active={activeLink === link.name.toUpperCase()}
+                onClick={(e) => handleLinkClick(e, link)}
+                style={{ display: "flex", alignItems: "center", gap: "2px" }}
+              >
+                {link.name}
+                {link.hasDropdown && <FiChevronDown style={{ fontSize: "0.8rem", marginTop: "2px" }} />}
+              </NavLink>
 
               {link.hasDropdown && (
                 <AnimatePresence>
@@ -637,8 +630,8 @@ const Header = () => {
                       transition={{ duration: 0.2 }}
                     >
                       {link.sublinks.map((sub) => (
-                        <DropdownLink 
-                          key={sub.name} 
+                        <DropdownLink
+                          key={sub.name}
                           as={sub.isRoute ? Link : "a"}
                           to={sub.isRoute ? sub.href : undefined}
                           href={sub.isRoute ? undefined : sub.href}
@@ -657,7 +650,7 @@ const Header = () => {
 
         <RightSection>
           {user ? (
-            <div 
+            <div
               style={{ position: 'relative' }}
               onMouseEnter={() => setUserDropdownOpen(true)}
               onMouseLeave={() => setUserDropdownOpen(false)}
@@ -697,7 +690,7 @@ const Header = () => {
           )}
 
           <DesktopOnlyBtn>
-            <RegisterButton 
+            <RegisterButton
               to="/contact"
               style={{ padding: "10px 24px", fontSize: "0.95rem" }}
             >
@@ -740,23 +733,23 @@ const Header = () => {
 
               <MobileControls>
                 {user ? (
-                  <MobileCta 
-                    $primary 
+                  <MobileCta
+                    $primary
                     onClick={handleLogout}
                   >
                     Logout
                   </MobileCta>
                 ) : (
                   <>
-                    <MobileCta 
+                    <MobileCta
                       as={Link}
                       to="/contact"
-                      $primary 
+                      $primary
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Contact Us
                     </MobileCta>
-                    <MobileCta 
+                    <MobileCta
                       as={Link}
                       to="/login"
                       onClick={() => setMobileMenuOpen(false)}
@@ -790,7 +783,7 @@ const Header = () => {
               )}
 
               {links.map((link, index) => (
-                <MobileLinkWrapper 
+                <MobileLinkWrapper
                   key={link.name}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -808,7 +801,7 @@ const Header = () => {
                         handleLinkClick(e, link);
                       }
                     }}
-                    style={{ 
+                    style={{
                       borderRadius: link.hasDropdown && coursesExpanded ? "10px 10px 0 0" : "10px"
                     }}
                   >
@@ -824,7 +817,7 @@ const Header = () => {
                       <FiChevronRight />
                     )}
                   </MainLink>
-                  
+
                   {link.hasDropdown && (
                     <AnimatePresence>
                       {coursesExpanded && (
@@ -835,8 +828,8 @@ const Header = () => {
                           transition={{ duration: 0.3, ease: "easeInOut" }}
                         >
                           {link.sublinks.map((sub, idx) => (
-                            <SubLink 
-                              key={sub.name} 
+                            <SubLink
+                              key={sub.name}
                               as={Link}
                               to={sub.href}
                               onClick={(e) => handleLinkClick(e, sub)}

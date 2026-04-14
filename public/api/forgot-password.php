@@ -41,8 +41,8 @@ if (!$email) {
 $usersFile = "../data/users.json";
 
 if (!file_exists($usersFile)) {
-    // Silently succeed to prevent account enumeration
-    echo json_encode(["status" => "success", "message" => "Recovery process initiated."]);
+    http_response_code(404);
+    echo json_encode(["status" => "error", "message" => "This email is not registered with us. Please check and try again."]);
     exit();
 }
 
@@ -119,5 +119,9 @@ if ($found) {
     @mail($to, $subject, $message, $headers);
 }
 
-// Always return success to prevent account enumeration
-echo json_encode(["status" => "success", "message" => "Recovery process initiated."]);
+if ($found) {
+    echo json_encode(["status" => "success", "message" => "Temporary password sent successfully."]);
+} else {
+    http_response_code(404);
+    echo json_encode(["status" => "error", "message" => "This email is not registered with us. Please check and try again."]);
+}

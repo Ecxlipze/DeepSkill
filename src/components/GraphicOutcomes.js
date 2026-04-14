@@ -3,6 +3,14 @@ import styled from 'styled-components';
 import { motion, useMotionValue } from 'framer-motion';
 import graphicsOutBg from '../assets/graphics-out.png';
 
+import brandIdentityImg from '../assets/brand-identity.svg';
+import socialMediaImg from '../assets/social-media.svg';
+import photoEditingImg from '../assets/photo-editing.svg';
+import uiDesignImg from '../assets/ui-design.svg';
+import portfolioImg from '../assets/portfolio.svg';
+import graphicRolesImg from '../assets/graphic-roles.svg';
+import freelancingImg from '../assets/freelancing.svg';
+
 const SectionContainer = styled.section`
   width: 100%;
   padding: 40px 0;
@@ -103,13 +111,16 @@ const OutcomeCard = styled(motion.div)`
 `;
 
 const CardTop = styled.div`
-  background: #555;
+  background-color: #555;
+  background-image: ${props => props.$bgImage ? `url(${props.$bgImage})` : 'none'};
+  background-size: cover;
+  background-position: center;
   height: 140px;
   width: 100%;
   transition: 0.3s;
 
   ${OutcomeCard}:hover & {
-    background: #666;
+    filter: brightness(1.1);
   }
 `;
 
@@ -153,13 +164,13 @@ const GraphicOutcomes = () => {
   };
 
   const outcomes = [
-    { text: "Design professional logos and brand identities independently" },
-    { text: "Create high-quality social media and marketing creatives" },
-    { text: "Perform advanced photo editing and manipulation" },
-    { text: "Design complete website and mobile app interfaces" },
-    { text: "Build a strong, portfolio-ready project collection" },
-    { text: "Qualify for roles such as Graphic, Visual, UI or Social Media Designer" },
-    { text: "Start freelancing and handle real client projects confidently" }
+    { text: "Design professional logos and brand identities independently", image: brandIdentityImg },
+    { text: "Create high-quality social media and marketing creatives", image: socialMediaImg },
+    { text: "Perform advanced photo editing and manipulation", image: photoEditingImg },
+    { text: "Design complete website and mobile app interfaces", image: uiDesignImg },
+    { text: "Build a strong, portfolio-ready project collection", image: portfolioImg },
+    { text: "Qualify for roles such as Graphic, Visual, UI or Social Media Designer", image: graphicRolesImg },
+    { text: "Start freelancing and handle real client projects confidently", image: freelancingImg }
   ];
 
   const containerVariants = {
@@ -206,7 +217,7 @@ const GraphicOutcomes = () => {
                 boxShadow: "0 20px 40px rgba(147, 51, 234, 0.2)"
               }}
             >
-              <CardTop />
+              <CardTop $bgImage={outcome.image} />
               <CardBottom>
                 <p>{outcome.text}</p>
                 <Underline />

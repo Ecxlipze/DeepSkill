@@ -184,10 +184,10 @@ const AboutSection = () => {
     const fetchContent = async () => {
       let data = null;
       try {
-        const { data: fetchedData, error: _ } = await supabase.from('settings').select('*');
+        const { data: fetchedData } = await supabase.from('settings').select('*');
         data = fetchedData;
-      } catch (_) {
-        console.error("Error fetching stats");
+      } catch (err) {
+        console.error("Error fetching stats", err);
       } finally {
         if (data) {
           const aboutContent = data.find(s => s.key === 'about_content')?.value;

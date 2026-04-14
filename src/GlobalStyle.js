@@ -10,7 +10,7 @@ const GlobalStyle = createGlobalStyle`
     font-style: normal;
   }
 
-  * {
+  *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -20,6 +20,7 @@ const GlobalStyle = createGlobalStyle`
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
+    cursor: none !important;
   }
 
   body {
@@ -33,6 +34,7 @@ const GlobalStyle = createGlobalStyle`
     overflow-x: hidden;
     position: relative;
     width: 100%;
+    cursor: none !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -45,7 +47,7 @@ const GlobalStyle = createGlobalStyle`
   }
 
   button {
-    cursor: pointer;
+    cursor: none !important;
     border: none;
     outline: none;
     background: none;

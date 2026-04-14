@@ -2,6 +2,15 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion, useMotionValue } from 'framer-motion';
 
+import webAppsImg from '../assets/lara-web-apps.svg';
+import uiImg from '../assets/lara-ui.svg';
+import backendImg from '../assets/lara-backend.svg';
+import authImg from '../assets/lara-auth.svg';
+import databaseImg from '../assets/lara-database.svg';
+import deploymentImg from '../assets/lara-deployment.svg';
+import rolesImg from '../assets/lara-roles.svg';
+import freelanceImg from '../assets/lara-freelance.svg';
+
 const Section = styled.section`
   width: 100%;
   padding: 40px 0;
@@ -153,7 +162,10 @@ const FloatingIcon = styled(motion.div)`
 `;
 
 const CardTop = styled.div`
-  background: #605757;
+  background-color: #605757;
+  background-image: ${props => props.$bgImage ? `url(${props.$bgImage})` : 'none'};
+  background-size: cover;
+  background-position: center;
   height: 180px;
   width: 100%;
 
@@ -220,14 +232,14 @@ const LaravelOutcomes = () => {
   };
 
   const outcomes = [
-    "Develop fully functional dynamic web applications independently",
-    "Build responsive, professional-grade user interfaces",
-    "Design secure backend systems using PHP & Laravel",
-    "Implement authentication and role-based access systems",
-    "Perform CRUD operations and manage real-world databases",
-    "Deploy live projects using hosting platforms and GitHub and create portfolio to apply for jobs",
-    "Qualify for roles such as Trainee Developer, Junior PHP Developer, Laravel Developer, or Backend Developer",
-    "Start freelancing and handle client-based web development projects"
+    { text: "Develop fully functional dynamic web applications independently", image: webAppsImg },
+    { text: "Build responsive, professional-grade user interfaces", image: uiImg },
+    { text: "Design secure backend systems using PHP & Laravel", image: backendImg },
+    { text: "Implement authentication and role-based access systems", image: authImg },
+    { text: "Perform CRUD operations and manage real-world databases", image: databaseImg },
+    { text: "Deploy live projects using hosting platforms and GitHub and create portfolio to apply for jobs", image: deploymentImg },
+    { text: "Qualify for roles such as Trainee Developer, Junior PHP Developer, Laravel Developer, or Backend Developer", image: rolesImg },
+    { text: "Start freelancing and handle client-based web development projects", image: freelanceImg }
   ];
 
   const containerVariants = {
@@ -272,14 +284,14 @@ const LaravelOutcomes = () => {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
         >
-          {outcomes.map((text, index) => (
+          {outcomes.map((outcome, index) => (
             <OutcomeCard 
               key={index}
               variants={itemVariants}
             >
-              <CardTop />
+              <CardTop $bgImage={outcome.image} />
               <CardBottom>
-                <CardText>{text}</CardText>
+                <CardText>{outcome.text}</CardText>
                 <CardLine />
               </CardBottom>
             </OutcomeCard>

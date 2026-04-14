@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress } from "react-icons/fa";
 import courseBg from "./assets/course-bg.png";
+import RegisterButton from "./components/RegisterButton";
+import btnIcon from "./assets/btn-icon.svg";
 
 const dummyCourses = [
   { id: 'dummy-1', title: 'Graphic Design Mastery', description: 'Learn Adobe Photoshop, Illustrator, and Premiere Pro from scratch. Build a stunning portfolio.', category: 'Graphic Design', image_url: null },
@@ -59,8 +61,8 @@ const Tagline = styled.p`
 `;
 
 const ContentContainer = styled(motion.div)`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 95%;
   max-width: 1400px;
   margin: 0 auto;
@@ -72,11 +74,13 @@ const ContentContainer = styled(motion.div)`
   border-radius: 25px;
   overflow: hidden;
   margin-bottom: 80px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const Column = styled.div`
-  flex: 1;
-  min-width: 350px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -184,6 +188,19 @@ const Description = styled.p`
   flex-grow: 1;
 `;
 
+const BottomCTA = styled.div`
+  text-align: center;
+  width: 100%;
+  margin-top: -50px;
+  margin-bottom: 50px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -249,7 +266,7 @@ const CoursesSection = () => {
         <SectionTitle>Courses We Offer</SectionTitle>
         <Tagline>Career-Ready Learning Programs</Tagline>
       </Header>
-      
+
       <ContentContainer
         variants={containerVariants}
         initial="hidden"
@@ -258,9 +275,9 @@ const CoursesSection = () => {
       >
         <Column>
           {courses.slice(0, 2).map((course, index) => (
-            <CourseCard 
-              key={course.id || index} 
-              variants={cardVariants} 
+            <CourseCard
+              key={course.id || index}
+              variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
               onClick={() => navigate(course.path || getPath(course.category))}
             >
@@ -275,9 +292,9 @@ const CoursesSection = () => {
 
         <Column>
           {courses.slice(2, 4).map((course, index) => (
-            <CourseCard 
-              key={course.id || index} 
-              variants={cardVariants} 
+            <CourseCard
+              key={course.id || index}
+              variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
               onClick={() => navigate(course.path || getPath(course.category))}
             >
@@ -290,6 +307,17 @@ const CoursesSection = () => {
           ))}
         </Column>
       </ContentContainer>
+
+      <BottomCTA>
+        <RegisterButton
+          to="/courses"
+          variant="primary"
+          style={{ minWidth: "220px" }}
+        >
+          <img src={btnIcon} alt="" style={{ width: "20px", height: "20px" }} />
+          Explore All Courses
+        </RegisterButton>
+      </BottomCTA>
     </Section>
   );
 };

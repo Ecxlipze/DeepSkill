@@ -11,6 +11,7 @@ import FounderMessage from './FounderMessage';
 import TraineePage from './TraineePage';
 import ContactPage from './ContactPage';
 import MediaPage from './MediaPage';
+import CoursesPage from './CoursesPage';
 import FullStackPage from './FullStackPage';
 import WordPressPage from './WordPressPage';
 import LaravelPage from './LaravelPage';
@@ -111,6 +112,7 @@ function AppContent() {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
           <Route path="/about" element={<PageTransition><AboutPage /></PageTransition>} />
+          <Route path="/courses" element={<PageTransition><CoursesPage /></PageTransition>} />
           <Route path="/media" element={<PageTransition><MediaPage /></PageTransition>} />
           <Route path="/full-stack-react" element={<PageTransition><FullStackPage /></PageTransition>} />
           <Route path="/wordpress-mastery" element={<PageTransition><WordPressPage /></PageTransition>} />

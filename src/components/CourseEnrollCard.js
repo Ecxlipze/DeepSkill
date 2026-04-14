@@ -129,25 +129,6 @@ const EnrollButton = styled(motion.button)`
   }
 `;
 
-const BenefitsSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #333;
-  text-transform: uppercase;
-
-  &::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: ${props => props.$accentColor || '#7B1F2E'};
-  }
-`;
 
 const CourseEnrollCard = ({ 
   image, 
