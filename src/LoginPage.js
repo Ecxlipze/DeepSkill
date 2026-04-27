@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaArrowRight } from 'react-icons/fa';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FaIdCard, FaArrowRight } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 
 const PageContainer = styled(motion.div)`
@@ -124,19 +124,6 @@ const Input = styled.input`
   }
 `;
 
-const ForgotPassword = styled.a`
-  color: #7B1F2E;
-  font-size: 0.85rem;
-  text-align: right;
-  text-decoration: none;
-  font-weight: 600;
-  margin-top: -10px;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
 const SubmitButton = styled(motion.button)`
   background: #7B1F2E;
   color: #fff;
@@ -160,25 +147,6 @@ const SubmitButton = styled(motion.button)`
   }
 `;
 
-
-
-const FooterText = styled.p`
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  margin-top: 30px;
-  font-size: 0.95rem;
-
-  a {
-    color: #7B1F2E;
-    text-decoration: none;
-    font-weight: 700;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-`;
-
 const ErrorMessage = styled(motion.div)`
   background: rgba(255, 100, 100, 0.1);
   border-left: 4px solid #ff4e4e;
@@ -188,137 +156,58 @@ const ErrorMessage = styled(motion.div)`
   border-radius: 4px;
 `;
 
-const ModalOverlay = styled(motion.div)`
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-  padding: 20px;
-`;
-
-const ModalCard = styled(motion.div)`
-  background: rgba(20, 20, 20, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 40px;
-  width: 100%;
-  max-width: 450px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
-`;
-
-const StatusMessage = styled.div`
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  background: ${props => props.$type === 'success' ? 'rgba(46, 125, 50, 0.15)' : 'rgba(198, 40, 40, 0.15)'};
-  border-left: 4px solid ${props => props.$type === 'success' ? '#4caf50' : '#f44336'};
-  color: ${props => props.$type === 'success' ? '#a5d6a7' : '#ef9a9a'};
-  line-height: 1.5;
-`;
+const formatCNIC = (value) => {
+  const cnic = value.replace(/\D/g, '');
+  let formatted = cnic;
+  if (cnic.length > 5 && cnic.length <= 12) {
+    formatted = `${cnic.slice(0, 5)}-${cnic.slice(5)}`;
+  } else if (cnic.length > 12) {
+    formatted = `${cnic.slice(0, 5)}-${cnic.slice(5, 12)}-${cnic.slice(12, 13)}`;
+  }
+  return formatted;
+};
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [cnic, setCnic] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // Forgot Password States
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetEmailError, setResetEmailError] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetStatus, setResetStatus] = useState(null); // { type: 'success' | 'error', message: '' }
-  const [resetSuccess, setResetSuccess] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/dashboard";
-
-  const validateResetEmail = (val) => {
-    if (!val.trim()) return 'Email is required';
-    if (!/^[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)+$/.test(val)) {
-      return 'Please enter valid email';
-    }
-    return '';
-  };
-
-  const handleResetEmailChange = (e) => {
-    const val = e.target.value;
-    setResetEmail(val);
-    setResetEmailError(validateResetEmail(val));
+  const handleCnicChange = (e) => {
+    setCnic(formatCNIC(e.target.value));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
-    try {
-      await login(email, password);
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError('Invalid email or password. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setShowResetModal(false);
-    setResetEmail('');
-    setResetEmailError('');
-    setResetStatus(null);
-    setResetSuccess(false);
-  };
-
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-
-    // Validate before submit
-    const emailErr = validateResetEmail(resetEmail);
-    if (emailErr) {
-      setResetEmailError(emailErr);
+    
+    if (cnic.length !== 15) {
+      setError('Please enter a valid 13-digit CNIC.');
       return;
     }
 
-    setResetLoading(true);
-    setResetStatus(null);
+    setLoading(true);
 
     try {
-      const response = await fetch('/api/forgot-password.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.status === 'success') {
-        setResetStatus({
-          type: 'success',
-          message: 'We have sent a temporary password. Please check your inbox and spam folder.'
-        });
-        setResetSuccess(true);
+      const user = await login(cnic);
+      
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/' && from !== '/login') {
+        navigate(from, { replace: true });
       } else {
-        setResetStatus({
-          type: 'error',
-          message: data.message || 'This email is not registered. Please check and try again.'
-        });
+        if (user.role === 'teacher') {
+          navigate('/teacher/dashboard', { replace: true });
+        } else {
+          navigate('/student/dashboard', { replace: true });
+        }
       }
     } catch (err) {
-      setResetStatus({
-        type: 'error',
-        message: 'Unable to connect to the server. Please try again later.'
-      });
+      setError(err.message || 'Access denied. Please contact your administrator.');
     } finally {
-      setResetLoading(false);
+      setLoading(false);
     }
   };
 
@@ -343,7 +232,7 @@ const LoginPage = () => {
         transition={{ duration: 0.8, type: 'spring' }}
       >
         <Title>Welcome Back</Title>
-        <Subtitle>Enter your details to access your account</Subtitle>
+        <Subtitle>Enter your CNIC to access your dashboard</Subtitle>
 
         <Form onSubmit={handleSubmit}>
           <AnimatePresence>
@@ -359,156 +248,32 @@ const LoginPage = () => {
           </AnimatePresence>
 
           <InputGroup>
-            <Label>Email Address</Label>
+            <Label>CNIC Number</Label>
             <InputWrapper>
-              <FaEnvelope />
+              <FaIdCard />
               <Input
-                type="email"
-                placeholder="john@example.com"
+                type="text"
+                placeholder="XXXXX-XXXXXXX-X"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={cnic}
+                onChange={handleCnicChange}
+                maxLength="15"
               />
             </InputWrapper>
           </InputGroup>
-
-          <InputGroup>
-            <Label>Password</Label>
-            <InputWrapper>
-              <FaLock />
-              <Input
-                type="password"
-                placeholder="••••••••"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </InputWrapper>
-          </InputGroup>
-
-          <ForgotPassword
-            as="button"
-            type="button"
-            onClick={() => setShowResetModal(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Forgot Password?
-          </ForgotPassword>
 
           <SubmitButton
             type="submit"
-            disabled={loading}
+            disabled={loading || cnic.length !== 15}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             {loading ? "Authenticating..." : "Sign In"} <FaArrowRight />
           </SubmitButton>
         </Form>
-
-        <FooterText>
-          Don't have an account? <Link to="/register">Get Enrolled</Link>
-        </FooterText>
       </LoginCard>
-
-      {/* Forgot Password Modal */}
-      <AnimatePresence>
-        {showResetModal && (
-          <ModalOverlay
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <ModalCard
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-            >
-              <Title style={{ fontSize: '1.8rem' }}>Reset Password</Title>
-              <Subtitle>Enter your email address and we'll send you a temporary password to recover your account.</Subtitle>
-
-              <AnimatePresence>
-                {resetStatus && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <StatusMessage $type={resetStatus.type}>
-                      {resetStatus.message}
-                    </StatusMessage>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <Form onSubmit={handleResetPassword}>
-                <InputGroup>
-                  <Label>Email Address</Label>
-                  <InputWrapper>
-                    <FaEnvelope />
-                    <Input
-                      type="text"
-                      placeholder="Enter your registered email"
-                      value={resetEmail}
-                      onChange={handleResetEmailChange}
-                      disabled={resetSuccess}
-                      style={resetEmailError ? { borderColor: '#ff4e4e', boxShadow: '0 0 10px rgba(255,78,78,0.2)' } : {}}
-                    />
-                  </InputWrapper>
-                  <AnimatePresence>
-                    {resetEmailError && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        style={{ color: '#ff9999', fontSize: '0.8rem', marginTop: '4px', marginLeft: '5px' }}
-                      >
-                        {resetEmailError}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </InputGroup>
-
-                <div style={{ display: 'flex', gap: '15px' }}>
-                  <SubmitButton
-                    type="button"
-                    onClick={handleCloseModal}
-                    style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancel
-                  </SubmitButton>
-
-                  {resetSuccess ? (
-                    <SubmitButton
-                      type="button"
-                      onClick={handleCloseModal}
-                      style={{ flex: 1.5, background: '#22c55e' }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Login Now <FaArrowRight />
-                    </SubmitButton>
-                  ) : (
-                    <SubmitButton
-                      type="submit"
-                      disabled={resetLoading || !!resetEmailError}
-                      style={{ flex: 1.5 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {resetLoading ? "Sending..." : "Send Password"}
-                    </SubmitButton>
-                  )}
-                </div>
-              </Form>
-            </ModalCard>
-          </ModalOverlay>
-        )}
-      </AnimatePresence>
     </PageContainer>
   );
 };
 
 export default LoginPage;
-

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
+import AdminLayout from '../components/AdminLayout';
 
 const Container = styled.div`
-  padding: 100px 40px 40px;
+  padding: 10px 0;
   color: #fff;
-  background: #000;
-  min-height: 100vh;
+  background: transparent;
 `;
 
 const Header = styled.div`
@@ -236,4 +236,6 @@ const TestimonialManager = () => {
   );
 };
 
-export default TestimonialManager;
+const TestimonialManagerPage = () => <AdminLayout><TestimonialManager /></AdminLayout>;
+export { TestimonialManager };
+export default TestimonialManagerPage;

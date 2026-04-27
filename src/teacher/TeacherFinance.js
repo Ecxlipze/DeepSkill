@@ -1,0 +1,225 @@
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import { 
+  FaWallet, FaHistory, FaCheckCircle, 
+  FaClock, FaExclamationCircle, FaUserTie
+} from 'react-icons/fa';
+import DashboardLayout from '../components/DashboardLayout';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
+
+const TeacherFinance = () => {
+  const { user } = useAuth();
+  const [financeData, setFinanceData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.cnic) fetchTeacherFinance();
+  }, [user]);
+
+  const fetchTeacherFinance = async () => {
+    try {
+      // 1. Get Teacher ID
+      const { data: teacher } = await supabase.from('teachers').select('id').eq('cnic', user.cnic).single();
+      if (!teacher) return;
+
+      // 2. Get Salary Config
+      const { data: config } = await supabase.from('teacher_salaries').select('*').eq('teacher_id', teacher.id).single();
+      
+      // 3. Get Payment History
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('entity_id', teacher.id)
+        .eq('entity_type', 'teacher')
+        .order('paid_date', { ascending: false });
+
+      const lastPayment = payments?.[0];
+      const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+      const isPaidThisMonth = payments?.some(p => p.description?.includes(currentMonth) && p.status === 'paid');
+
+      setFinanceData({
+        monthlyAmount: config?.monthly_amount || 0,
+        status: isPaidThisMonth ? 'Paid' : 'Pending',
+        lastPaymentDate: lastPayment?.paid_date || 'N/A',
+        history: payments || []
+      });
+    } catch (err) {
+      console.error("Teacher finance error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <DashboardLayout><p>Loading salary details...</p></DashboardLayout>;
+
+  return (
+    <DashboardLayout>
+      <Container>
+        <Header>
+          <div className="title-area">
+            <FaUserTie size={30} color="#7B1F2E" />
+            <div>
+              <h1>Salary & Earnings</h1>
+              <p>View your monthly salary status and history.</p>
+            </div>
+          </div>
+        </Header>
+
+        <SummaryRow>
+          <SummaryCard>
+            <span>Monthly Salary</span>
+            <h2>Rs. {financeData?.monthlyAmount.toLocaleString()}</h2>
+          </SummaryCard>
+          <SummaryCard status={financeData?.status}>
+            <span>Status (This Month)</span>
+            <div className="status-val">
+              {financeData?.status === 'Paid' ? <FaCheckCircle /> : <FaClock />}
+              <h2>{financeData?.status}</h2>
+            </div>
+          </SummaryCard>
+          <SummaryCard>
+            <span>Last Payment Date</span>
+            <h2>{financeData?.lastPaymentDate}</h2>
+          </SummaryCard>
+        </SummaryRow>
+
+        <SectionHeader>
+          <FaHistory /> Payment History
+        </SectionHeader>
+
+        <TableCard>
+          <TableContainer>
+            <table>
+              <thead>
+                <tr>
+                  <th>Month/Period</th>
+                  <th>Amount</th>
+                  <th>Paid On</th>
+                  <th>Method</th>
+                  <th>Reference</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {financeData?.history.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.description || 'Monthly Salary'}</td>
+                    <td style={{ fontWeight: '700' }}>Rs. {p.amount.toLocaleString()}</td>
+                    <td>{p.paid_date || '—'}</td>
+                    <td style={{ textTransform: 'capitalize' }}>{p.method?.replace('_', ' ')}</td>
+                    <td style={{ color: '#6b7280', fontSize: '0.85rem' }}>{p.reference_number || '—'}</td>
+                    <td>
+                      <StatusBadge status={p.status}>{p.status}</StatusBadge>
+                    </td>
+                  </tr>
+                ))}
+                {financeData?.history.length === 0 && (
+                  <tr><td colSpan="6" style={{ textAlign: 'center', padding: '50px', color: '#6b7280' }}>No payment records found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </TableContainer>
+        </TableCard>
+
+        <InfoBox>
+          <FaExclamationCircle />
+          <p>If you have any questions regarding your salary or notice any discrepancies, please contact the finance department.</p>
+        </InfoBox>
+      </Container>
+    </DashboardLayout>
+  );
+};
+
+// Styled Components
+const Container = styled.div`
+  max-width: 1100px;
+  margin: 0 auto;
+`;
+
+const Header = styled.div`
+  margin-bottom: 35px;
+  .title-area { display: flex; align-items: center; gap: 20px; }
+  h1 { font-size: 1.8rem; color: #fff; margin: 0 0 5px; }
+  p { color: #6b7280; margin: 0; }
+`;
+
+const SummaryRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+  
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
+`;
+
+const SummaryCard = styled.div`
+  background: #111318;
+  padding: 25px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+
+  span { font-size: 0.8rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+  h2 { font-size: 1.5rem; color: #fff; margin: 15px 0 0; font-weight: 700; }
+
+  .status-val {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+    color: ${props => props.status === 'Paid' ? '#10B981' : '#F59E0B'};
+    h2 { margin: 0; color: inherit; }
+  }
+`;
+
+const SectionHeader = styled.h2`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #fff;
+`;
+
+const TableCard = styled.div`
+  background: #111318;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+`;
+
+const TableContainer = styled.div`
+  overflow-x: auto;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    th { text-align: left; padding: 20px 25px; font-size: 0.8rem; color: #6b7280; text-transform: uppercase; background: rgba(255,255,255,0.02); }
+    td { padding: 18px 25px; font-size: 0.95rem; color: #eee; border-top: 1px solid rgba(255,255,255,0.03); }
+  }
+`;
+
+const StatusBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: ${props => props.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'};
+  color: ${props => props.status === 'paid' ? '#10B981' : '#F59E0B'};
+`;
+
+const InfoBox = styled.div`
+  margin-top: 40px;
+  background: rgba(255,255,255,0.02);
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255,255,255,0.05);
+`;
+
+export default TeacherFinance;

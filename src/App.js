@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import GlobalStyle from './GlobalStyle';
 import Header from './Header';
@@ -6,7 +7,6 @@ import Footer from './Footer';
 import CustomCursor from './CustomCursor';
 import HomePage from './HomePage';
 import AboutPage from './AboutPage';
-import RegisterPage from './RegisterPage';
 import FounderMessage from './FounderMessage';
 import TraineePage from './TraineePage';
 import ContactPage from './ContactPage';
@@ -17,16 +17,47 @@ import WordPressPage from './WordPressPage';
 import LaravelPage from './LaravelPage';
 import GraphicPage from './GraphicPage';
 import LoginPage from './LoginPage';
-import DashboardPage from './DashboardPage';
+import RegisterPage from './RegisterPage';
 import ProfilePage from './ProfilePage';
 import AdminLogin from './admin/Login';
 import AdminDashboard from './admin/Dashboard';
 import MediaLibrary from './admin/MediaLibrary';
 import CourseManager from './admin/CourseManager';
+import BatchManager from './admin/BatchManager';
 import TestimonialManager from './admin/TestimonialManager';
 import ContentManager from './admin/ContentManager';
-import InstructorManager from './admin/InstructorManager';
+import TeacherManager from './admin/TeacherManager';
+import TeacherProfile from './admin/TeacherProfile';
 import MediaPageManager from './admin/MediaPageManager';
+import EnrollmentManager from './admin/EnrollmentManager';
+import VerifyCertificatePage from './VerifyCertificatePage';
+import CertificateManager from './admin/CertificateManager';
+import UserManager from './admin/UserManager';
+import StudentManager from './admin/StudentManager';
+import StudentProfile from './admin/StudentProfile';
+import StudentDashboard from './StudentDashboard';
+import TeacherDashboard from './TeacherDashboard';
+import AssignTask from './teacher/AssignTask';
+import ViewTasks from './teacher/ViewTasks';
+import StudentTasks from './student/StudentTasks';
+import StudentProgress from './student/StudentProgress';
+import StudentCertificate from './student/StudentCertificate';
+import StudentComplaints from './student/StudentComplaints';
+import TeacherComplaints from './teacher/TeacherComplaints';
+import AdminComplaints from './admin/AdminComplaints';
+import StudentGroupChat from './student/StudentGroupChat';
+import TeacherGroupChat from './teacher/TeacherGroupChat';
+import AdminFinance from './admin/FinanceManager';
+import AdminFinanceTransactions from './admin/TransactionHistory';
+import { 
+  AdminAnnouncements, 
+  AdminReferral, AdminReports 
+} from './admin/AdminPlaceholders';
+import StudentFinance from './student/StudentFinance';
+import TeacherFinance from './teacher/TeacherFinance';
+import TeacherAttendance from './teacher/TeacherAttendance';
+import AdminAttendancePage from './admin/AdminAttendance';
+import StudentAttendance from './student/StudentAttendance';
 
 import ScrollProgressBar from './components/ScrollProgressBar';
 import GoToTopButton from './components/GoToTopButton';
@@ -35,6 +66,9 @@ import { AnimatePresence } from 'framer-motion';
 import GlobalOverlay from './components/GlobalOverlay';
 import PageTransition from './components/PageTransition';
 import { useAuth } from './context/AuthContext';
+import { TasksProvider } from './context/TasksContext';
+import { ComplaintsProvider } from './context/ComplaintsContext';
+import { GroupChatProvider } from './context/GroupChatContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ResetPasswordModal from './components/ResetPasswordModal';
 import PremiumLoader from './components/PremiumLoader';
@@ -95,18 +129,49 @@ function AppContent() {
     }
   }, [location.pathname]);
 
+  const isDashboardRoute = 
+    location.pathname.startsWith('/student') || 
+    location.pathname.startsWith('/teacher') || 
+    location.pathname.startsWith('/admin');
+
   return (
     <>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#111318',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '0.9rem',
+            padding: '12px 20px',
+            borderRadius: '10px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#2ecc71',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#e74c3c',
+              secondary: '#fff',
+            },
+          }
+        }}
+      />
       <PremiumLoader loading={isAppLoading} />
       <ResetPasswordModal user={user} isOpen={user?.is_first_login} />
       <ScrollToTop />
       <GlobalStyle />
       <GlobalOverlay />
-      <ScrollProgressBar />
-      <GoToTopButton />
+      {!isDashboardRoute && <ScrollProgressBar />}
+      {!isDashboardRoute && <GoToTopButton />}
       <CustomCursor />
       
-      <Header />
+      {!isDashboardRoute && <Header />}
       
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
@@ -118,16 +183,128 @@ function AppContent() {
           <Route path="/wordpress-mastery" element={<PageTransition><WordPressPage /></PageTransition>} />
           <Route path="/laravel-mastery" element={<PageTransition><LaravelPage /></PageTransition>} />
           <Route path="/graphic-design" element={<PageTransition><GraphicPage /></PageTransition>} />
-          <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
           <Route path="/founder-message" element={<PageTransition><FounderMessage /></PageTransition>} />
           <Route path="/trainers" element={<PageTransition><TraineePage /></PageTransition>} />
           <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
           <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
+          <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
           <Route 
-            path="/dashboard" 
+            path="/student/dashboard" 
             element={
-              <ProtectedRoute>
-                <PageTransition><DashboardPage /></PageTransition>
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentDashboard /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/tasks" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentTasks /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/progress" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentProgress /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/finance" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentFinance /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/certificate" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentCertificate /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/complaints" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentComplaints /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/attendance" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentAttendance /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/student/group-chat" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentGroupChat /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/dashboard" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherDashboard /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/complaints" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherComplaints /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/finance" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherFinance /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/attendance" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherAttendance /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/group-chat" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherGroupChat /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/tasks/assign" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><AssignTask /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teacher/tasks/view" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><ViewTasks /></PageTransition>
               </ProtectedRoute>
             } 
           />
@@ -143,16 +320,47 @@ function AppContent() {
           {/* Admin Routes */}
           <Route path="/admin" element={<PageTransition><AdminLogin /></PageTransition>} />
           <Route path="/admin/dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
-          <Route path="/admin/media" element={<PageTransition><MediaLibrary /></PageTransition>} />
+          
+          {/* Admin Management */}
+          <Route path="/admin/students" element={<PageTransition><StudentManager /></PageTransition>} />
+          <Route path="/admin/students/:id" element={<PageTransition><StudentProfile /></PageTransition>} />
+          <Route path="/admin/users" element={<PageTransition><UserManager /></PageTransition>} />
+          <Route path="/admin/teachers" element={<PageTransition><TeacherManager /></PageTransition>} />
+          <Route path="/admin/teachers/:id" element={<PageTransition><TeacherProfile /></PageTransition>} />
           <Route path="/admin/courses" element={<PageTransition><CourseManager /></PageTransition>} />
-          <Route path="/admin/testimonials" element={<PageTransition><TestimonialManager /></PageTransition>} />
-          <Route path="/admin/content" element={<PageTransition><ContentManager /></PageTransition>} />
-          <Route path="/admin/instructors" element={<PageTransition><InstructorManager /></PageTransition>} />
-          <Route path="/admin/media-page" element={<PageTransition><MediaPageManager /></PageTransition>} />
+          <Route path="/admin/batches" element={<PageTransition><BatchManager /></PageTransition>} />
+          <Route path="/admin/attendance" element={<PageTransition><AdminAttendancePage /></PageTransition>} />
+          <Route path="/admin/certificates" element={<PageTransition><CertificateManager /></PageTransition>} />
+          <Route path="/admin/admissions" element={<PageTransition><EnrollmentManager /></PageTransition>} />
+
+          {/* Admin Communication */}
+          <Route path="/admin/announcements" element={<PageTransition><AdminAnnouncements /></PageTransition>} />
+          <Route 
+            path="/admin/complaints" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <PageTransition><AdminComplaints /></PageTransition>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Admin Finance & Growth */}
+          <Route path="/admin/finance" element={<PageTransition><AdminFinance /></PageTransition>} />
+          <Route path="/admin/finance/transactions" element={<PageTransition><AdminFinanceTransactions /></PageTransition>} />
+          <Route path="/admin/referral" element={<PageTransition><AdminReferral /></PageTransition>} />
+
+          {/* Admin System & Settings */}
+          <Route path="/admin/reports" element={<PageTransition><AdminReports /></PageTransition>} />
+          <Route path="/admin/settings/testimonials" element={<PageTransition><TestimonialManager /></PageTransition>} />
+          <Route path="/admin/settings/media" element={<PageTransition><MediaLibrary /></PageTransition>} />
+          <Route path="/admin/settings/content" element={<PageTransition><ContentManager /></PageTransition>} />
+          <Route path="/admin/settings/media-page" element={<PageTransition><MediaPageManager /></PageTransition>} />
+
+          <Route path="/verify-certificate" element={<PageTransition><VerifyCertificatePage /></PageTransition>} />
         </Routes>
       </AnimatePresence>
 
-      <Footer />
+      {!isDashboardRoute && <Footer />}
     </>
   );
 }
@@ -160,7 +368,13 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <TasksProvider>
+        <ComplaintsProvider>
+          <GroupChatProvider>
+            <AppContent />
+          </GroupChatProvider>
+        </ComplaintsProvider>
+      </TasksProvider>
     </Router>
   );
 }

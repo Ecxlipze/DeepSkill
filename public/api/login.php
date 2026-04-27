@@ -58,6 +58,18 @@ foreach ($users as $u) {
 }
 
 if ($foundUser) {
+    if (($foundUser['status'] ?? 'approved') === 'pending') {
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Your application is still under review. You will receive an email once it is approved."]);
+        exit();
+    }
+    
+    if (($foundUser['status'] ?? 'approved') === 'declined') {
+        http_response_code(403);
+        echo json_encode(["status" => "error", "message" => "Your application was not approved. Please contact support for more details."]);
+        exit();
+    }
+
     // Return profile without the password hash
     unset($foundUser['password']);
     echo json_encode(["status" => "success", "user" => $foundUser]);

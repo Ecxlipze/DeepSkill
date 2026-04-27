@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { FaUser, FaStar, FaUsers, FaProjectDiagram, FaWallet, FaClock, FaBriefcase, FaChalkboardTeacher, FaDatabase } from 'react-icons/fa';
+import { supabase } from './supabaseClient';
 import mernCard from './assets/mern-card.svg';
 import mernProject from './assets/mern-project.svg';
 import mernTree from './assets/mern-tree.svg';
@@ -468,6 +469,22 @@ const OutcomesDescription = styled(motion.p)`
 const FullStackPage = () => {
   const { user, enrollCourse } = useAuth();
   const navigate = useNavigate();
+  const [pdfUrl, setPdfUrl] = React.useState('/assets/course-pdfs/fullstack-mern.pdf'); // Fallback
+
+  React.useEffect(() => {
+    const fetchPdf = async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('pdf_url')
+        .ilike('category', '%react%')
+        .single();
+      
+      if (data?.pdf_url) {
+        setPdfUrl(data.pdf_url);
+      }
+    };
+    fetchPdf();
+  }, []);
 
   const handleEnroll = () => {
     if (!user) {
@@ -797,7 +814,11 @@ const FullStackPage = () => {
 
       <CertifySection accentColor="#97C049" accentRGB="151, 192, 73" />
 
-      <CourseOutline accentColor="#97C049" accentRGB="151, 192, 73" />
+      <CourseOutline 
+        accentColor="#97C049" 
+        accentRGB="151, 192, 73" 
+        pdfUrl={pdfUrl} 
+      />
       <div style={{ position: 'relative', zIndex: 10 }}>
         <CourseRoadmap imageSrc={mernMap} accentColor="#97C049" />
 

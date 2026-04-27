@@ -9,6 +9,7 @@ import {
   FaInstagram, FaLinkedin, FaGlobe, FaUsers, FaUniversity,
   FaCode, FaLaptop, FaPaintBrush, FaWordpress, FaPenNib, FaChartLine
 } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 const PageContainer = styled(motion.div)`
   background-color: #000;
@@ -410,6 +411,7 @@ const RegisterPage = () => {
     gender: "",
     source: "",
     selectedCourse: "",
+    cnic: "",
     'bot-field': "" // Honeypot
   });
 
@@ -490,6 +492,13 @@ const RegisterPage = () => {
           error = 'Mobile number must be at least 10 characters';
         }
         break;
+      case 'cnic':
+        if (!value.trim()) {
+          error = 'CNIC is required';
+        } else if (!/^\d{5}-\d{7}-\d{1}$/.test(value)) {
+          error = 'Invalid CNIC format (e.g. 35202-1234567-9)';
+        }
+        break;
       case 'lastEducation':
         if (!value) error = 'Education selection is required';
         break;
@@ -565,11 +574,22 @@ const RegisterPage = () => {
     if (validateForm()) {
       setIsSubmitting(true);
       try {
-        await register(formData);
+        const applicationData = {
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          phone: formData.mobileNo,
+          cnic: formData.cnic,
+          course: formData.selectedCourse,
+          education: formData.lastEducation,
+          hear_about_us: formData.source,
+          gender: formData.gender,
+          age: formData.age
+        };
+        await register(applicationData);
         setIsSuccess(true);
       } catch (err) {
         console.error("Registration failed", err);
-        alert(err.message || 'There was an error with your registration. Please try again.');
+        toast.error(err.message || 'There was an error with your registration. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
@@ -807,6 +827,41 @@ const RegisterPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
               >{errors.mobileNo}</ErrorMsg>
+            )}
+          </AnimatePresence>
+        </FormCard>
+        
+        {/* CNIC */}
+        <FormCard
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
+        >
+          <Label><FaUser /> CNIC Number*</Label>
+          <Input
+            name="cnic"
+            placeholder="e.g. 35202-1234567-9"
+            value={formData.cnic}
+            onChange={(e) => {
+              // Auto-format CNIC as user types
+              let val = e.target.value.replace(/\D/g, '');
+              if (val.length > 5) val = val.slice(0, 5) + '-' + val.slice(5);
+              if (val.length > 13) val = val.slice(0, 13) + '-' + val.slice(13, 14);
+              setFormData(prev => ({ ...prev, cnic: val }));
+              setErrors(prev => ({ ...prev, cnic: validateField('cnic', val) }));
+            }}
+            maxLength={15}
+            className={errors.cnic ? 'error' : ''}
+          />
+          <AnimatePresence>
+            {errors.cnic && (
+              <ErrorMsg
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >{errors.cnic}</ErrorMsg>
             )}
           </AnimatePresence>
         </FormCard>
@@ -1059,10 +1114,8 @@ const RegisterPage = () => {
               transition={{ delay: 0.4 }}
               style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', maxWidth: '600px', textAlign: 'center' }}
             >
-              Welcome to DeepSkills, <strong>{formData.firstName}</strong>! <br /><br />
-              A <strong>Welcome Email</strong> has been sent to your address with your
-              <strong> auto-generated login password</strong>. <br /><br />
-              Please check your inbox (and spam folder) to find your credentials.
+              Thank you for showing interest in <strong>{formData.selectedCourse}</strong> at DeepSkills! <br /><br />
+              You will receive a confirmation email shortly. Our team will review your application and update you regarding your admission status within <strong>24-48 hours</strong>.
             </motion.p>
             <motion.div
               initial={{ y: 20, opacity: 0 }}

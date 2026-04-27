@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
+import AdminLayout from '../components/AdminLayout';
 
 const Container = styled.div`
   padding: 100px 40px 40px;
@@ -216,4 +217,6 @@ const InstructorManager = () => {
   );
 };
 
-export default InstructorManager;
+const InstructorManagerPage = () => <AdminLayout><InstructorManager /></AdminLayout>;
+export { InstructorManager };
+export default InstructorManagerPage;

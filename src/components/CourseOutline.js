@@ -84,7 +84,48 @@ const DownloadButton = styled(motion.button)`
   }
 `;
 
-const CourseOutline = ({ accentColor, accentRGB }) => {
+const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
+  const [downloadStatus, setDownloadStatus] = React.useState('idle'); // 'idle', 'downloading', 'completed'
+
+  const handleDownload = async () => {
+    if (pdfUrl) {
+      setDownloadStatus('downloading');
+      try {
+        // Use a clean loading state if needed, but for now we'll fetch and download
+        const response = await fetch(pdfUrl);
+        const blob = await response.blob();
+
+        // Create a local object URL for the blob
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        // Extract a clean filename and remove leading timestamps
+        let fileName = pdfUrl.split('/').pop().split('?')[0].replace(/%20/g, ' ');
+        fileName = fileName.replace(/^\d+-/, '');
+
+        link.setAttribute('download', fileName || 'Course-Outline.pdf');
+
+        document.body.appendChild(link);
+        link.click();
+
+        // Cleanup
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        setDownloadStatus('completed');
+        // Reset back to idle after a few seconds
+        setTimeout(() => setDownloadStatus('idle'), 3000);
+      } catch (error) {
+        console.error("Direct download failed, falling back to new tab:", error);
+        setDownloadStatus('idle');
+        window.open(pdfUrl, '_blank');
+      }
+    } else {
+      alert("Course outline PDF will be available soon!");
+    }
+  };
+
   return (
     <Section>
       <Container>
@@ -111,17 +152,22 @@ const CourseOutline = ({ accentColor, accentRGB }) => {
         <DownloadButton
           accentColor={accentColor}
           accentRGB={accentRGB}
-          whileHover={{ 
-            scale: 1.05,
+          disabled={downloadStatus === 'downloading'}
+          whileHover={{
+            scale: downloadStatus === 'downloading' ? 1 : 1.05,
             boxShadow: `0 15px 40px rgba(${accentRGB || '151, 192, 73'}, 0.5)`
           }}
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: downloadStatus === 'downloading' ? 1 : 0.95 }}
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.4 }}
+          onClick={handleDownload}
+          style={{ opacity: downloadStatus === 'downloading' ? 0.8 : 1 }}
         >
-          Download Course PDF
+          {downloadStatus === 'idle' && "Download Course PDF"}
+          {downloadStatus === 'downloading' && "Downloading..."}
+          {downloadStatus === 'completed' && "Downloaded "}
         </DownloadButton>
       </Container>
     </Section>

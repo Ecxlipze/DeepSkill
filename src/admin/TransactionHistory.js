@@ -1,0 +1,303 @@
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import { 
+  FaSearch, FaFilter, FaDownload, FaArrowUp, 
+  FaArrowDown, FaExchangeAlt, FaHistory
+} from 'react-icons/fa';
+import AdminLayout from '../components/AdminLayout';
+import { supabase } from '../supabaseClient';
+import toast from 'react-hot-toast';
+
+const TransactionHistory = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [summary, setSummary] = useState({ totalIn: 0, totalOut: 0, net: 0 });
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('status', 'paid')
+        .order('paid_date', { ascending: false });
+
+      if (error) throw error;
+
+      setTransactions(data || []);
+      
+      const totalIn = data?.filter(p => p.entity_type === 'student').reduce((sum, p) => sum + p.amount, 0) || 0;
+      const totalOut = data?.filter(p => p.entity_type === 'teacher').reduce((sum, p) => sum + p.amount, 0) || 0;
+      
+      setSummary({
+        totalIn,
+        totalOut,
+        net: totalIn - totalOut
+      });
+
+    } catch (err) {
+      toast.error("Failed to load transactions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportCSV = () => {
+    const headers = ["Date", "Type", "Description", "Method", "Amount", "Reference"];
+    const rows = transactions.map(t => [
+      t.paid_date,
+      t.entity_type === 'student' ? 'Fee' : 'Salary',
+      t.description,
+      t.method,
+      t.amount,
+      t.reference_number
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `DeepSkills_Finance_Export_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+  };
+
+  return (
+    <AdminLayout>
+      <Container>
+        <Header>
+          <div>
+            <h1>Master Ledger</h1>
+            <p>Complete transaction history across the entire system.</p>
+          </div>
+          <ExportBtn onClick={exportCSV}>
+            <FaDownload /> Export CSV
+          </ExportBtn>
+        </Header>
+
+        <SummaryRow>
+          <SummaryCard type="in">
+            <div className="icon"><FaArrowUp /></div>
+            <div className="info">
+              <span>Total Inflow</span>
+              <strong>Rs. {summary.totalIn.toLocaleString()}</strong>
+            </div>
+          </SummaryCard>
+          <SummaryCard type="out">
+            <div className="icon"><FaArrowDown /></div>
+            <div className="info">
+              <span>Total Outflow</span>
+              <strong>Rs. {summary.totalOut.toLocaleString()}</strong>
+            </div>
+          </SummaryCard>
+          <SummaryCard type="net">
+            <div className="icon"><FaExchangeAlt /></div>
+            <div className="info">
+              <span>Net Position</span>
+              <strong>Rs. {summary.net.toLocaleString()}</strong>
+            </div>
+          </SummaryCard>
+        </SummaryRow>
+
+        <FilterBar>
+          <SearchBox>
+            <FaSearch />
+            <input 
+              type="text" 
+              placeholder="Search by person, reference..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </SearchBox>
+          <FilterGroup>
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+              <option value="all">All Types</option>
+              <option value="student">Student Fees</option>
+              <option value="teacher">Teacher Salaries</option>
+            </select>
+            <select><option>Last 30 Days</option></select>
+          </FilterGroup>
+        </FilterBar>
+
+        <TableCard>
+          <TableContainer>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                  <th>Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions
+                  .filter(t => (filterType === 'all' || t.entity_type === filterType))
+                  .map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.paid_date}</td>
+                      <td>
+                        <TypeBadge type={t.entity_type}>
+                          {t.entity_type === 'student' ? 'Student Fee' : 'Salary'}
+                        </TypeBadge>
+                      </td>
+                      <td>{t.description || 'System Transaction'}</td>
+                      <td>{t.method?.replace('_', ' ')}</td>
+                      <td style={{ fontWeight: '700', color: t.entity_type === 'student' ? '#10B981' : '#ef4444' }}>
+                        {t.entity_type === 'student' ? '+' : '-'} Rs. {t.amount.toLocaleString()}
+                      </td>
+                      <td style={{ color: '#6b7280', fontSize: '0.85rem' }}>{t.reference_number || '—'}</td>
+                    </tr>
+                  ))}
+                {transactions.length === 0 && !loading && (
+                  <tr><td colSpan="6" style={{ textAlign: 'center', padding: '50px', color: '#6b7280' }}>No transactions recorded yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </TableContainer>
+        </TableCard>
+      </Container>
+    </AdminLayout>
+  );
+};
+
+// Styled Components
+const Container = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  h1 { font-size: 2rem; color: #fff; margin-bottom: 5px; }
+  p { color: #6b7280; font-size: 1rem; }
+`;
+
+const ExportBtn = styled.button`
+  background: #111318;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  &:hover { background: rgba(255,255,255,0.05); }
+`;
+
+const SummaryRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+`;
+
+const SummaryCard = styled.div`
+  background: #111318;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  .icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${props => 
+      props.type === 'in' ? 'rgba(16, 185, 129, 0.1)' : 
+      props.type === 'out' ? 'rgba(239, 68, 68, 0.1)' : 
+      'rgba(79, 142, 247, 0.1)'};
+    color: ${props => 
+      props.type === 'in' ? '#10B981' : 
+      props.type === 'out' ? '#ef4444' : 
+      '#4F8EF7'};
+  }
+
+  .info {
+    span { font-size: 0.8rem; color: #6b7280; text-transform: uppercase; }
+    strong { font-size: 1.2rem; color: #fff; display: block; }
+  }
+`;
+
+const FilterBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  gap: 20px;
+`;
+
+const SearchBox = styled.div`
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+  svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #6b7280; }
+  input {
+    width: 100%;
+    background: #111318;
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 12px 15px 12px 45px;
+    border-radius: 12px;
+    color: #fff;
+    outline: none;
+  }
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  gap: 15px;
+  select {
+    background: #111318;
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 10px 15px;
+    border-radius: 10px;
+    color: #fff;
+    outline: none;
+  }
+`;
+
+const TableCard = styled.div`
+  background: #111318;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+`;
+
+const TableContainer = styled.div`
+  overflow-x: auto;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    th { text-align: left; padding: 20px 25px; font-size: 0.8rem; color: #6b7280; text-transform: uppercase; background: rgba(255,255,255,0.02); }
+    td { padding: 18px 25px; font-size: 0.95rem; color: #eee; border-top: 1px solid rgba(255,255,255,0.03); }
+  }
+`;
+
+const TypeBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: ${props => props.type === 'student' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(236, 72, 153, 0.1)'};
+  color: ${props => props.type === 'student' ? '#8B5CF6' : '#EC4899'};
+`;
+
+export default TransactionHistory;

@@ -94,6 +94,13 @@ const Login = () => {
     if (error) {
       setError(error.message);
     } else {
+      // Set admin user in localStorage for AuthContext
+      const adminUser = {
+        name: 'Administrator',
+        role: 'admin',
+        email: email
+      };
+      localStorage.setItem('deepskill_user', JSON.stringify(adminUser));
       window.location.href = '/admin/dashboard';
     }
     setLoading(false);

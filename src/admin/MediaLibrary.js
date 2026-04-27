@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
+import { FaFilePdf, FaLink, FaTrash } from 'react-icons/fa';
+import AdminLayout from '../components/AdminLayout';
 
 const MediaContainer = styled.div`
-  padding: 100px 40px 40px;
+  padding: 10px 0;
   color: #fff;
-  background: #000;
-  min-height: 100vh;
+  background: transparent;
 `;
 
 const Header = styled.div`
@@ -160,12 +161,12 @@ const MediaLibrary = () => {
 
       <UploadSection>
         <UploadLabel htmlFor="upload-media">
-          {uploading ? 'Uploading...' : 'Upload New Media (Image/Video)'}
+          {uploading ? 'Uploading...' : 'Upload New Media (Image/Video/PDF)'}
         </UploadLabel>
         <FileInput 
           id="upload-media" 
           type="file" 
-          accept="image/*,video/*" 
+          accept="image/*,video/*,application/pdf" 
           onChange={handleUpload}
           disabled={uploading}
         />
@@ -176,12 +177,14 @@ const MediaLibrary = () => {
           <MediaItem key={file.id}>
             {file.name.match(/\.(mp4|webm|ogg)$/i) ? (
               <VideoPreview>🎥 {file.name}</VideoPreview>
+            ) : file.name.match(/\.pdf$/i) ? (
+              <VideoPreview><FaFilePdf style={{ fontSize: '2rem', color: '#ff4d4d' }} /> <div style={{ marginTop: '10px' }}>{file.name}</div></VideoPreview>
             ) : (
               <MediaPreview src={`${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/media/${file.name}`} />
             )}
             <ActionBtns>
-              <DarkBtn onClick={() => handleCopy(file.name)}>🔗 Copy URL</DarkBtn>
-              <DarkBtn $delete onClick={() => handleDelete(file.name)}>🗑️</DarkBtn>
+              <DarkBtn onClick={() => handleCopy(file.name)}><FaLink /> Copy URL</DarkBtn>
+              <DarkBtn $delete onClick={() => handleDelete(file.name)}><FaTrash /></DarkBtn>
             </ActionBtns>
           </MediaItem>
         ))}
@@ -190,4 +193,6 @@ const MediaLibrary = () => {
   );
 };
 
-export default MediaLibrary;
+const MediaLibraryPage = () => <AdminLayout><MediaLibrary /></AdminLayout>;
+export { MediaLibrary };
+export default MediaLibraryPage;

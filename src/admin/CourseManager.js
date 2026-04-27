@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
+import AdminLayout from '../components/AdminLayout';
 
 const Container = styled.div`
-  padding: 100px 40px 40px;
+  padding: 10px 0;
   color: #fff;
-  background: #000;
-  min-height: 100vh;
+  background: transparent;
 `;
 
 const Header = styled.div`
@@ -115,7 +115,8 @@ const CourseManager = () => {
     price: '',
     duration: '',
     image_url: '',
-    category: ''
+    category: '',
+    pdf_url: ''
   });
 
   useEffect(() => {
@@ -134,7 +135,7 @@ const CourseManager = () => {
       const { error } = await supabase.from('courses').update(formData).eq('id', editingId);
       if (error) alert(error.message);
       else {
-        setFormData({ title: '', description: '', price: '', duration: '', image_url: '', category: '' });
+        setFormData({ title: '', description: '', price: '', duration: '', image_url: '', category: '', pdf_url: '' });
         setEditingId(null);
         fetchCourses();
       }
@@ -143,7 +144,7 @@ const CourseManager = () => {
       if (error) {
         alert(error.message);
       } else {
-        setFormData({ title: '', description: '', price: '', duration: '', image_url: '', category: '' });
+        setFormData({ title: '', description: '', price: '', duration: '', image_url: '', category: '', pdf_url: '' });
         fetchCourses();
       }
     }
@@ -157,7 +158,8 @@ const CourseManager = () => {
       price: course.price || '',
       duration: course.duration || '',
       image_url: course.image_url || '',
-      category: course.category || ''
+      category: course.category || '',
+      pdf_url: course.pdf_url || ''
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -197,6 +199,10 @@ const CourseManager = () => {
           <Label>Image URL (from Media Library)</Label>
           <Input value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
         </InputGroup>
+        <InputGroup style={{ gridColumn: 'span 2' }}>
+          <Label>Course PDF URL (from Media Library)</Label>
+          <Input value={formData.pdf_url} onChange={e => setFormData({...formData, pdf_url: e.target.value})} placeholder="Paste PDF URL from Media Library here" />
+        </InputGroup>
         <TextArea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Description..." />
         <Button type="submit">{editingId ? 'Update Course' : 'Add Course'}</Button>
         {editingId && (
@@ -204,7 +210,7 @@ const CourseManager = () => {
             type="button" 
             onClick={() => {
               setEditingId(null);
-              setFormData({ title: '', description: '', price: '', duration: '', image_url: '', category: '' });
+              setFormData({ title: '', description: '', price: '', duration: '', image_url: '', category: '', pdf_url: '' });
             }}
             style={{ background: '#444' }}
           >
@@ -239,5 +245,6 @@ const CourseManager = () => {
     </Container>
   );
 };
-
-export default CourseManager;
+const CourseManagerPage = () => <AdminLayout><CourseManager /></AdminLayout>;
+export { CourseManager };
+export default CourseManagerPage;

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { supabase } from './supabaseClient';
 import styled from 'styled-components';
 import WordPressHero from './components/WordPressHero';
 import WordPressFeatures from './components/WordPressFeatures';
@@ -26,8 +27,21 @@ const PageContainer = styled.div`
 `;
 
 const WordPressPage = () => {
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  const [pdfUrl, setPdfUrl] = React.useState('/assets/course-pdfs/wordpress-mastery.pdf');
+
+  React.useEffect(() => {
+    const fetchPdf = async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('pdf_url')
+        .ilike('category', '%wordpress%')
+        .single();
+      
+      if (data?.pdf_url) {
+        setPdfUrl(data.pdf_url);
+      }
+    };
+    fetchPdf();
   }, []);
 
   return (
@@ -45,7 +59,7 @@ const WordPressPage = () => {
       <InstantDoubt accentColor="#275D8F" accentRGB="140, 199, 255" bannerImage={wpInstantBanner} />
       <CertifySection accentColor="#275D8F" accentRGB="140, 199, 255" />
       <WordPressOutcomes />
-      <CourseOutline accentColor="#275D8F" accentRGB="140, 199, 255" />
+      <CourseOutline accentColor="#275D8F" accentRGB="140, 199, 255" pdfUrl={pdfUrl} />
       <CourseRoadmap imageSrc={wpMap} accentColor="#275D8F" />
 
     </PageContainer>

@@ -90,23 +90,14 @@ foreach ($users as $u) {
     }
 }
 
-// Generate Random Password
-function generatePassword($length = 8) {
-    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    return substr(str_shuffle($chars), 0, $length);
-}
-
-$generatedPassword = generatePassword(8);
-$hashedPassword = password_hash($generatedPassword, PASSWORD_DEFAULT);
-
 // Store New User
 $newStudent = [
     "id" => time() . rand(1000, 9999),
+    "status" => "pending",
     "firstName" => $firstName,
     "lastName" => $lastName,
     "name" => $firstName . " " . $lastName,
     "email" => $email,
-    "password" => $hashedPassword,
     "mobileNo" => $mobileNo,
     "lastEducation" => $lastEducation,
     "age" => $age,
@@ -151,8 +142,8 @@ $adminBody = "
 
 mail($adminEmail, $adminSubject, $adminBody, $adminHeaders);
 
-// 2. Send Welcome Email to Student
-$studentSubject = "Welcome to DeepSkills - Your Admission Confirmation";
+// 2. Send Confirmation Email to Student
+$studentSubject = "Admission Interest Received - DeepSkills";
 $studentHeaders = "From: DeepSkills <" . $sender . ">\r\n";
 $studentHeaders .= "MIME-Version: 1.0\r\n";
 $studentHeaders .= "Content-Type: text/html; charset=UTF-8\r\n";
@@ -162,24 +153,21 @@ $studentBody = "
 <body style='font-family: sans-serif; color: #333;'>
     <div style='max-width: 600px; margin: auto; border: 2px solid #7a2136; border-radius: 15px; overflow: hidden;'>
         <div style='background: #7a2136; color: white; padding: 20px; text-align: center;'>
-            <h1 style='margin:0;'>Welcome to DeepSkills!</h1>
+            <h1 style='margin:0;'>DeepSkills Enrollment</h1>
         </div>
         <div style='padding: 30px;'>
             <h3>Dear {$firstName},</h3>
-            <p>Congratulations! Your admission for <strong>{$selectedCourse}</strong> has been received.</p>
-            <p>To access your student portal and start your learning journey, please use the following credentials:</p>
+            <p>Thank you for showing interest in <strong>{$selectedCourse}</strong> at DeepSkills.</p>
+            <p>We have received your application. Our admission committee will review your details and get back to you within <strong>24-48 hours</strong>.</p>
             <div style='background: #fdf2f4; padding: 15px; border-radius: 8px; border-left: 5px solid #7a2136;'>
-                <p style='margin: 5px 0;'><strong>Login Email:</strong> {$email}</p>
-                <p style='margin: 5px 0;'><strong>Temporary Password:</strong> <span style='color: #7a2136; font-size: 1.2rem; font-weight: 700;'>{$generatedPassword}</span></p>
+                <p style='margin: 5px 0;'><strong>Applied For:</strong> {$selectedCourse}</p>
+                <p style='margin: 5px 0;'><strong>Current Status:</strong> <span style='color: #7a2136; font-weight: 700;'>Under Review</span></p>
             </div>
             <p style='color: #666; font-size: 0.9rem; margin-top: 15px;'>
-                <em>Note: You will be prompted to set your own permanent password when you log in for the first time.</em>
+                <em>Once your application is approved, you will receive another email with your login credentials and further instructions.</em>
             </p>
-            <div style='text-align: center; margin-top: 30px;'>
-                <a href='http://deepskills.pk/login' style='background: #7a2136; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;'>Login to Student Dashboard</a>
-            </div>
-            <p style='margin-top: 30px;'>If you have any questions, feel free to reply to this email.</p>
-            <p>Happy Learning!<br><strong>Team DeepSkills</strong></p>
+            <p style='margin-top: 30px;'>In the meantime, feel free to explore our website or reply to this email if you have any questions.</p>
+            <p>Best Regards,<br><strong>Admissions Team, DeepSkills</strong></p>
         </div>
     </div>
 </body>
@@ -188,10 +176,9 @@ $studentBody = "
 
 mail($email, $studentSubject, $studentBody, $studentHeaders);
 
-echo json_encode(["status" => "success", "message" => "Registration successful. Please check your email for login details.", "user" => [
+echo json_encode(["status" => "success", "message" => "Interest registered successfully. Our team will review your application soon.", "user" => [
     "id" => $newStudent["id"],
     "name" => $newStudent["name"],
-    "email" => $newStudent["email"],
-    "is_first_login" => true
+    "email" => $newStudent["email"]
 ]]);
 ?>

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { supabase } from './supabaseClient';
 import styled from 'styled-components';
 import LaravelHero from './components/LaravelHero';
 import LaravelFeatures from './components/LaravelFeatures';
@@ -24,8 +25,21 @@ const PageContainer = styled.div`
 `;
 
 const LaravelPage = () => {
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  const [pdfUrl, setPdfUrl] = React.useState('/assets/course-pdfs/laravel-mastery.pdf');
+
+  React.useEffect(() => {
+    const fetchPdf = async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('pdf_url')
+        .ilike('category', '%laravel%')
+        .single();
+      
+      if (data?.pdf_url) {
+        setPdfUrl(data.pdf_url);
+      }
+    };
+    fetchPdf();
   }, []);
 
   // Laravel Theme: Cyber Cyan accent
@@ -46,7 +60,7 @@ const LaravelPage = () => {
       <InstantDoubt accentColor={accentColor} accentRGB={accentRGB} bannerImage={laraInstant} />
       <CertifySection accentColor={accentColor} accentRGB={accentRGB} />
       <LaravelCareer />
-      <CourseOutline accentColor={accentColor} accentRGB={accentRGB} />
+      <CourseOutline accentColor={accentColor} accentRGB={accentRGB} pdfUrl={pdfUrl} />
       <CourseRoadmap imageSrc={laravelMap} accentColor={accentColor} />
 
     </PageContainer>

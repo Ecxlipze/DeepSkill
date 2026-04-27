@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaBars, FaTimes, FaHome, FaInfoCircle, FaBook, FaUserTie, FaPlayCircle, FaCommentAlt, FaUser, FaSignOutAlt, FaColumns } from "react-icons/fa";
+import { FaBars, FaTimes, FaHome, FaInfoCircle, FaBook, FaUserTie, FaPlayCircle, FaUser, FaSignOutAlt, FaColumns, FaPhoneAlt } from "react-icons/fa";
 import { FiChevronRight, FiChevronDown } from "react-icons/fi";
 import logoImg from "./logo.svg";
 import RegisterButton from "./components/RegisterButton";
@@ -400,6 +400,10 @@ const MobileCta = styled(motion.button)`
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: none;
   background: ${props => props.$primary ? "#000" : "#fff"};
   color: ${props => props.$primary ? "#fff" : "#7B1F2E"};
@@ -492,8 +496,8 @@ const Header = () => {
   const [activeLink, setActiveLink] = useState("HOME");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [coursesExpanded, setCoursesExpanded] = useState(false);
-  const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false);
+  const [expandedMobileItem, setExpandedMobileItem] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const { user, logout } = useAuth();
@@ -511,7 +515,18 @@ const Header = () => {
 
   const links = React.useMemo(() => [
     { name: "Home", href: "/", isRoute: true, icon: <FaHome /> },
-    { name: "About Us", href: "/about", isRoute: true, icon: <FaInfoCircle /> },
+    {
+      name: "About",
+      href: "/about",
+      isRoute: true,
+      icon: <FaInfoCircle />,
+      hasDropdown: true,
+      sublinks: [
+        { name: "About DeepSkills", href: "/about", isRoute: true },
+        { name: "Our Trainers", href: "/trainers", isRoute: true },
+        { name: "Founder Message", href: "/founder-message", isRoute: true }
+      ]
+    },
     {
       name: "Courses",
       href: "/courses",
@@ -525,9 +540,18 @@ const Header = () => {
         { name: "View All Courses", href: "/courses", isRoute: true }
       ]
     },
-    { name: "Trainers", href: "/trainers", isRoute: true, icon: <FaUserTie /> },
     { name: "Media", href: "/media", isRoute: true, icon: <FaPlayCircle /> },
-    { name: "Founder Message", href: "/founder-message", isRoute: true, icon: <FaCommentAlt /> },
+    {
+      name: "Certificate",
+      href: "/verify-certificate",
+      isRoute: true,
+      icon: <FaBook />,
+      hasDropdown: true,
+      sublinks: [
+        { name: "Verify Certificate", href: "/verify-certificate", isRoute: true },
+      ]
+    },
+    { name: "Contact Us", href: "/contact", isRoute: true, icon: <FaPhoneAlt /> },
   ], []);
 
   useEffect(() => {
@@ -605,8 +629,8 @@ const Header = () => {
           {links.slice(0, 7).map((link) => (
             <NavPillContainer
               key={link.name}
-              onMouseEnter={() => link.hasDropdown && setDesktopDropdownOpen(true)}
-              onMouseLeave={() => link.hasDropdown && setDesktopDropdownOpen(false)}
+              onMouseEnter={() => link.hasDropdown && setOpenDropdown(link.name)}
+              onMouseLeave={() => link.hasDropdown && setOpenDropdown(null)}
             >
               <NavLink
                 as={link.isRoute ? Link : "a"}
@@ -622,7 +646,7 @@ const Header = () => {
 
               {link.hasDropdown && (
                 <AnimatePresence>
-                  {desktopDropdownOpen && (
+                  {openDropdown === link.name && (
                     <DesktopDropdown
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -669,11 +693,8 @@ const Header = () => {
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <DropdownItem to="/dashboard">
+                    <DropdownItem to={user?.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'}>
                       <FaColumns /> Dashboard
-                    </DropdownItem>
-                    <DropdownItem to="/profile">
-                      <FaUser /> My Profile
                     </DropdownItem>
                     <div style={{ padding: '0 10px' }}>
                       <hr style={{ border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', margin: '5px 0' }} />
@@ -691,10 +712,10 @@ const Header = () => {
 
           <DesktopOnlyBtn>
             <RegisterButton
-              to="/contact"
+              to="/register"
               style={{ padding: "10px 24px", fontSize: "0.95rem" }}
             >
-              Contact Us
+              Get Enroll
             </RegisterButton>
           </DesktopOnlyBtn>
           <MobileMenuBtn onClick={() => setMobileMenuOpen(true)}>
@@ -743,17 +764,19 @@ const Header = () => {
                   <>
                     <MobileCta
                       as={Link}
-                      to="/contact"
+                      to="/register"
                       $primary
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Contact Us
+                      <FaUserTie style={{ fontSize: "1rem" }} />
+                      Get Enroll
                     </MobileCta>
                     <MobileCta
                       as={Link}
                       to="/login"
                       onClick={() => setMobileMenuOpen(false)}
                     >
+                      <FaUser style={{ fontSize: "1rem" }} />
                       Login
                     </MobileCta>
                   </>
@@ -768,15 +791,16 @@ const Header = () => {
               {user && (
                 <div style={{ marginBottom: '20px' }}>
                   <MobileLinkWrapper>
-                    <MainLink as={Link} to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                    <MainLink as={Link} to={user?.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'} onClick={() => setMobileMenuOpen(false)}>
                       <LinkLeft><FaColumns /> <span>Dashboard</span></LinkLeft>
                       <FiChevronRight />
                     </MainLink>
                   </MobileLinkWrapper>
+                  
                   <MobileLinkWrapper>
-                    <MainLink as={Link} to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                      <LinkLeft><FaUser /> <span>My Profile</span></LinkLeft>
-                      <FiChevronRight />
+                    <MainLink as="div" onClick={handleLogout} style={{ cursor: 'pointer', background: 'rgba(255, 78, 78, 0.1)' }}>
+                      <LinkLeft style={{ color: '#ff4e4e' }}><FaSignOutAlt /> <span style={{ color: '#ff4e4e' }}>Logout</span></LinkLeft>
+                      <FiChevronRight color="#ff4e4e" />
                     </MainLink>
                   </MobileLinkWrapper>
                 </div>
@@ -796,13 +820,13 @@ const Header = () => {
                     onClick={(e) => {
                       if (link.hasDropdown) {
                         e.preventDefault();
-                        setCoursesExpanded(!coursesExpanded);
+                        setExpandedMobileItem(expandedMobileItem === link.name ? null : link.name);
                       } else {
                         handleLinkClick(e, link);
                       }
                     }}
                     style={{
-                      borderRadius: link.hasDropdown && coursesExpanded ? "10px 10px 0 0" : "10px"
+                      borderRadius: link.hasDropdown && expandedMobileItem === link.name ? "10px 10px 0 0" : "10px"
                     }}
                   >
                     <LinkLeft>
@@ -810,7 +834,7 @@ const Header = () => {
                       <span>{link.name}</span>
                     </LinkLeft>
                     {link.hasDropdown ? (
-                      <motion.div animate={{ rotate: coursesExpanded ? 180 : 0 }}>
+                      <motion.div animate={{ rotate: expandedMobileItem === link.name ? 180 : 0 }}>
                         <FiChevronDown />
                       </motion.div>
                     ) : (
@@ -820,7 +844,7 @@ const Header = () => {
 
                   {link.hasDropdown && (
                     <AnimatePresence>
-                      {coursesExpanded && (
+                      {expandedMobileItem === link.name && (
                         <DropdownContent
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}

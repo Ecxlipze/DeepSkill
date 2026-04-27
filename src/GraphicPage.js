@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import GraphicHero from './components/GraphicHero';
+import { supabase } from './supabaseClient';
 import GraphicFeatures from './components/GraphicFeatures';
 import GraphicLearning from './components/GraphicLearning';
 import GraphicProjects from './components/GraphicProjects';
@@ -24,8 +25,21 @@ const PageContainer = styled.div`
 `;
 
 const GraphicPage = () => {
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  const [pdfUrl, setPdfUrl] = React.useState('/assets/course-pdfs/graphic-design.pdf');
+
+  React.useEffect(() => {
+    const fetchPdf = async () => {
+      const { data } = await supabase
+        .from('courses')
+        .select('pdf_url')
+        .ilike('category', '%graphic%')
+        .single();
+      
+      if (data?.pdf_url) {
+        setPdfUrl(data.pdf_url);
+      }
+    };
+    fetchPdf();
   }, []);
 
   // Theme settings for shared components
@@ -45,7 +59,7 @@ const GraphicPage = () => {
       <InstantDoubt accentColor={graphicsAccent} bannerImage={instantBanner} />
       <CertifySection accentColor={graphicsAccent} />
       <GraphicCareer />
-      <CourseOutline accentColor={graphicsAccent} />
+      <CourseOutline accentColor={graphicsAccent} pdfUrl={pdfUrl} />
       <CourseRoadmap imageSrc={graphicMap} accentColor={graphicsAccent} />
 
     </PageContainer>
