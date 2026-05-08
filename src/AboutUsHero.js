@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { FaBook, FaPlayCircle } from "react-icons/fa";
@@ -168,28 +168,44 @@ const BulbGlow = styled(motion.div)`
 `;
 
 const MoneyParticles = () => {
-  const particles = Array.from({ length: 15 });
+  const [particles, setParticles] = useState([]);
+
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 15 }).map((_, i) => ({
+        id: i,
+        initialX: Math.random() * window.innerWidth,
+        initialY: Math.random() * window.innerHeight,
+        y: Math.random() * -100 - 100,
+        x: (Math.random() - 0.5) * 100,
+        rotate: Math.random() * 360,
+        duration: Math.random() * 5 + 5,
+        delay: Math.random() * 5
+      }))
+    );
+  }, []);
+
   return (
     <>
-      {particles.map((_, i) => (
+      {particles.map((particle) => (
         <Particle
-          key={i}
+          key={particle.id}
           initial={{ 
-            x: Math.random() * window.innerWidth, 
-            y: Math.random() * window.innerHeight,
+            x: particle.initialX,
+            y: particle.initialY,
             opacity: 0 
           }}
           animate={{ 
-            y: [null, Math.random() * -100 - 100],
-            x: [null, (Math.random() - 0.5) * 100],
+            y: [null, particle.y],
+            x: [null, particle.x],
             opacity: [0, 0.3, 0],
-            rotate: [0, Math.random() * 360]
+            rotate: [0, particle.rotate]
           }}
           transition={{ 
-            duration: Math.random() * 5 + 5, 
+            duration: particle.duration,
             repeat: Infinity, 
             ease: "linear",
-            delay: Math.random() * 5 
+            delay: particle.delay
           }}
         >
           $

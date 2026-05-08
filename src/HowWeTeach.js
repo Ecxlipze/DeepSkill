@@ -124,7 +124,7 @@ const IconWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #7B1F2E;
+  color: #d94a5e;
   font-size: 2.7rem;
   transition: all 0.3s ease;
 

@@ -23,7 +23,6 @@ import AdminLogin from './admin/Login';
 import AdminDashboard from './admin/Dashboard';
 import MediaLibrary from './admin/MediaLibrary';
 import CourseManager from './admin/CourseManager';
-import BatchManager from './admin/BatchManager';
 import TestimonialManager from './admin/TestimonialManager';
 import ContentManager from './admin/ContentManager';
 import TeacherManager from './admin/TeacherManager';
@@ -32,7 +31,8 @@ import MediaPageManager from './admin/MediaPageManager';
 import EnrollmentManager from './admin/EnrollmentManager';
 import VerifyCertificatePage from './VerifyCertificatePage';
 import CertificateManager from './admin/CertificateManager';
-import UserManager from './admin/UserManager';
+import AdminUserManagement from './admin/AdminUserManagement';
+import AdminActivityLogsPage from './admin/AdminActivityLogsPage';
 import StudentManager from './admin/StudentManager';
 import StudentProfile from './admin/StudentProfile';
 import StudentDashboard from './StudentDashboard';
@@ -49,15 +49,25 @@ import StudentGroupChat from './student/StudentGroupChat';
 import TeacherGroupChat from './teacher/TeacherGroupChat';
 import AdminFinance from './admin/FinanceManager';
 import AdminFinanceTransactions from './admin/TransactionHistory';
-import { 
-  AdminAnnouncements, 
-  AdminReferral, AdminReports 
+import {
+  AdminReports
 } from './admin/AdminPlaceholders';
+import AdminAnnouncements from './admin/AdminAnnouncements';
+import TeacherAnnouncements from './teacher/TeacherAnnouncements';
+import StudentAnnouncements from './student/StudentAnnouncements';
 import StudentFinance from './student/StudentFinance';
 import TeacherFinance from './teacher/TeacherFinance';
 import TeacherAttendance from './teacher/TeacherAttendance';
+import TeacherHRPage from './teacher/TeacherHRPage';
 import AdminAttendancePage from './admin/AdminAttendance';
+import AdminHRManagement from './admin/AdminHRManagement';
 import StudentAttendance from './student/StudentAttendance';
+import ReferralPage from './components/ReferralPage';
+import AdminReferral from './admin/AdminReferral';
+import StudentResults from './student/StudentResults';
+import AdminResults from './admin/AdminResults';
+import NewEnrollment from './student/NewEnrollment';
+import CourseDetailPage from './admin/CourseDetailPage';
 
 import ScrollProgressBar from './components/ScrollProgressBar';
 import GoToTopButton from './components/GoToTopButton';
@@ -69,7 +79,9 @@ import { useAuth } from './context/AuthContext';
 import { TasksProvider } from './context/TasksContext';
 import { ComplaintsProvider } from './context/ComplaintsContext';
 import { GroupChatProvider } from './context/GroupChatContext';
+import { AnnouncementsProvider } from './context/AnnouncementsContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import PermissionGuard from './components/PermissionGuard';
 import ResetPasswordModal from './components/ResetPasswordModal';
 import PremiumLoader from './components/PremiumLoader';
 
@@ -83,8 +95,8 @@ function ScrollToTop() {
   // Handle ResizeObserver loop limit exceeded error
   useEffect(() => {
     const handleError = (e) => {
-      if (e.message === "ResizeObserver loop completed with undelivered notifications." || 
-          e.message === "ResizeObserver loop limit exceeded") {
+      if (e.message === "ResizeObserver loop completed with undelivered notifications." ||
+        e.message === "ResizeObserver loop limit exceeded") {
         const resizeObserverErrGuid = document.getElementById("webpack-dev-server-client-overlay-div");
         const resizeObserverErr = document.getElementById("webpack-dev-server-client-overlay");
         if (resizeObserverErr) {
@@ -113,30 +125,18 @@ function AppContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsAppLoading(false);
-    }, 2000);
+    }, 1000); // Shortened initial load
     return () => clearTimeout(timer);
   }, []);
 
-  // Route Change Transitions
-  useEffect(() => {
-    // Only trigger for navigation, not for the very first load which is handled above
-    if (location.pathname !== '/') {
-      setIsAppLoading(true);
-      const timer = setTimeout(() => {
-        setIsAppLoading(false);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [location.pathname]);
-
-  const isDashboardRoute = 
-    location.pathname.startsWith('/student') || 
-    location.pathname.startsWith('/teacher') || 
+  const isDashboardRoute =
+    location.pathname.startsWith('/student') ||
+    location.pathname.startsWith('/teacher') ||
     location.pathname.startsWith('/admin');
 
   return (
     <>
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
@@ -170,9 +170,9 @@ function AppContent() {
       {!isDashboardRoute && <ScrollProgressBar />}
       {!isDashboardRoute && <GoToTopButton />}
       <CustomCursor />
-      
+
       {!isDashboardRoute && <Header />}
-      
+
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
@@ -188,173 +188,240 @@ function AppContent() {
           <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
           <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
           <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
-          <Route 
-            path="/student/dashboard" 
+          <Route
+            path="/student/dashboard"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentDashboard /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/tasks" 
+          <Route
+            path="/student/tasks"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentTasks /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/progress" 
+          <Route
+            path="/student/progress"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentProgress /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/finance" 
+          <Route
+            path="/student/finance"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentFinance /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/certificate" 
+          <Route
+            path="/student/certificate"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentCertificate /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/complaints" 
+          <Route
+            path="/student/complaints"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentComplaints /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/attendance" 
+          <Route
+            path="/student/attendance"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentAttendance /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/student/group-chat" 
+          <Route
+            path="/student/results/:type"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentResults /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/new-enrollment"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><NewEnrollment /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/group-chat"
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <PageTransition><StudentGroupChat /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/dashboard" 
+          <Route
+            path="/student/announcements"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><StudentAnnouncements /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/referral"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <PageTransition><ReferralPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/dashboard"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><TeacherDashboard /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/complaints" 
+          <Route
+            path="/teacher/complaints"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><TeacherComplaints /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/finance" 
+          <Route
+            path="/teacher/finance"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><TeacherFinance /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/attendance" 
+          <Route
+            path="/teacher/attendance"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><TeacherAttendance /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/group-chat" 
+          <Route
+            path="/teacher/referral"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><ReferralPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/group-chat"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><TeacherGroupChat /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/tasks/assign" 
+          <Route
+            path="/teacher/announcements"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherAnnouncements /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/hr"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <PageTransition><TeacherHRPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/tasks/assign"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><AssignTask /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/teacher/tasks/view" 
+          <Route
+            path="/teacher/tasks/view"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <PageTransition><ViewTasks /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/profile" 
+          <Route
+            path="/profile"
             element={
               <ProtectedRoute>
                 <PageTransition><ProfilePage /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<PageTransition><AdminLogin /></PageTransition>} />
-          <Route path="/admin/dashboard" element={<PageTransition><AdminDashboard /></PageTransition>} />
-          
+          <Route path="/admin/dashboard" element={<PermissionGuard allowedRoles={['admin','hr_manager','accountant','receptionist','custom']} permissionKey="dashboard"><PageTransition><AdminDashboard /></PageTransition></PermissionGuard>} />
+
           {/* Admin Management */}
-          <Route path="/admin/students" element={<PageTransition><StudentManager /></PageTransition>} />
+          <Route path="/admin/students" element={<PermissionGuard allowedRoles={['admin','hr_manager','accountant','receptionist','custom']} permissionKey="students"><PageTransition><StudentManager /></PageTransition></PermissionGuard>} />
           <Route path="/admin/students/:id" element={<PageTransition><StudentProfile /></PageTransition>} />
-          <Route path="/admin/users" element={<PageTransition><UserManager /></PageTransition>} />
-          <Route path="/admin/teachers" element={<PageTransition><TeacherManager /></PageTransition>} />
+          <Route path="/admin/users" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="users"><PageTransition><AdminUserManagement /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/users/activity" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="users"><PageTransition><AdminActivityLogsPage /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/teachers" element={<PermissionGuard allowedRoles={['admin','hr_manager','accountant','receptionist','custom']} permissionKey="teachers"><PageTransition><TeacherManager /></PageTransition></PermissionGuard>} />
           <Route path="/admin/teachers/:id" element={<PageTransition><TeacherProfile /></PageTransition>} />
-          <Route path="/admin/courses" element={<PageTransition><CourseManager /></PageTransition>} />
-          <Route path="/admin/batches" element={<PageTransition><BatchManager /></PageTransition>} />
-          <Route path="/admin/attendance" element={<PageTransition><AdminAttendancePage /></PageTransition>} />
+          <Route path="/admin/courses" element={<PermissionGuard allowedRoles={['admin','receptionist','custom']} permissionKey="courses"><PageTransition><CourseManager /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/courses/:courseId" element={<PageTransition><CourseDetailPage /></PageTransition>} />
+          <Route path="/admin/batches" element={<PageTransition><CourseManager /></PageTransition>} />
+          <Route path="/admin/attendance" element={<PermissionGuard allowedRoles={['admin','hr_manager','receptionist','custom']} permissionKey="attendance"><PageTransition><AdminAttendancePage /></PageTransition></PermissionGuard>} />
           <Route path="/admin/certificates" element={<PageTransition><CertificateManager /></PageTransition>} />
-          <Route path="/admin/admissions" element={<PageTransition><EnrollmentManager /></PageTransition>} />
+          <Route path="/admin/admissions" element={<PermissionGuard allowedRoles={['admin','hr_manager','receptionist','custom']} permissionKey="students"><PageTransition><EnrollmentManager /></PageTransition></PermissionGuard>} />
+          <Route
+            path="/admin/hr"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <PageTransition><AdminHRManagement /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Communication */}
-          <Route path="/admin/announcements" element={<PageTransition><AdminAnnouncements /></PageTransition>} />
-          <Route 
-            path="/admin/complaints" 
+          <Route path="/admin/announcements" element={<PermissionGuard allowedRoles={['admin','hr_manager','receptionist','custom']} permissionKey="announcements"><PageTransition><AdminAnnouncements /></PageTransition></PermissionGuard>} />
+          <Route
+            path="/admin/complaints"
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <PageTransition><AdminComplaints /></PageTransition>
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Admin Finance & Growth */}
-          <Route path="/admin/finance" element={<PageTransition><AdminFinance /></PageTransition>} />
-          <Route path="/admin/finance/transactions" element={<PageTransition><AdminFinanceTransactions /></PageTransition>} />
-          <Route path="/admin/referral" element={<PageTransition><AdminReferral /></PageTransition>} />
+          <Route path="/admin/finance" element={<PermissionGuard allowedRoles={['admin','accountant','custom']} permissionKey="finance"><PageTransition><AdminFinance /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/finance/transactions" element={<PermissionGuard allowedRoles={['admin','accountant','custom']} permissionKey="finance"><PageTransition><AdminFinanceTransactions /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/referral" element={<PermissionGuard allowedRoles={['admin','accountant','custom']} permissionKey="referral"><PageTransition><AdminReferral /></PageTransition></PermissionGuard>} />
 
           {/* Admin System & Settings */}
-          <Route path="/admin/reports" element={<PageTransition><AdminReports /></PageTransition>} />
-          <Route path="/admin/settings/testimonials" element={<PageTransition><TestimonialManager /></PageTransition>} />
-          <Route path="/admin/settings/media" element={<PageTransition><MediaLibrary /></PageTransition>} />
-          <Route path="/admin/settings/content" element={<PageTransition><ContentManager /></PageTransition>} />
-          <Route path="/admin/settings/media-page" element={<PageTransition><MediaPageManager /></PageTransition>} />
+          <Route path="/admin/reports" element={<PermissionGuard allowedRoles={['admin','hr_manager','accountant','custom']} permissionKey="reports"><PageTransition><AdminReports /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/settings/testimonials" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><TestimonialManager /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/settings/media" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><MediaLibrary /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/settings/content" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><ContentManager /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/settings/media-page" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><MediaPageManager /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/results" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="results"><PageTransition><AdminResults /></PageTransition></PermissionGuard>} />
 
           <Route path="/verify-certificate" element={<PageTransition><VerifyCertificatePage /></PageTransition>} />
         </Routes>
@@ -371,7 +438,9 @@ function App() {
       <TasksProvider>
         <ComplaintsProvider>
           <GroupChatProvider>
-            <AppContent />
+            <AnnouncementsProvider>
+              <AppContent />
+            </AnnouncementsProvider>
           </GroupChatProvider>
         </ComplaintsProvider>
       </TasksProvider>
@@ -380,4 +449,3 @@ function App() {
 }
 
 export default App;
-

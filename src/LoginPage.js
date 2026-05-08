@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaIdCard, FaArrowRight } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
+import { getFirstAccessibleAdminPath } from './utils/permissions';
 
 const PageContainer = styled(motion.div)`
   min-height: 100vh;
@@ -200,8 +201,13 @@ const LoginPage = () => {
       } else {
         if (user.role === 'teacher') {
           navigate('/teacher/dashboard', { replace: true });
-        } else {
+        } else if (user.role === 'student') {
           navigate('/student/dashboard', { replace: true });
+        } else {
+          const adminPath = user.role === 'admin'
+            ? '/admin/dashboard'
+            : getFirstAccessibleAdminPath(user.permissions || {});
+          navigate(adminPath, { replace: true });
         }
       }
     } catch (err) {

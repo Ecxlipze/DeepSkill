@@ -2,9 +2,10 @@
 
 @font-face {
   font-family: 'Asimovian';
-  src: url('./assets/fonts/Asimovian/Asimovian-Regular.ttf') format('truetype');
+  src: url('/fonts/Asimovian-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 body {

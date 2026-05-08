@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaDownload, FaFilter, FaUsers, FaCalendarAlt, FaChartLine,
+  FaDownload, FaCalendarAlt, FaChartLine,
   FaExclamationCircle, FaCheckCircle, FaSearch, FaChevronRight
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import AdminLayout from '../components/AdminLayout';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -141,31 +142,32 @@ const AdminAttendance = () => {
     search: ''
   });
 
-  useEffect(() => {
-    fetchGlobalAttendance();
-  }, [filters.month]);
-
-  const fetchGlobalAttendance = async () => {
+  const fetchGlobalAttendance = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('attendance')
         .select('*')
         .gte('date', `${filters.month}-01`)
-        .lte('date', `${filters.month}-31`);
+        .lt('date', new Date(new Date(filters.month + '-01').setMonth(new Date(filters.month + '-01').getMonth() + 1)).toISOString().split('T')[0]);
       
       if (error) throw error;
       setRecords(data || []);
 
       // Get student names for the summary tab
-      const { data: stdData } = await supabase.from('admissions').select('id, name, cnic, batch');
-      setStudents(stdData || []);
+      const { data: sData } = await supabase.from('admissions').select('id, name, batch').eq('status', 'Active');
+      if (sData) setStudents(sData);
+
     } catch (err) {
-      toast.error("Error loading attendance data");
+      toast.error("Failed to load attendance logs");
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.month]);
+
+  useEffect(() => {
+    fetchGlobalAttendance();
+  }, [fetchGlobalAttendance]);
 
   // Group by session
   const sessions = useMemo(() => {
@@ -227,26 +229,32 @@ const AdminAttendance = () => {
         </Header>
 
         <StatsGrid>
-          <StatCard>
-            <div className="label">Overall Avg Attendance</div>
-            <div className="value">{overallAvg}%</div>
-            <div className="trend" style={{color:'#2ecc71'}}><FaChartLine /> Institue Wide</div>
-          </StatCard>
-          <StatCard>
-            <div className="label">Sessions Held</div>
-            <div className="value">{sessions.length}</div>
-            <div className="trend" style={{color:'#888'}}><FaCalendarAlt /> This Month</div>
-          </StatCard>
-          <StatCard>
-            <div className="label">Students at Risk</div>
-            <div className="value" style={{color:'#e74c3c'}}>{atRiskCount}</div>
-            <div className="trend" style={{color:'#e74c3c'}}><FaExclamationCircle /> Below 75%</div>
-          </StatCard>
-          <StatCard>
-            <div className="label">Perfect Records</div>
-            <div className="value" style={{color:'#2ecc71'}}>{studentStats.filter(s => s.pct === 100).length}</div>
-            <div className="trend" style={{color:'#2ecc71'}}><FaCheckCircle /> 100% Attendance</div>
-          </StatCard>
+          {loading ? (
+            [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
+          ) : (
+            <>
+              <StatCard>
+                <div className="label">Overall Avg Attendance</div>
+                <div className="value">{overallAvg}%</div>
+                <div className="trend" style={{color:'#2ecc71'}}><FaChartLine /> Institue Wide</div>
+              </StatCard>
+              <StatCard>
+                <div className="label">Sessions Held</div>
+                <div className="value">{sessions.length}</div>
+                <div className="trend" style={{color:'#888'}}><FaCalendarAlt /> This Month</div>
+              </StatCard>
+              <StatCard>
+                <div className="label">Students at Risk</div>
+                <div className="value" style={{color:'#e74c3c'}}>{atRiskCount}</div>
+                <div className="trend" style={{color:'#e74c3c'}}><FaExclamationCircle /> Below 75%</div>
+              </StatCard>
+              <StatCard>
+                <div className="label">Perfect Records</div>
+                <div className="value" style={{color:'#2ecc71'}}>{studentStats.filter(s => s.pct === 100).length}</div>
+                <div className="trend" style={{color:'#2ecc71'}}><FaCheckCircle /> 100% Attendance</div>
+              </StatCard>
+            </>
+          )}
         </StatsGrid>
 
         <FilterCard>
@@ -296,7 +304,20 @@ const AdminAttendance = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map((s, idx) => (
+                      {loading ? (
+                        [...Array(6)].map((_, i) => (
+                          <tr key={i}>
+                            <td><Skeleton height="20px" width="100px" /></td>
+                            <td><Skeleton height="20px" width="60px" /></td>
+                            <td><Skeleton height="35px" width="120px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="24px" width="60px" radius="12px" /></td>
+                            <td><Skeleton height="20px" width="20px" /></td>
+                          </tr>
+                        ))
+                      ) : sessions.map((s, idx) => (
                         <tr key={idx}>
                           <td>{s.date}</td>
                           <td style={{color:'#888'}}>{s.day}</td>
@@ -334,7 +355,20 @@ const AdminAttendance = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {studentStats.filter(s => s.name.toLowerCase().includes(filters.search.toLowerCase())).map((s, idx) => (
+                      {loading ? (
+                        [...Array(6)].map((_, i) => (
+                          <tr key={i}>
+                            <td><Skeleton height="35px" width="150px" /></td>
+                            <td><Skeleton height="20px" width="100px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="20px" width="40px" /></td>
+                            <td><Skeleton height="24px" width="60px" radius="12px" /></td>
+                            <td><Skeleton height="24px" width="80px" radius="12px" /></td>
+                          </tr>
+                        ))
+                      ) : studentStats.filter(s => s.name.toLowerCase().includes(filters.search.toLowerCase())).map((s, idx) => (
                         <tr key={idx}>
                           <td><strong>{s.name}</strong><br/><small style={{color:'#666'}}>{s.cnic}</small></td>
                           <td>{s.batch}</td>

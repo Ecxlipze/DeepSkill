@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TasksContext';
-import { supabase } from '../supabaseClient';
-import { 
-  FaHome, FaTasks, FaExclamationCircle, 
-  FaWallet, FaUserFriends
-} from 'react-icons/fa';
+import { getAssignedTeacherBatches, getTeacherByCnic, uniqueCoursesFromBatches } from '../utils/teacherUtils';
 
 const Container = styled.div`
   max-width: 800px;
@@ -102,63 +99,57 @@ const SubmitBtn = styled.button`
   }
 `;
 
-const Toast = styled(motion.div)`
-  background: #4caf50;
-  color: #fff;
-  padding: 15px 20px;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: bold;
-  margin-bottom: 20px;
-`;
-
-const navItems = [
-  { label: 'Home', path: '/teacher/dashboard', icon: <FaHome /> },
-  { 
-    label: 'Tasks', 
-    icon: <FaTasks />, 
-    subItems: [
-      { label: 'Assign Task', path: '/teacher/tasks/assign' },
-      { label: 'View Tasks', path: '/teacher/tasks/view' }
-    ]
-  },
-  { label: 'Complaints', path: '/teacher/complaints', icon: <FaExclamationCircle /> },
-  { label: 'Finance', path: '/teacher/finance', icon: <FaWallet /> },
-  { label: 'Referral Program', path: '/teacher/referral', icon: <FaUserFriends /> }
-];
-
 const AssignTask = () => {
   const { user } = useAuth();
   const { addTask } = useTasks();
-  const [showToast, setShowToast] = useState(false);
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
   
   const [formData, setFormData] = useState({
     title: '',
     category: 'Assignment',
     description: '',
     dueDate: '',
-    course: user?.assigned_course || 'Web Development Bootcamp',
-    batch: user?.batch || 'Batch 12',
-    file: null
+    course: '',
+    batch: '',
+    file: null,
+    totalMarks: 20
   });
 
   useEffect(() => {
-    fetchCourses();
-    fetchBatches();
-  }, []);
+    const fetchAssignments = async () => {
+      if (!user?.cnic) return;
+      setLoadingAssignments(true);
 
-  const fetchCourses = async () => {
-    const { data } = await supabase.from('courses').select('title');
-    if (data) setCourses(data);
-  };
+      try {
+        const teacher = await getTeacherByCnic(user.cnic);
+        const assignedBatches = await getAssignedTeacherBatches(teacher.id);
+        const activeBatches = assignedBatches.filter((batch) => batch.status === 'Active');
+        const courseOptions = uniqueCoursesFromBatches(activeBatches);
 
-  const fetchBatches = async () => {
-    const { data } = await supabase.from('batches').select('*').eq('status', 'Active');
-    if (data) setBatches(data);
-  };
+        setBatches(activeBatches);
+        setCourses(courseOptions);
+
+        setFormData((current) => {
+          const firstBatch = activeBatches[0];
+          return {
+            ...current,
+            course: current.course || firstBatch?.course || '',
+            batch: current.batch || firstBatch?.batch_name || ''
+          };
+        });
+      } catch (err) {
+        console.error('Teacher assignment fetch error:', err);
+      } finally {
+        setLoadingAssignments(false);
+      }
+    };
+
+    fetchAssignments();
+  }, [user?.cnic]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -173,13 +164,15 @@ const AssignTask = () => {
       course: formData.course,
       batch: formData.batch,
       file: formData.file,
-      assignedBy: user?.name || "Teacher"
+      assignedBy: user?.name || "Teacher",
+      totalMarks: ['Assignment', 'Quiz', 'Project'].includes(formData.category) ? formData.totalMarks : null
     };
 
-    await addTask(newTask);
+    const saved = await addTask(newTask);
 
     setIsSubmitting(false);
-    setShowToast(true);
+    if (!saved) return;
+    navigate('/teacher/tasks/view');
     
     // Reset file input by unmounting/remounting or just resetting state
     setFormData({
@@ -194,9 +187,6 @@ const AssignTask = () => {
     const fileInput = document.getElementById('taskFileInput');
     if (fileInput) fileInput.value = '';
 
-    setTimeout(() => {
-      setShowToast(false);
-    }, 3000);
   };
 
   const getTodayString = () => {
@@ -204,14 +194,8 @@ const AssignTask = () => {
   };
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
-        {showToast && (
-          <Toast initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            Task assigned successfully!
-          </Toast>
-        )}
-        
         <Card initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Title>Assign New Task</Title>
           <Form onSubmit={handleSubmit}>
@@ -253,6 +237,19 @@ const AssignTask = () => {
               </FormGroup>
             </Row>
 
+            {['Assignment', 'Quiz', 'Project'].includes(formData.category) && (
+              <FormGroup>
+                <label>Total Marks *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.totalMarks}
+                  onChange={e => setFormData({...formData, totalMarks: parseInt(e.target.value) || 0})}
+                />
+              </FormGroup>
+            )}
+
             <Row>
               <FormGroup>
                 <label>Select Course *</label>
@@ -272,7 +269,7 @@ const AssignTask = () => {
                 <select 
                   value={formData.batch}
                   onChange={e => setFormData({...formData, batch: e.target.value})}
-                  disabled={!formData.course}
+                  disabled={!formData.course || loadingAssignments}
                 >
                   <option value="">Select Batch</option>
                   {batches
@@ -305,8 +302,8 @@ const AssignTask = () => {
               <span style={{ fontSize: '0.8rem', color: '#666' }}>Max 10MB (PDF, DOC, DOCX, PNG, JPG, ZIP)</span>
             </FormGroup>
 
-            <SubmitBtn type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Uploading & Assigning...' : 'Assign Task'}
+            <SubmitBtn type="submit" disabled={isSubmitting || loadingAssignments || batches.length === 0}>
+              {isSubmitting ? 'Uploading & Assigning...' : loadingAssignments ? 'Loading Assignments...' : 'Assign Task'}
             </SubmitBtn>
           </Form>
         </Card>

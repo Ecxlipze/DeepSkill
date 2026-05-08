@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FaPaperPlane, FaCircle, FaExclamationCircle, 
+import {
+  FaPaperPlane, FaExclamationCircle,
   FaCheckCircle, FaInbox, FaFilter, FaUser
 } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
@@ -312,13 +311,13 @@ const TeacherComplaints = () => {
   const { complaints, loading, sendMessage, closeComplaint, toggleUrgent } = useComplaints();
   
   const [activeId, setActiveId] = useState(null);
-  const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState('Active');
   const [newMessage, setNewMessage] = useState('');
   
   const chatBodyRef = useRef(null);
 
   const filteredComplaints = complaints.filter(c => {
-    if (filter === 'All') return true;
+    if (filter === 'Active') return c.status !== 'Closed';
     if (filter === 'Urgent') return c.priority === 'Urgent';
     return c.status === filter;
   });
@@ -330,6 +329,12 @@ const TeacherComplaints = () => {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
     }
   }, [activeTicket?.messages, activeId]);
+
+  useEffect(() => {
+    if (activeId && !filteredComplaints.some(ticket => ticket.id === activeId)) {
+      setActiveId(null);
+    }
+  }, [activeId, filteredComplaints]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeId) return;
@@ -392,7 +397,7 @@ const TeacherComplaints = () => {
               <h3 style={{ margin: 0, fontSize: '1rem' }}>Complaints Inbox</h3>
             </div>
             <FilterBar>
-              {['All', 'Open', 'Pending Reply', 'Closed', 'Urgent'].map(f => (
+              {['Active', 'Open', 'Pending Reply', 'Closed', 'Urgent'].map(f => (
                 <FilterBtn key={f} active={filter === f} onClick={() => setFilter(f)}>
                   {f}
                 </FilterBtn>
@@ -475,7 +480,7 @@ const TeacherComplaints = () => {
                       placeholder="Type your reply..." 
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                     />
                     <SendBtn onClick={handleSendMessage} disabled={!newMessage.trim()}>
                       <FaPaperPlane /> Reply

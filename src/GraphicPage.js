@@ -1,7 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
 import GraphicHero from './components/GraphicHero';
-import { supabase } from './supabaseClient';
 import GraphicFeatures from './components/GraphicFeatures';
 import GraphicLearning from './components/GraphicLearning';
 import GraphicProjects from './components/GraphicProjects';
@@ -29,6 +28,7 @@ const GraphicPage = () => {
 
   React.useEffect(() => {
     const fetchPdf = async () => {
+      const { supabase } = await import('./supabaseClient');
       const { data } = await supabase
         .from('courses')
         .select('pdf_url')

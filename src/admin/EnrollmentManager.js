@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { 
-  FaCheck, FaTimes, FaEnvelope, FaGraduationCap, 
-  FaPhone, FaSearch, FaEye, 
+import {
+  FaCheck, FaTimes, FaEnvelope, FaGraduationCap,
+  FaPhone, FaSearch, FaEye,
   FaUserGraduate, FaClock, FaCalendarAlt, FaMoneyCheckAlt, FaInfoCircle,
   FaChevronRight
 } from 'react-icons/fa';
@@ -10,6 +10,7 @@ import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { Skeleton } from '../components/Skeleton';
 
 const Container = styled.div`
   padding: 10px 0;
@@ -93,7 +94,7 @@ const Tab = styled.button`
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.2s;
-  
+
   &:hover {
     color: #fff;
     background: ${props => props.$active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
@@ -139,12 +140,12 @@ const StatusBadge = styled.span`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  
+
   ${props => {
     switch(props.$status) {
       case 'Pending': return 'background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2);';
-      case 'Approved': return 'background: rgba(13, 110, 253, 0.1); color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.2);';
-      case 'Active': return 'background: rgba(25, 135, 84, 0.1); color: #198754; border: 1px solid rgba(25, 135, 84, 0.2);';
+      case 'Approved': return 'background: rgba(0, 123, 255, 0.1); color: #007bff; border: 1px solid rgba(0, 123, 255, 0.2);';
+      case 'Active': return 'background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2);';
       case 'Rejected': return 'background: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.2);';
       default: return 'background: rgba(255, 255, 255, 0.1); color: #fff;';
     }
@@ -170,7 +171,7 @@ const ActionBtn = styled.button`
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover {
     background: #7B1F2E;
     border-color: #7B1F2E;
@@ -212,7 +213,7 @@ const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   h2 { font-size: 1.5rem; color: #fff; }
 `;
 
@@ -281,25 +282,21 @@ const SecondaryButton = styled.button`
   cursor: pointer;
   &:hover { background: rgba(255, 255, 255, 0.15); }
 `;
+
 const EnrollmentManager = () => {
   const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [batches, setBatches] = useState([]);
-  const [activeTab, setActiveTab] = useState('All');
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('Pending');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Modal states
+
   const [selectedApp, setSelectedApp] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
-  
-  // Form states
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('');
   const [processing, setProcessing] = useState(false);
-
-  // Fee generation states
   const [totalFee, setTotalFee] = useState(25000);
   const [planType, setPlanType] = useState('installment');
   const [installmentCount, setInstallmentCount] = useState(4);
@@ -311,20 +308,55 @@ const EnrollmentManager = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch Admissions
+      // Fetch Initial Admissions
       const { data: apps, error: appError } = await supabase
         .from('admissions')
         .select('*')
+        .in('status', ['Pending', 'Approved'])
         .order('submitted_at', { ascending: false });
-      
+
       if (appError) throw appError;
-      setApplications(apps || []);
+
+      // Fetch Re-enrollments
+      const { data: reApps, error: reError } = await supabase
+        .from('enrollments')
+        .select('*, admissions!inner(*)')
+        .in('status', ['pending', 'approved'])
+        .order('submitted_at', { ascending: false });
+
+      if (reError) throw reError;
+
+      const mappedReApps = (reApps || []).map(re => ({
+        ...re.admissions, // spread original admission data for name, email, etc.
+        id: re.id, // override id with enrollment id
+        original_admission_id: re.admissions.id,
+        course: re.course,
+        batch: re.batch_name,
+        batch_timing: re.batch_timing,
+        status: re.status === 'approved' ? 'Approved' : (re.status === 'pending' ? 'Pending' : (re.status === 'rejected' ? 'Rejected' : 'Active')),
+        submitted_at: re.submitted_at,
+        isReEnrollment: true,
+        original_fee: re.original_fee,
+        discount_amount: re.discount_amount,
+        final_fee: re.final_fee,
+        message: re.message,
+        rejection_reason: re.rejection_reason
+      }));
+
+      const mappedApps = (apps || []).map(app => ({
+        ...app,
+        isReEnrollment: false
+      }));
+
+      const combined = [...mappedApps, ...mappedReApps].sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+      setApplications(combined);
 
       // Fetch Batches
       const { data: batchList, error: batchError } = await supabase
         .from('batches')
         .select('*');
-      
+
       if (batchError) throw batchError;
       setBatches(batchList || []);
     } catch (err) {
@@ -335,9 +367,13 @@ const EnrollmentManager = () => {
   };
 
   const filteredApps = applications.filter(app => {
-    const matchesTab = activeTab === 'All' || app.status === activeTab;
-    const matchesSearch = 
-      app.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    let matchesTab = false;
+    if (activeTab === 'All') matchesTab = app.status === 'Pending' || app.status === 'Approved';
+    else if (activeTab === 'Re-enrollment') matchesTab = app.isReEnrollment;
+    else matchesTab = app.status === activeTab;
+
+    const matchesSearch =
+      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.cnic.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
@@ -351,19 +387,29 @@ const EnrollmentManager = () => {
   const handleApprove = async () => {
     setProcessing(true);
     try {
-      const { error } = await supabase
-        .from('admissions')
-        .update({ 
-          status: 'Approved',
-          approved_at: new Date().toISOString()
-        })
-        .eq('id', selectedApp.id);
+      if (selectedApp.isReEnrollment) {
+        const { error } = await supabase
+          .from('enrollments')
+          .update({
+            status: 'approved',
+            approved_at: new Date().toISOString()
+          })
+          .eq('id', selectedApp.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('admissions')
+          .update({
+            status: 'Approved',
+            approved_at: new Date().toISOString()
+          })
+          .eq('id', selectedApp.id);
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-      
       // Notify (Mock)
       console.log(`Email sent to ${selectedApp.email}: Admission Approved!`);
-      
+
       setIsReviewModalOpen(false);
       fetchData();
     } catch (err) {
@@ -380,15 +426,25 @@ const EnrollmentManager = () => {
     }
     setProcessing(true);
     try {
-      const { error } = await supabase
-        .from('admissions')
-        .update({ 
-          status: 'Rejected',
-          rejection_reason: rejectionReason
-        })
-        .eq('id', selectedApp.id);
-
-      if (error) throw error;
+      if (selectedApp.isReEnrollment) {
+        const { error } = await supabase
+          .from('enrollments')
+          .update({
+            status: 'rejected',
+            rejection_reason: rejectionReason
+          })
+          .eq('id', selectedApp.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('admissions')
+          .update({
+            status: 'Rejected',
+            rejection_reason: rejectionReason
+          })
+          .eq('id', selectedApp.id);
+        if (error) throw error;
+      }
 
       // Notify (Mock)
       console.log(`Email sent to ${selectedApp.email}: Admission Rejected. Reason: ${rejectionReason}`);
@@ -407,7 +463,8 @@ const EnrollmentManager = () => {
     setSelectedApp(app);
     setIsBatchModalOpen(true);
     // Auto-select batch if already assigned or find first matching course batch
-    const matchingBatches = batches.filter(b => b.course_name === app.course);
+    const appCourse = app.course || app.selectedCourse;
+    const matchingBatches = batches.filter(b => b.course === appCourse);
     if (matchingBatches.length > 0) {
       setSelectedBatch(matchingBatches[0].id);
     }
@@ -421,19 +478,34 @@ const EnrollmentManager = () => {
     setProcessing(true);
     try {
       const batch = batches.find(b => b.id === selectedBatch);
-      
-      // 1. Update Admission record
-      const { error: admError } = await supabase
-        .from('admissions')
-        .update({ 
-          status: 'Active',
-          batch: batch.batch_name,
-          batch_timing: batch.time_shift,
-          batch_assigned_at: new Date().toISOString()
-        })
-        .eq('id', selectedApp.id);
 
-      if (admError) throw admError;
+      // 1. Update Admission record
+      if (selectedApp.isReEnrollment) {
+        // Only update the enrollments record — do NOT touch the student's current admissions record
+        const { error: admError } = await supabase
+          .from('enrollments')
+          .update({
+            status: 'active',
+            batch_id: batch.batch_name,
+            batch_name: batch.batch_name,
+            batch_timing: batch.time_shift,
+            activated_at: new Date().toISOString()
+          })
+          .eq('id', selectedApp.id);
+        if (admError) throw admError;
+
+      } else {
+        const { error: admError } = await supabase
+          .from('admissions')
+          .update({
+            status: 'Active',
+            batch: batch.batch_name,
+            batch_timing: batch.time_shift,
+            batch_assigned_at: new Date().toISOString()
+          })
+          .eq('id', selectedApp.id);
+        if (admError) throw admError;
+      }
 
       // 2. Add to allowed_cnics to unlock dashboard
       const { error: authError } = await supabase
@@ -445,17 +517,17 @@ const EnrollmentManager = () => {
           assigned_course: selectedApp.course || selectedApp.selectedCourse,
           batch: batch.batch_name
         }, { onConflict: 'cnic' });
-        
+
       if (authError) throw authError;
 
       // 3. Automate Fee Generation
       const amountPerInst = planType === 'full' ? totalFee : Math.round(totalFee / installmentCount);
-      
+
       // Create Fee Plan record
       const { error: feePlanError } = await supabase
         .from('fee_plans')
         .insert({
-          student_id: selectedApp.id,
+          student_id: selectedApp.isReEnrollment ? selectedApp.original_admission_id : selectedApp.id,
           course: selectedApp.course || selectedApp.selectedCourse,
           batch: batch.batch_name,
           total_fee: totalFee,
@@ -476,7 +548,7 @@ const EnrollmentManager = () => {
         dueDate.setMonth(dueDate.getMonth() + (i - 1)); // One month apart
 
         paymentRows.push({
-          entity_id: selectedApp.id,
+          entity_id: selectedApp.isReEnrollment ? selectedApp.original_admission_id : selectedApp.id,
           entity_type: 'student',
           installment_number: planType === 'full' ? null : i,
           total_installments: planType === 'full' ? null : insts,
@@ -496,6 +568,43 @@ const EnrollmentManager = () => {
       // Notify (Mock)
       console.log(`Email sent to ${selectedApp.email}: Access Granted & Fee Plan Generated!`);
 
+      // 4. Referral Program Logic
+      if (selectedApp.referred_by) {
+        try {
+          // Look up referrer by code
+          const { data: codeData } = await supabase
+            .from('referral_codes')
+            .select('user_id, user_role')
+            .eq('code', selectedApp.referred_by)
+            .single();
+
+          if (codeData) {
+            // Get reward settings
+            const { data: settings } = await supabase.from('referral_settings').select('cash_reward').single();
+            const rewardAmount = settings ? settings.cash_reward : 1000;
+
+            // Create or Update Referral Record
+            const { error: refError } = await supabase
+              .from('referrals')
+              .upsert({
+                referrer_id: codeData.user_id,
+                referrer_role: codeData.user_role,
+                referred_id: selectedApp.id, // Using admission ID for now as students don't have user_id yet
+                referred_name: selectedApp.name,
+                referred_phone: selectedApp.phone,
+                status: 'enrolled',
+                payout_status: 'pending',
+                reward_amount: rewardAmount,
+                referred_at: selectedApp.submitted_at // Link to original registration time
+              }, { onConflict: 'referred_id' });
+
+            if (refError) console.error('Referral recording failed:', refError);
+          }
+        } catch (refLogErr) {
+          console.error('Error in referral hook:', refLogErr);
+        }
+      }
+
       setIsFeeModalOpen(false);
       setIsBatchModalOpen(false);
       fetchData();
@@ -507,7 +616,7 @@ const EnrollmentManager = () => {
     }
   };
 
-  const tabs = ['All', 'Pending', 'Approved', 'Rejected', 'Active'];
+  const tabs = ['Pending', 'Approved', 'Re-enrollment'];
 
   return (
     <Container>
@@ -519,8 +628,8 @@ const EnrollmentManager = () => {
         <Controls>
           <SearchBox>
             <FaSearch />
-            <input 
-              placeholder="Search by Name, CNIC, Email..." 
+            <input
+              placeholder="Search by Name, CNIC, Email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -530,8 +639,8 @@ const EnrollmentManager = () => {
 
       <Tabs>
         {tabs.map(tab => (
-          <Tab 
-            key={tab} 
+          <Tab
+            key={tab}
             $active={activeTab === tab}
             onClick={() => setActiveTab(tab)}
           >
@@ -553,57 +662,79 @@ const EnrollmentManager = () => {
             </tr>
           </thead>
           <tbody>
-            <AnimatePresence mode='popLayout'>
-              {filteredApps.map(app => (
-                <motion.tr 
-                  key={app.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  layout
-                >
-                  <Td>
-                    <UserInfo>
-                      <span className="name">{app.name}</span>
-                      <span className="detail"><FaEnvelope size={10} /> {app.email}</span>
-                      <span className="detail"><FaPhone size={10} /> {app.phone || app.mobileNo}</span>
-                    </UserInfo>
-                  </Td>
-                  <Td style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>{app.cnic}</Td>
-                  <Td>
-                    <UserInfo>
-                      <span style={{ fontWeight: 500 }}>{app.course || app.selectedCourse}</span>
-                      <span className="detail"><FaGraduationCap size={10} /> {app.education || app.lastEducation}</span>
-                    </UserInfo>
-                  </Td>
-                  <Td>
-                    <StatusBadge $status={app.status}>{app.status}</StatusBadge>
-                  </Td>
-                  <Td style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
-                    {new Date(app.submitted_at || app.created_at).toLocaleDateString()}
-                  </Td>
-                  <Td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {app.status === 'Pending' && (
-                        <ActionBtn onClick={() => handleReview(app)} title="Review Application">
-                          <FaEye />
-                        </ActionBtn>
-                      )}
-                      {app.status === 'Approved' && (
-                        <ActionBtn onClick={() => handleOpenBatchModal(app)} title="Assign Batch">
-                          <FaUserGraduate />
-                        </ActionBtn>
-                      )}
-                      {app.status === 'Active' && (
-                        <ActionBtn onClick={() => handleOpenBatchModal(app)} title="Edit Batch">
-                          <FaCalendarAlt />
-                        </ActionBtn>
-                      )}
-                    </div>
-                  </Td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
+            {loading ? (
+              <>
+                {[...Array(6)].map((_, i) => (
+                  <tr key={i}>
+                    <Td><Skeleton height="40px" width="180px" /></Td>
+                    <Td><Skeleton height="20px" width="120px" /></Td>
+                    <Td><Skeleton height="40px" width="150px" /></Td>
+                    <Td><Skeleton height="24px" width="80px" radius="12px" /></Td>
+                    <Td><Skeleton height="20px" width="100px" /></Td>
+                    <Td><Skeleton height="36px" width="36px" radius="8px" /></Td>
+                  </tr>
+                ))}
+              </>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {filteredApps.map(app => (
+                  <motion.tr
+                    key={app.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    layout
+                  >
+                    <Td>
+                      <UserInfo>
+                        <span className="name">{app.name}</span>
+                        <span className="detail"><FaEnvelope size={10} /> {app.email}</span>
+                        <span className="detail"><FaPhone size={10} /> {app.phone || app.mobileNo}</span>
+                      </UserInfo>
+                    </Td>
+                    <Td style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>{app.cnic}</Td>
+                    <Td>
+                      <UserInfo>
+                        <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {app.course || app.selectedCourse}
+                          {app.isReEnrollment && (
+                            <span style={{ background: '#9333ea', color: '#fff', fontSize: '0.65rem', padding: '3px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                              RE-ENROLLMENT
+                            </span>
+                          )}
+                        </span>
+                        <span className="detail"><FaGraduationCap size={10} /> {app.education || app.lastEducation}</span>
+                      </UserInfo>
+                    </Td>
+                    <Td>
+                      <StatusBadge $status={app.status}>{app.status}</StatusBadge>
+                    </Td>
+                    <Td style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                      {new Date(app.submitted_at || app.created_at).toLocaleDateString()}
+                    </Td>
+                    <Td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {app.status === 'Pending' && (
+                          <ActionBtn onClick={() => handleReview(app)} title="Review Application">
+                            <FaEye />
+                          </ActionBtn>
+                        )}
+                        {app.status === 'Approved' && (
+                          <ActionBtn onClick={() => handleOpenBatchModal(app)} title="Assign Batch">
+                            <FaUserGraduate />
+                          </ActionBtn>
+                        )}
+                        {app.status === 'Active' && (
+                          <ActionBtn onClick={() => handleOpenBatchModal(app)} title="Edit Batch">
+                            <FaCalendarAlt />
+                          </ActionBtn>
+                        )}
+                      </div>
+                    </Td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            )}
           </tbody>
         </Table>
         {filteredApps.length === 0 && (
@@ -668,8 +799,8 @@ const EnrollmentManager = () => {
 
                 <FormGroup>
                   <label>Rejection Reason (only if rejecting)</label>
-                  <textarea 
-                    rows="3" 
+                  <textarea
+                    rows="3"
                     placeholder="Enter reason for rejection..."
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
@@ -678,15 +809,15 @@ const EnrollmentManager = () => {
               </ModalContent>
               <ModalFooter>
                 <SecondaryButton onClick={() => setIsReviewModalOpen(false)}>Cancel</SecondaryButton>
-                <PrimaryButton 
-                  style={{ background: '#7a2136' }} 
+                <PrimaryButton
+                  style={{ background: '#7a2136' }}
                   onClick={handleReject}
                   disabled={processing}
                 >
                   <FaTimes /> {processing ? '...' : 'Reject'}
                 </PrimaryButton>
-                <PrimaryButton 
-                  style={{ background: '#1b4d3e' }} 
+                <PrimaryButton
+                  style={{ background: '#1b4d3e' }}
                   onClick={handleApprove}
                   disabled={processing}
                 >
@@ -729,13 +860,13 @@ const EnrollmentManager = () => {
 
                 <FormGroup>
                   <label>Select Batch*</label>
-                  <select 
-                    value={selectedBatch} 
+                  <select
+                    value={selectedBatch}
                     onChange={(e) => setSelectedBatch(e.target.value)}
                   >
                     <option value="">Choose a batch...</option>
                     {batches
-                      .filter(b => b.course === (selectedApp.course || selectedApp.selectedCourse))
+                      .filter(b => b.course === (selectedApp.course || selectedApp.selectedCourse) && b.status === 'Active')
                       .map(batch => (
                         <option key={batch.id} value={batch.id}>
                           {batch.batch_name} ({batch.time_shift})
@@ -760,7 +891,7 @@ const EnrollmentManager = () => {
               </ModalContent>
               <ModalFooter>
                 <SecondaryButton onClick={() => setIsBatchModalOpen(false)}>Cancel</SecondaryButton>
-                <PrimaryButton 
+                <PrimaryButton
                   onClick={() => {
                     setIsBatchModalOpen(false);
                     setIsFeeModalOpen(true);
@@ -801,9 +932,9 @@ const EnrollmentManager = () => {
 
                 <FormGroup>
                   <label>Total Course Fee (Rs.)</label>
-                  <input 
-                    type="number" 
-                    value={totalFee} 
+                  <input
+                    type="number"
+                    value={totalFee}
                     onChange={(e) => setTotalFee(parseInt(e.target.value))}
                   />
                 </FormGroup>
@@ -819,8 +950,8 @@ const EnrollmentManager = () => {
                 {planType === 'installment' && (
                   <FormGroup>
                     <label>Number of Installments</label>
-                    <select 
-                      value={installmentCount} 
+                    <select
+                      value={installmentCount}
                       onChange={(e) => setInstallmentCount(parseInt(e.target.value))}
                     >
                       {[2,3,4,5,6,8,10,12].map(n => <option key={n} value={n}>{n} Months</option>)}
@@ -836,7 +967,7 @@ const EnrollmentManager = () => {
                   setIsFeeModalOpen(false);
                   setIsBatchModalOpen(true);
                 }}>Back</SecondaryButton>
-                <PrimaryButton 
+                <PrimaryButton
                   onClick={handleGrantAccess}
                   disabled={processing}
                 >

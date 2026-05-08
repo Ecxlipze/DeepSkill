@@ -8,6 +8,7 @@ import {
 import { supabase } from '../supabaseClient';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout';
+import { Skeleton, SkeletonCard } from '../components/Skeleton';
 
 const AdminDashboard = () => {
   const [stats, setStats] = React.useState({
@@ -68,36 +69,40 @@ const AdminDashboard = () => {
     { label: 'Revenue (month)', value: `Rs. 0`, icon: <FaMoneyBillWave />, color: '#F59E0B', change: `Coming Soon`, trend: 'up' },
   ];
 
-  if (loading) return <AdminLayout><div style={{ color: '#fff', padding: '40px' }}>Loading real-time stats...</div></AdminLayout>;
+  // No more full screen loading, we use skeletons inside the layout
 
   return (
     <AdminLayout>
       <DashboardGrid>
         {/* Stats Section */}
         <StatsRow>
-          {statsCards.map((stat, idx) => (
-            <StatCard 
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              color={stat.color}
-            >
-              <div className="card-top">
-                <div className="icon-box" style={{ background: `${stat.color}20`, color: stat.color }}>
-                  {stat.icon}
+          {loading ? (
+            [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
+          ) : (
+            statsCards.map((stat, idx) => (
+              <StatCard 
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                color={stat.color}
+              >
+                <div className="card-top">
+                  <div className="icon-box" style={{ background: `${stat.color}20`, color: stat.color }}>
+                    {stat.icon}
+                  </div>
+                  <div className="change-indicator" style={{ color: stat.trend === 'up' || stat.change.includes('+') ? '#10B981' : '#6b7280' }}>
+                    {stat.trend === 'up' && <FaArrowUp size={10} />}
+                    <span>{stat.change}</span>
+                  </div>
                 </div>
-                <div className="change-indicator" style={{ color: stat.trend === 'up' || stat.change.includes('+') ? '#10B981' : '#6b7280' }}>
-                  {stat.trend === 'up' && <FaArrowUp size={10} />}
-                  <span>{stat.change}</span>
+                <div className="card-bottom">
+                  <h3>{stat.value}</h3>
+                  <p>{stat.label}</p>
                 </div>
-              </div>
-              <div className="card-bottom">
-                <h3>{stat.value}</h3>
-                <p>{stat.label}</p>
-              </div>
-            </StatCard>
-          ))}
+              </StatCard>
+            ))
+          )}
         </StatsRow>
 
         {/* Content Row */}
@@ -122,25 +127,38 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentStudents.map((student, idx) => (
-                    <tr key={idx}>
-                      <td>
-                        <div className="user-info">
-                          <span className="name">{student.name}</span>
-                          <span className="cnic">{student.cnic}</span>
-                        </div>
-                      </td>
-                      <td>{student.course}</td>
-                      <td>{student.batch || 'Pending'}</td>
-                      <td>
-                        <StatusBadge active={student.status === 'Active'}>
-                          {student.status}
-                        </StatusBadge>
-                      </td>
-                    </tr>
-                  ))}
-                  {recentStudents.length === 0 && (
-                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>No students found in database.</td></tr>
+                  {loading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i}>
+                        <td><Skeleton height="35px" width="120px" /></td>
+                        <td><Skeleton height="20px" width="100px" /></td>
+                        <td><Skeleton height="20px" width="80px" /></td>
+                        <td><Skeleton height="24px" width="70px" radius="12px" /></td>
+                      </tr>
+                    ))
+                  ) : (
+                    <>
+                      {recentStudents.map((student, idx) => (
+                        <tr key={idx}>
+                          <td>
+                            <div className="user-info">
+                              <span className="name">{student.name}</span>
+                              <span className="cnic">{student.cnic}</span>
+                            </div>
+                          </td>
+                          <td>{student.course}</td>
+                          <td>{student.batch || 'Pending'}</td>
+                          <td>
+                            <StatusBadge active={student.status === 'Active'}>
+                              {student.status}
+                            </StatusBadge>
+                          </td>
+                        </tr>
+                      ))}
+                      {recentStudents.length === 0 && (
+                        <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>No students found in database.</td></tr>
+                      )}
+                    </>
                   )}
                 </tbody>
               </table>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
+import { getAssignedTeacherBatches, getTeacherByCnic } from '../utils/teacherUtils';
 
 const GroupChatContext = createContext();
 
@@ -11,40 +12,83 @@ export const GroupChatProvider = ({ children }) => {
   const [members, setMembers] = useState([]);
   const [mutes, setMutes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [teacherBatches, setTeacherBatches] = useState([]);
+
+  useEffect(() => {
+    const fetchTeacherBatches = async () => {
+      if (user?.role !== 'teacher' || !user?.cnic) {
+        setTeacherBatches([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const teacher = await getTeacherByCnic(user.cnic);
+        const assignedBatches = await getAssignedTeacherBatches(teacher.id);
+        setTeacherBatches(assignedBatches.filter((batch) => batch.status === 'Active'));
+      } catch (err) {
+        console.error('Error fetching teacher chat batches:', err);
+        setTeacherBatches([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeacherBatches();
+  }, [user?.role, user?.cnic]);
 
   // Parse batches and courses (handle comma separated strings)
   const availableBatches = useMemo(() => {
+    if (user?.role === 'teacher') {
+      return teacherBatches.map((batch) => ({
+        batch: batch.batch_name,
+        course: batch.course || 'General Course'
+      }));
+    }
+
     if (!user?.batch) return [];
-    const batchList = user.batch.split(',').map(b => b.trim());
+    const batchList = user.batch.split(',').map(b => b.trim()).filter(Boolean);
     const courseList = user.assigned_course ? user.assigned_course.split(',').map(c => c.trim()) : [];
     
     return batchList.map((batch, index) => ({
       batch,
       course: courseList[index] || user.assigned_course || "General Course"
     }));
-  }, [user?.batch, user?.assigned_course]);
+  }, [teacherBatches, user?.role, user?.batch, user?.assigned_course]);
 
   useEffect(() => {
-    if (availableBatches.length > 0 && !activeBatch) {
+    if (availableBatches.length === 0) {
+      setActiveBatch(null);
+      return;
+    }
+
+    const canAccessActiveBatch = availableBatches.some((item) => item.batch === activeBatch);
+    if (!activeBatch || !canAccessActiveBatch) {
       setActiveBatch(availableBatches[0].batch);
     }
   }, [availableBatches, activeBatch]);
+
+  const batchMatches = useCallback((memberBatchValue) => {
+    if (!activeBatch || !memberBatchValue) return false;
+    return memberBatchValue
+      .split(',')
+      .map((batch) => batch.trim())
+      .includes(activeBatch);
+  }, [activeBatch]);
 
   const fetchMembers = useCallback(async () => {
     if (!activeBatch) return;
     try {
       const { data, error } = await supabase
         .from('allowed_cnics')
-        .select('cnic, name, role, batch')
-        // Check if batch column contains activeBatch (handling comma separated or exact match)
-        .ilike('batch', `%${activeBatch}%`);
+        .select('cnic, name, role, batch');
 
       if (error) throw error;
-      setMembers(data || []);
+      setMembers((data || []).filter((member) => batchMatches(member.batch)));
     } catch (err) {
       console.error('Error fetching members:', err);
     }
-  }, [activeBatch]);
+  }, [activeBatch, batchMatches]);
 
   const fetchMutes = useCallback(async () => {
     if (!activeBatch) return;
@@ -78,34 +122,40 @@ export const GroupChatProvider = ({ children }) => {
   }, [activeBatch]);
 
   useEffect(() => {
-    if (activeBatch) {
-      setLoading(true);
-      Promise.all([fetchMembers(), fetchMessages(), fetchMutes()]).then(() => {
-        setLoading(false);
-      });
-
-      // Real-time Subscriptions
-      const channel = supabase
-        .channel(`group-chat-${activeBatch}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'group_chat_messages', filter: `batch=eq.${activeBatch}` }, () => {
-          fetchMessages();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'group_chat_mutes', filter: `batch=eq.${activeBatch}` }, () => {
-          fetchMutes();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'allowed_cnics' }, () => {
-          fetchMembers();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    if (!activeBatch) {
+      setMessages([]);
+      setMembers([]);
+      setMutes([]);
+      setLoading(false);
+      return undefined;
     }
+
+    setLoading(true);
+    Promise.all([fetchMembers(), fetchMessages(), fetchMutes()]).then(() => {
+      setLoading(false);
+    });
+
+    // Real-time Subscriptions
+    const channel = supabase
+      .channel(`group-chat-${activeBatch}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_chat_messages', filter: `batch=eq.${activeBatch}` }, () => {
+        fetchMessages();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_chat_mutes', filter: `batch=eq.${activeBatch}` }, () => {
+        fetchMutes();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'allowed_cnics' }, () => {
+        fetchMembers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [activeBatch, fetchMembers, fetchMessages, fetchMutes]);
 
   const sendMessage = async (messageData) => {
-    if (!user || !activeBatch || isMuted) return;
+    if (!user || !activeBatch || (user.role !== 'teacher' && isMuted)) return;
     try {
       const { error } = await supabase
         .from('group_chat_messages')
@@ -151,10 +201,32 @@ export const GroupChatProvider = ({ children }) => {
     }
   };
 
+  const uploadChatFile = async (file) => {
+    if (!file || !activeBatch) return null;
+
+    const safeBatch = activeBatch.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `group-chat/${safeBatch}/${Date.now()}_${safeName}`;
+
+    const { error } = await supabase.storage
+      .from('task_files')
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('task_files')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
   const muteStudent = async (studentCnic, studentName) => {
     if (user.role !== 'teacher' || !activeBatch) return;
     try {
-      // 1. Add to mutes table
+      const alreadyMuted = mutes.some((mute) => mute.user_cnic === studentCnic);
+      if (alreadyMuted) return;
+
       const { error: muteError } = await supabase
         .from('group_chat_mutes')
         .insert([{
@@ -219,6 +291,7 @@ export const GroupChatProvider = ({ children }) => {
       isMuted,
       sendMessage,
       sendReaction,
+      uploadChatFile,
       muteStudent,
       unmuteStudent,
       fetchMessages

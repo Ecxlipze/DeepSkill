@@ -1,5 +1,4 @@
 import React from 'react';
-import { supabase } from './supabaseClient';
 import styled from 'styled-components';
 import LaravelHero from './components/LaravelHero';
 import LaravelFeatures from './components/LaravelFeatures';
@@ -29,6 +28,7 @@ const LaravelPage = () => {
 
   React.useEffect(() => {
     const fetchPdf = async () => {
+      const { supabase } = await import('./supabaseClient');
       const { data } = await supabase
         .from('courses')
         .select('pdf_url')

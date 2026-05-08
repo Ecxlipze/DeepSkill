@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaArrowLeft, FaEdit, FaUserSlash, FaCheckCircle, 
-  FaTimesCircle, FaTimes, FaDollarSign, FaCalendarAlt
+  FaTimesCircle, FaTimes, FaDollarSign, FaCalendarAlt, FaTrash
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import AdminLayout from '../components/AdminLayout';
@@ -351,6 +351,8 @@ const StudentProfile = () => {
 
   // Modals
   const [isEditBatchOpen, setIsEditBatchOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isSetupFinanceOpen, setIsSetupFinanceOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -528,6 +530,79 @@ const StudentProfile = () => {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    setProcessing(true);
+    try {
+      // 1. Update Admissions
+      const { error: admError } = await supabase
+        .from('admissions')
+        .update({ 
+          name: editFormData.name,
+          phone: editFormData.phone,
+          email: editFormData.email,
+          education: editFormData.education,
+          cnic: editFormData.cnic,
+          course: editFormData.course
+        })
+        .eq('id', id);
+      
+      if (admError) throw admError;
+
+      // 2. Sync allowed_cnics
+      if (student.status === 'Active') {
+        if (editFormData.cnic !== student.cnic) {
+            // Delete old CNIC
+            await supabase.from('allowed_cnics').delete().eq('cnic', student.cnic);
+            // Insert new CNIC
+            await supabase.from('allowed_cnics').insert({
+                cnic: editFormData.cnic,
+                name: editFormData.name,
+                role: 'student',
+                assigned_course: editFormData.course,
+                batch: student.batch
+            });
+        } else {
+            // Update name/course
+            await supabase.from('allowed_cnics').update({ 
+                name: editFormData.name,
+                assigned_course: editFormData.course
+            }).eq('cnic', student.cnic);
+        }
+      }
+
+      setStudent(prev => ({ ...prev, ...editFormData }));
+      toast.success("Profile updated successfully");
+      setIsEditProfileOpen(false);
+    } catch (err) {
+      toast.error("Failed to update profile: " + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDeleteStudent = async () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Delete Student",
+      message: "Are you absolutely sure? This will permanently delete the student and their access.",
+      onConfirm: async () => {
+        setProcessing(true);
+        try {
+          await supabase.from('allowed_cnics').delete().eq('cnic', student.cnic);
+          const { error: delError } = await supabase.from('admissions').delete().eq('id', id);
+          if (delError) throw delError;
+
+          toast.success("Student deleted successfully.");
+          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+          navigate('/admin/students');
+        } catch (err) {
+          toast.error("Failed to delete student: " + err.message);
+          setProcessing(false);
+        }
+      }
+    });
+  };
+
   const handleSetupFeePlan = async () => {
     setProcessing(true);
     try {
@@ -616,6 +691,19 @@ const StudentProfile = () => {
             </InfoGrid>
 
             <ActionButtons>
+              <Button className="edit" onClick={() => {
+                setEditFormData({
+                  name: student.name,
+                  phone: student.phone,
+                  email: student.email,
+                  education: student.education,
+                  cnic: student.cnic,
+                  course: student.course
+                });
+                setIsEditProfileOpen(true);
+              }}>
+                <FaEdit /> Edit Profile
+              </Button>
               <Button className="edit" onClick={() => setIsEditBatchOpen(true)}>
                 <FaEdit /> Edit Batch
               </Button>
@@ -624,6 +712,9 @@ const StudentProfile = () => {
               </Button>
               <Button className="revoke" onClick={revokeAccess} disabled={processing}>
                 <FaTimesCircle /> Revoke Access
+              </Button>
+              <Button className="revoke" onClick={handleDeleteStudent} disabled={processing}>
+                <FaTrash /> Delete Student
               </Button>
             </ActionButtons>
           </SidebarCard>
@@ -807,6 +898,69 @@ const StudentProfile = () => {
                 <input type="text" placeholder="TXN-123456" />
               </FormGroup>
               <SubmitBtn onClick={() => { toast.success("Payment added successfully"); setIsPaymentOpen(false); }}>Record Payment</SubmitBtn>
+            </ModalContent>
+          </ModalOverlay>
+        )}
+
+        {isEditProfileOpen && (
+          <ModalOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <ModalContent initial={{ y: 20 }} animate={{ y: 0 }}>
+              <ModalHeader>
+                <h3>Edit Student Profile</h3>
+                <button onClick={() => setIsEditProfileOpen(false)}><FaTimes /></button>
+              </ModalHeader>
+              <FormGroup>
+                <label>Full Name</label>
+                <input 
+                  type="text" 
+                  value={editFormData.name} 
+                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} 
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>CNIC</label>
+                <input 
+                  type="text" 
+                  value={editFormData.cnic} 
+                  onChange={(e) => setEditFormData({...editFormData, cnic: e.target.value})} 
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Phone Number</label>
+                <input 
+                  type="text" 
+                  value={editFormData.phone} 
+                  onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})} 
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Email Address</label>
+                <input 
+                  type="email" 
+                  value={editFormData.email} 
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})} 
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Course</label>
+                <input 
+                  type="text" 
+                  value={editFormData.course} 
+                  onChange={(e) => setEditFormData({...editFormData, course: e.target.value})} 
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Education</label>
+                <input 
+                  type="text" 
+                  value={editFormData.education} 
+                  onChange={(e) => setEditFormData({...editFormData, education: e.target.value})} 
+                />
+              </FormGroup>
+
+              <SubmitBtn onClick={handleUpdateProfile} disabled={processing}>
+                {processing ? 'Saving...' : 'Save Changes'}
+              </SubmitBtn>
             </ModalContent>
           </ModalOverlay>
         )}

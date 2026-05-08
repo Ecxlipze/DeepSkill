@@ -1,83 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FaMoneyBillWave, FaUserGraduate, FaChalkboardTeacher, 
-  FaChartBar, FaSearch, FaExclamationTriangle, FaFilter, FaDownload,
-  FaCalendarAlt, FaChevronLeft, FaChevronRight, FaTimes, FaFileCsv,
-  FaEllipsisV, FaEye, FaPlus, FaHistory
+import {
+  FaMoneyBillWave, FaUserGraduate, FaChalkboardTeacher,
+  FaChartBar, FaSearch, FaExclamationTriangle, FaTimes,
+  FaEye, FaPlus, FaHistory
 } from 'react-icons/fa';
 import AdminLayout from '../components/AdminLayout';
 import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
-
-const StudentInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .avatar {
-    width: 38px;
-    height: 38px;
-    background: #7B1F2E;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #fff;
-  }
-
-  .details {
-    .name { font-weight: 600; color: #fff; }
-    .email { font-size: 0.8rem; color: #666; }
-  }
-`;
+import { Skeleton, SkeletonCard, SkeletonTable } from '../components/Skeleton';
 
 
-
-const Pagination = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-
-  .info { color: #888; font-size: 0.9rem; }
-  .controls {
-    display: flex;
-    gap: 10px;
-  }
-`;
-
-const PageBtn = styled.button`
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.05)'};
-  border: 1px solid ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
-  color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:disabled { opacity: 0.3; cursor: not-allowed; }
-  &:hover:not(:disabled) { border-color: #7B1F2E; }
-`;
 
 const FinanceManager = () => {
   const [activeTab, setActiveTab] = useState('students');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRevenue: 0,
     outstandingFees: 0,
     teacherSalaries: 0,
     netBalance: 0
   });
-  
+
   const [studentFees, setStudentFees] = useState([]);
   const [teacherSalaries, setTeacherSalaries] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +40,7 @@ const FinanceManager = () => {
     try {
       // 1. Fetch Stats
       const { data: allPayments } = await supabase.from('payments').select('amount, status, entity_type');
-      
+
       let revenue = 0;
       let outstanding = 0;
       let salaries = 0;
@@ -123,19 +68,19 @@ const FinanceManager = () => {
           *,
           student:admissions(name, cnic, status)
         `);
-      
+
       // For each fee plan, get its payment status
       const { data: payments } = await supabase.from('payments').select('*').eq('entity_type', 'student');
-      
+
       const processedFees = fees?.map(plan => {
         const planPayments = payments?.filter(p => p.entity_id === plan.student_id) || [];
         const paid = planPayments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0);
         const total = plan.total_fee;
-        
+
         let status = 'Pending';
         if (paid >= total) status = 'Paid';
         else if (paid > 0) status = 'Partial';
-        
+
         // Check for overdue
         const hasOverdue = planPayments.some(p => p.status === 'pending' && new Date(p.due_date) < new Date());
         if (hasOverdue && status !== 'Paid') status = 'Overdue';
@@ -152,14 +97,14 @@ const FinanceManager = () => {
           id, name, specialization,
           salary_config:teacher_salaries(monthly_amount)
         `);
-      
+
       const { data: tPayments } = await supabase.from('payments').select('*').eq('entity_type', 'teacher');
 
       const processedTeachers = teachers?.map(t => {
         const monthly = t.salary_config?.[0]?.monthly_amount || 0;
         const teacherPay = tPayments?.filter(p => p.entity_id === t.id) || [];
-        const lastPaid = teacherPay.length > 0 ? teacherPay.sort((a,b) => new Date(b.paid_date) - new Date(a.paid_date))[0].paid_date : 'Never';
-        
+        const lastPaid = teacherPay.length > 0 ? teacherPay.sort((a, b) => new Date(b.paid_date) - new Date(a.paid_date))[0].paid_date : 'Never';
+
         // Determine this month status
         const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
         const paidThisMonth = teacherPay.some(p => p.description?.includes(currentMonth) && p.status === 'paid');
@@ -175,9 +120,8 @@ const FinanceManager = () => {
 
       setTeacherSalaries(processedTeachers || []);
 
-    } catch (err) {
-      console.error("Finance fetch error:", err);
-      toast.error("Failed to load finance data");
+    } catch (error) {
+      toast.error("Error fetching finance data");
     } finally {
       setLoading(false);
     }
@@ -198,7 +142,7 @@ const FinanceManager = () => {
         .eq('id', selectedInstallment.id);
 
       if (error) throw error;
-      
+
       toast.success("Payment recorded successfully!");
       setIsPaymentModalOpen(false);
       fetchFinanceData(); // Refresh
@@ -237,14 +181,14 @@ const FinanceManager = () => {
         </StatsGrid>
 
         <TabsContainer>
-          <Tab 
-            active={activeTab === 'students'} 
+          <Tab
+            active={activeTab === 'students'}
             onClick={() => setActiveTab('students')}
           >
             <FaUserGraduate /> Student Fees
           </Tab>
-          <Tab 
-            active={activeTab === 'teachers'} 
+          <Tab
+            active={activeTab === 'teachers'}
             onClick={() => setActiveTab('teachers')}
           >
             <FaChalkboardTeacher /> Teacher Salaries
@@ -254,9 +198,9 @@ const FinanceManager = () => {
         <FiltersRow>
           <SearchBox>
             <FaSearch />
-            <input 
-              type="text" 
-              placeholder={`Search ${activeTab}...`} 
+            <input
+              type="text"
+              placeholder={`Search ${activeTab}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -406,7 +350,7 @@ const FinanceManager = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedStudent.paymentRecords?.sort((a,b) => (a.installment_number || 0) - (b.installment_number || 0)).map((p, idx) => (
+                      {selectedStudent.paymentRecords?.sort((a, b) => (a.installment_number || 0) - (b.installment_number || 0)).map((p, idx) => (
                         <tr key={p.id}>
                           <td>{p.installment_number || 'Full'}</td>
                           <td>Rs. {p.amount.toLocaleString()}</td>

@@ -59,6 +59,8 @@ const GoToTopButton = () => {
     <AnimatePresence>
       {isVisible && (
         <ButtonContainer
+          type="button"
+          aria-label="Scroll to top"
           onClick={scrollToTop}
           initial={{ opacity: 0, scale: 0.5, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

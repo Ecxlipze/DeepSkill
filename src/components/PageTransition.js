@@ -10,11 +10,11 @@ const variants = {
 const PageTransition = ({ children }) => {
   return (
     <motion.div
-      initial="hidden"
+      initial={false}
       animate="enter"
       exit="exit"
       variants={variants}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
       style={{ width: '100%' }}
     >
       {children}

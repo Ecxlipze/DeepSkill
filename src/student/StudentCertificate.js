@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
@@ -7,26 +7,14 @@ import DashboardLayout from '../components/DashboardLayout';
 import { 
   FaHome, FaTasks, FaExclamationCircle, 
   FaWallet, FaUserFriends, FaChartLine, FaCertificate, 
-  FaGraduationCap, FaUserPlus, FaComments, FaDownload, FaExclamationTriangle
+  FaGraduationCap, FaUserPlus, FaComments, FaDownload
 } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import logo from '../logo.svg';
 
 // Nav items matching Student dashboard
-const navItems = [
-  { label: 'Home', path: '/student/dashboard', icon: <FaHome /> },
-  { label: 'Tasks', path: '/student/tasks', icon: <FaTasks /> },
-  { label: 'Progress', path: '/student/progress', icon: <FaChartLine /> },
-  { label: 'Certificate', path: '/student/certificate', icon: <FaCertificate /> },
-  { label: 'Complaints', path: '/student/complaints', icon: <FaExclamationCircle /> },
-  { label: 'Results (Mid Term)', path: '/student/results/mid', icon: <FaGraduationCap /> },
-  { label: 'Results (Final Term)', path: '/student/results/final', icon: <FaGraduationCap /> },
-  { label: 'New Enrollment', path: '/student/enrollment', icon: <FaUserPlus /> },
-  { label: 'Group Chat', path: '/student/chat', icon: <FaComments /> },
-  { label: 'Finance', path: '/student/finance', icon: <FaWallet /> },
-  { label: 'Referral Program', path: '/student/referral', icon: <FaUserFriends /> }
-];
+
 
 const Container = styled.div`
   max-width: 1100px;
@@ -384,8 +372,7 @@ const StudentCertificate = () => {
   const [maroonLogo, setMaroonLogo] = useState(null);
   const certRef = useRef(null);
 
-  // Use student's CNIC from context. For testing, default to a CNIC if not present
-  const studentCnic = user?.cnic || "35202-1234567-9";
+  const studentCnic = user?.cnic || "";
 
   useEffect(() => {
     // Process logo to maroon for PDF compatibility
@@ -407,14 +394,16 @@ const StudentCertificate = () => {
     };
   }, []);
 
-  useEffect(() => {
-    fetchCertificates();
-  }, [studentCnic]);
+  const fetchCertificates = useCallback(async () => {
+    if (!studentCnic) {
+      setCertificates([]);
+      setActiveCert(null);
+      setLoading(false);
+      return;
+    }
 
-  const fetchCertificates = async () => {
     setLoading(true);
     try {
-      // Find all certificates where student_cnic matches current user's CNIC
       const { data, error } = await supabase
         .from('certificates')
         .select('*')
@@ -431,7 +420,11 @@ const StudentCertificate = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [studentCnic]);
+
+  useEffect(() => {
+    fetchCertificates();
+  }, [fetchCertificates]);
 
   const handleDownloadPDF = async () => {
     if (!activeCert || !certRef.current) return;
@@ -537,7 +530,7 @@ const StudentCertificate = () => {
   };
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
         <Title>Your Certificates</Title>
 

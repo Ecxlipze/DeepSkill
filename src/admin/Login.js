@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
+import { logActivity } from '../utils/activityLogger';
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -98,9 +99,17 @@ const Login = () => {
       const adminUser = {
         name: 'Administrator',
         role: 'admin',
-        email: email
+        email: email,
+        authType: 'supabase_admin'
       };
       localStorage.setItem('deepskill_user', JSON.stringify(adminUser));
+      await logActivity({
+        userId: null,
+        userName: 'Administrator',
+        userRole: 'admin',
+        eventType: 'login',
+        description: `Logged in as admin (${email})`
+      });
       window.location.href = '/admin/dashboard';
     }
     setLoading(false);

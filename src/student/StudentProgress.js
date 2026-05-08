@@ -10,20 +10,7 @@ import {
   FaGraduationCap, FaUserPlus, FaComments, FaChevronDown, FaChevronUp, FaLock
 } from 'react-icons/fa';
 
-// Nav items matching Student dashboard
-const navItems = [
-  { label: 'Home', path: '/student/dashboard', icon: <FaHome /> },
-  { label: 'Tasks', path: '/student/tasks', icon: <FaTasks /> },
-  { label: 'Progress', path: '/student/progress', icon: <FaChartLine /> },
-  { label: 'Certificate', path: '/student/certificate', icon: <FaCertificate /> },
-  { label: 'Complaints', path: '/student/complaints', icon: <FaExclamationCircle /> },
-  { label: 'Results (Mid Term)', path: '/student/results/mid', icon: <FaGraduationCap /> },
-  { label: 'Results (Final Term)', path: '/student/results/final', icon: <FaGraduationCap /> },
-  { label: 'New Enrollment', path: '/student/enrollment', icon: <FaUserPlus /> },
-  { label: 'Group Chat', path: '/student/chat', icon: <FaComments /> },
-  { label: 'Finance', path: '/student/finance', icon: <FaWallet /> },
-  { label: 'Referral Program', path: '/student/referral', icon: <FaUserFriends /> }
-];
+// Nav items handled by DashboardLayout
 
 const Container = styled.div`
   max-width: 1000px;
@@ -341,52 +328,40 @@ const StudentProgress = () => {
   const { tasks } = useTasks();
   const [showTable, setShowTable] = useState(false);
 
-  // Configuration
-  const totalTasks = 30;
   const tasksPerCheckpoint = 5;
-  const totalCheckpoints = totalTasks / tasksPerCheckpoint; // 6 rows
 
-  const studentCnic = user?.cnic || "35202-1234567-9";
-  const studentCourse = user?.assigned_course || "Web Development Bootcamp";
-  const studentBatch = user?.batch || "Batch 12";
+  const studentCnic = user?.cnic || "";
+  const studentCourse = user?.assigned_course || user?.course || "";
+  const studentBatch = user?.batch || "";
 
   // Filter actual assigned tasks for this student
   const myTasks = tasks.filter(t => t.course === studentCourse && t.batch === studentBatch);
+  const totalTasks = myTasks.length;
+  const totalCheckpoints = Math.max(1, Math.ceil(totalTasks / tasksPerCheckpoint));
   
-  // Create exactly 30 slots for the roadmap
-  // If we have actual tasks assigned, map them in. If not, create placeholders.
-  const roadmapTasks = Array.from({ length: totalTasks }).map((_, index) => {
-    const actualTask = myTasks[index];
-    if (actualTask) {
-      const isSubmitted = actualTask.submissions.some(s => s.cnic === studentCnic);
-      const isOverdue = new Date(actualTask.dueDate) < new Date(new Date().setHours(0,0,0,0));
-      return {
-        ...actualTask,
-        taskNumber: index + 1,
-        status: isSubmitted ? 'Submitted' : (isOverdue ? 'Overdue' : 'Pending')
-      };
-    } else {
-      return {
-        id: `placeholder-${index}`,
-        title: `Task ${index + 1}`,
-        category: 'TBD',
-        dueDate: null,
-        taskNumber: index + 1,
-        status: 'Not Assigned'
-      };
-    }
+  const roadmapTasks = myTasks.map((task, index) => {
+    const isSubmitted = task.submissions?.some(s => s.cnic === studentCnic);
+    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date(new Date().setHours(0,0,0,0));
+    return {
+      ...task,
+      taskNumber: index + 1,
+      status: isSubmitted ? 'Submitted' : (isOverdue ? 'Overdue' : 'Pending')
+    };
   });
 
   const submittedCount = roadmapTasks.filter(t => t.status === 'Submitted').length;
-  const progressPercent = Math.round((submittedCount / totalTasks) * 100);
+  const progressPercent = totalTasks > 0 ? Math.round((submittedCount / totalTasks) * 100) : 0;
   
   // Calculate current checkpoint (1-indexed)
   // If submittedCount is 0, current checkpoint is 1
   // If submittedCount is 5, current checkpoint is 2
-  const currentCheckpointIndex = Math.min(Math.floor(submittedCount / tasksPerCheckpoint) + 1, totalCheckpoints);
+  const currentCheckpointIndex = totalTasks > 0
+    ? Math.min(Math.floor(submittedCount / tasksPerCheckpoint) + 1, totalCheckpoints)
+    : 0;
 
   const getCheckpointState = (cpIndex) => {
-    const tasksNeeded = cpIndex * tasksPerCheckpoint;
+    if (totalTasks === 0) return "locked";
+    const tasksNeeded = Math.min(cpIndex * tasksPerCheckpoint, totalTasks);
     if (submittedCount >= tasksNeeded) return "done";
     if (submittedCount >= (cpIndex - 1) * tasksPerCheckpoint) return "active";
     return "locked";
@@ -406,7 +381,7 @@ const StudentProgress = () => {
   }
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
         <StatsGrid>
           <StatCard initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -438,7 +413,11 @@ const StudentProgress = () => {
           <Title>Your Learning Journey</Title>
           
           <RoadmapContainer>
-            {rows.map((row, rowIndex) => {
+            {totalTasks === 0 ? (
+              <div style={{ color: '#666', padding: '30px', textAlign: 'center' }}>
+                No tasks have been assigned to your course and batch yet.
+              </div>
+            ) : rows.map((row, rowIndex) => {
               const isLastRow = rowIndex === rows.length - 1;
               const hasUTurn = !isLastRow;
               
@@ -451,7 +430,7 @@ const StudentProgress = () => {
                   {row.tasks.map((task, taskIndex) => {
                     const isCompleted = task.status === 'Submitted';
                     const globalTaskIndex = (row.index - 1) * tasksPerCheckpoint + taskIndex;
-                    const isCarPosition = globalTaskIndex === submittedCount;
+                    const isCarPosition = globalTaskIndex === submittedCount && submittedCount < totalTasks;
 
                     return (
                       <React.Fragment key={task.id}>
@@ -529,12 +508,19 @@ const StudentProgress = () => {
                     {roadmapTasks.map(t => (
                       <tr key={t.id}>
                         <td>{t.taskNumber}</td>
-                        <td style={{ color: t.status !== 'Not Assigned' ? '#fff' : '#666' }}>{t.title}</td>
+                        <td style={{ color: '#fff' }}>{t.title}</td>
                         <td>{t.category}</td>
                         <td>{t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '-'}</td>
                         <td><StatusBadge status={t.status}>{t.status}</StatusBadge></td>
                       </tr>
                     ))}
+                    {roadmapTasks.length === 0 && (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: 'center', color: '#666', padding: '30px' }}>
+                          No assigned tasks found.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </StyledTable>
               </motion.div>

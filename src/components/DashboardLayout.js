@@ -6,7 +6,8 @@ import {
   FaBars, FaTimes, FaSignOutAlt, FaChevronDown, FaChevronUp,
   FaHome, FaTasks, FaChartLine, FaCertificate,
   FaExclamationCircle, FaUserPlus, FaComments,
-  FaWallet, FaUserFriends, FaGraduationCap, FaCalendarCheck
+  FaWallet, FaUserFriends, FaGraduationCap, FaCalendarCheck, FaGift,
+  FaUserGraduate, FaChalkboardTeacher, FaMoneyBillWave, FaBullhorn, FaIdBadge
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import logoImg from '../logo.svg';
@@ -271,6 +272,20 @@ const DashboardLayout = ({ children, navItems }) => {
     if (!user) return [];
     
     if (user.role === 'student') {
+      if (user.status === 'Graduated') {
+        return [
+          { label: 'Home', path: '/student/dashboard', icon: <FaHome /> },
+          { label: 'Progress', path: '/student/progress', icon: <FaChartLine /> },
+          { label: 'Certificate', path: '/student/certificate', icon: <FaCertificate /> },
+          { label: 'Results (Mid Term)', path: '/student/results/midterm', icon: <FaGraduationCap /> },
+          { label: 'Results (Final Term)', path: '/student/results/finalterm', icon: <FaGraduationCap /> },
+          { label: 'Finance', path: '/student/finance', icon: <FaWallet /> },
+          { label: 'Announcements', path: '/student/announcements', icon: <FaBullhorn /> },
+          { label: 'New Enrollment', path: '/student/new-enrollment', icon: <FaUserPlus /> },
+          { label: 'Referral Program', path: '/student/referral', icon: <FaUserFriends /> }
+        ];
+      }
+
       return [
         { label: 'Home', path: '/student/dashboard', icon: <FaHome /> },
         { label: 'Tasks', path: '/student/tasks', icon: <FaTasks /> },
@@ -278,9 +293,10 @@ const DashboardLayout = ({ children, navItems }) => {
         { label: 'Attendance', path: '/student/attendance', icon: <FaCalendarCheck /> },
         { label: 'Certificate', path: '/student/certificate', icon: <FaCertificate /> },
         { label: 'Complaints', path: '/student/complaints', icon: <FaExclamationCircle /> },
-        { label: 'Results (Mid Term)', path: '/student/results/mid', icon: <FaGraduationCap /> },
-        { label: 'Results (Final Term)', path: '/student/results/final', icon: <FaGraduationCap /> },
-        { label: 'New Enrollment', path: '/student/enrollment', icon: <FaUserPlus /> },
+        { label: 'Announcements', path: '/student/announcements', icon: <FaBullhorn /> },
+        { label: 'Results (Mid Term)', path: '/student/results/midterm', icon: <FaGraduationCap /> },
+        { label: 'Results (Final Term)', path: '/student/results/finalterm', icon: <FaGraduationCap /> },
+        { label: 'New Enrollment', path: '/student/new-enrollment', icon: <FaUserPlus /> },
         { label: 'Group Chat', path: '/student/group-chat', icon: <FaComments /> },
         { label: 'Finance', path: '/student/finance', icon: <FaWallet /> },
         { label: 'Referral Program', path: '/student/referral', icon: <FaUserFriends /> }
@@ -300,6 +316,14 @@ const DashboardLayout = ({ children, navItems }) => {
         },
         { label: 'Attendance', path: '/teacher/attendance', icon: <FaCalendarCheck /> },
         { label: 'Complaints', path: '/teacher/complaints', icon: <FaExclamationCircle /> },
+        { label: 'Announcements', path: '/teacher/announcements', icon: <FaBullhorn /> },
+        {
+          label: 'HR',
+          icon: <FaIdBadge />,
+          subItems: [
+            { label: 'My HR Profile', path: '/teacher/hr' }
+          ]
+        },
         { label: 'Group Chat', path: '/teacher/group-chat', icon: <FaComments /> },
         { label: 'Finance', path: '/teacher/finance', icon: <FaWallet /> },
         { label: 'Referral Program', path: '/teacher/referral', icon: <FaUserFriends /> }
@@ -309,9 +333,15 @@ const DashboardLayout = ({ children, navItems }) => {
     if (user.role === 'admin') {
       return [
         { label: 'Dashboard', path: '/admin/dashboard', icon: <FaHome /> },
+        { label: 'Admissions', path: '/admin/admissions', icon: <FaUserPlus /> },
+        { label: 'Students', path: '/admin/students', icon: <FaUserGraduate /> },
+        { label: 'Teachers', path: '/admin/teachers', icon: <FaChalkboardTeacher /> },
+        { label: 'Attendance', path: '/admin/attendance', icon: <FaCalendarCheck /> },
         { label: 'Complaints', path: '/admin/complaints', icon: <FaExclamationCircle /> },
         { label: 'Certificates', path: '/admin/certificates', icon: <FaCertificate /> },
-        { label: 'Users', path: '/admin/users', icon: <FaUserFriends /> }
+        { label: 'Finance', path: '/admin/finance', icon: <FaMoneyBillWave /> },
+        { label: 'Referral Program', path: '/admin/referral', icon: <FaGift /> },
+        { label: 'Exam Results', path: '/admin/results', icon: <FaGraduationCap /> }
       ];
     }
     

@@ -32,10 +32,8 @@ const Emoji = styled.div`
   font-size: 4rem;
 `;
 
-export const AdminStudents = () => <PlaceholderPage title="Students Management" icon="👥" />;
 export const AdminAttendance = () => <PlaceholderPage title="Attendance System" icon="📋" />;
-export const AdminAnnouncements = () => <PlaceholderPage title="Announcements" icon="📢" />;
+export const AdminReports = () => <PlaceholderPage title="System Reports" icon="📊" />;
 export const AdminFinance = () => <PlaceholderPage title="Finance Overview" icon="💰" />;
 export const AdminFinanceTransactions = () => <PlaceholderPage title="Transactions" icon="💸" />;
 export const AdminReferral = () => <PlaceholderPage title="Referral Program" icon="🔗" />;
-export const AdminReports = () => <PlaceholderPage title="System Reports" icon="📊" />;

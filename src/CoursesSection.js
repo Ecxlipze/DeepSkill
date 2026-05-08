@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { supabase } from "./supabaseClient";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress } from "react-icons/fa";
 import courseBg from "./assets/course-bg.png";
 import RegisterButton from "./components/RegisterButton";
 import btnIcon from "./assets/btn-icon.svg";
+import mernCardThumb from "./assets/mern-card.png";
+import graphicsCardThumb from "./assets/graphics-card.png";
+import wpCardThumb from "./assets/wp-card.png";
 
 const dummyCourses = [
   { id: 'dummy-1', title: 'Graphic Design Mastery', description: 'Learn Adobe Photoshop, Illustrator, and Premiere Pro from scratch. Build a stunning portfolio.', category: 'Graphic Design', image_url: null },
-  { id: 'dummy-2', title: 'Laravel PHP Development', description: 'Master backend development with Laravel. Build robust and scalable web applications.', category: 'Laravel / PHP', image_url: null },
+  { id: 'dummy-2', title: 'Full Stack (Laravel)', description: 'Master backend development with Laravel. Build robust and scalable web applications.', category: 'Laravel / PHP', image_url: null },
   { id: 'dummy-3', title: 'Full Stack React JS', description: 'Become a highly paid Frontend Engineer. Learn React, Redux, Node.js, and Modern UI/UX.', category: 'React JS', image_url: null },
   { id: 'dummy-4', title: 'WordPress Mastery', description: 'Create professional websites without coding. Best for freelancers and digital marketers.', category: 'WordPress', image_url: null }
 ];
@@ -168,6 +170,7 @@ const CourseImage = styled.div`
   width: 100%;
   height: 150px;
   background-color: #333;
+  background-image: ${props => props.$image ? `url(${props.$image})` : 'linear-gradient(135deg, rgba(123, 31, 46, 0.95), rgba(20, 20, 20, 0.95))'};
   border-radius: 15px;
   margin-bottom: 20px;
   background-size: cover;
@@ -223,6 +226,7 @@ const CoursesSection = () => {
 
   useEffect(() => {
     const fetchCourses = async () => {
+      const { supabase } = await import("./supabaseClient");
       const { data, error } = await supabase.from('courses').select('*').order('created_at', { ascending: true });
       if (error) {
         console.error(error);
@@ -251,6 +255,14 @@ const CoursesSection = () => {
     if (cat?.includes('react')) return '/full-stack-react';
     if (cat?.includes('wordpress')) return '/wordpress-mastery';
     return '/';
+  };
+
+  const getCourseImage = (category) => {
+    const cat = category?.toLowerCase();
+    if (cat?.includes('react')) return mernCardThumb;
+    if (cat?.includes('graphic')) return graphicsCardThumb;
+    if (cat?.includes('wordpress')) return wpCardThumb;
+    return null;
   };
 
   if (loading) return <div style={{ color: '#fff', padding: '100px', textAlign: 'center' }}>Loading Courses...</div>;
@@ -283,7 +295,7 @@ const CoursesSection = () => {
             >
               <IconContainer>{getIcon(course.category)}</IconContainer>
               <Title>{course.title}</Title>
-              <CourseImage style={{ backgroundImage: `url(${course.image_url || 'https://via.placeholder.com/300x150/333/fff?text=DeepSkill'})` }} />
+              <CourseImage $image={getCourseImage(course.category)} />
               <Description>{course.description}</Description>
               <Separator />
             </CourseCard>
@@ -300,7 +312,7 @@ const CoursesSection = () => {
             >
               <IconContainer>{getIcon(course.category)}</IconContainer>
               <Title>{course.title}</Title>
-              <CourseImage style={{ backgroundImage: `url(${course.image_url || 'https://via.placeholder.com/300x150/333/fff?text=DeepSkill'})` }} />
+              <CourseImage $image={getCourseImage(course.category)} />
               <Description>{course.description}</Description>
               <Separator />
             </CourseCard>

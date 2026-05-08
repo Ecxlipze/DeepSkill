@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TasksContext';
-import { 
-  FaHome, FaTasks, FaExclamationCircle, 
-  FaWallet, FaUserFriends, FaTimes, FaEdit, FaTrash
-} from 'react-icons/fa';
+import { FaTimes, FaEdit, FaTrash } from 'react-icons/fa';
 
 const Container = styled.div`
   max-width: 1000px;
@@ -222,34 +219,26 @@ const StatusPill = styled.span`
   border: 1px solid rgba(46, 125, 50, 0.3);
 `;
 
-const navItems = [
-  { label: 'Home', path: '/teacher/dashboard', icon: <FaHome /> },
-  { 
-    label: 'Tasks', 
-    icon: <FaTasks />, 
-    subItems: [
-      { label: 'Assign Task', path: '/teacher/tasks/assign' },
-      { label: 'View Tasks', path: '/teacher/tasks/view' }
-    ]
-  },
-  { label: 'Complaints', path: '/teacher/complaints', icon: <FaExclamationCircle /> },
-  { label: 'Finance', path: '/teacher/finance', icon: <FaWallet /> },
-  { label: 'Referral Program', path: '/teacher/referral', icon: <FaUserFriends /> }
-];
-
 const ViewTasks = () => {
   const { user } = useAuth();
-  const { tasks, deleteTask, updateTask } = useTasks();
+  const { tasks, deleteTask, updateTask, gradeSubmission } = useTasks();
   const [selectedTask, setSelectedTask] = useState(null);
+  const [gradingMarks, setGradingMarks] = useState({}); // { submissionId: value }
   const [editingTask, setEditingTask] = useState(null);
   const [editFormData, setEditFormData] = useState({
     title: '', category: '', description: '', dueDate: ''
   });
 
-  const teacherName = user?.name || "Dr. Ahmed Khan";
-  // For demo, we might want to just show all if mock data doesn't match perfectly
-  // but strictly we should filter by assignedBy
-  const myTasks = tasks.filter(t => t.assignedBy === teacherName || t.assignedBy === 'Sir Usman');
+  const teacherName = user?.name || '';
+  const myTasks = useMemo(() => {
+    return tasks.filter((task) => task.assignedBy === teacherName);
+  }, [tasks, teacherName]);
+
+  useEffect(() => {
+    if (!selectedTask) return;
+    const refreshedTask = tasks.find((task) => task.id === selectedTask.id);
+    if (refreshedTask) setSelectedTask(refreshedTask);
+  }, [tasks, selectedTask]);
 
   const isOverdue = (dueDate) => {
     return new Date(dueDate) < new Date(new Date().setHours(0,0,0,0));
@@ -278,7 +267,7 @@ const ViewTasks = () => {
   };
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
         <Card initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Title>Assigned Tasks</Title>
@@ -367,6 +356,7 @@ const ViewTasks = () => {
                           <th>Submitted At</th>
                           <th>File</th>
                           <th>Status</th>
+                          {['Assignment', 'Quiz', 'Project'].includes(selectedTask.category) && <th>Marks ({selectedTask.totalMarks})</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -392,6 +382,25 @@ const ViewTasks = () => {
                               ) : '-'}
                             </td>
                             <td><StatusPill>{sub.status}</StatusPill></td>
+                            {['Assignment', 'Quiz', 'Project'].includes(selectedTask.category) && (
+                              <td>
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                  <input
+                                    type="number"
+                                    placeholder="Marks"
+                                    defaultValue={sub.marksObtained}
+                                    onChange={(e) => setGradingMarks({...gradingMarks, [sub.id]: e.target.value})}
+                                    style={{ width: '60px', padding: '5px', borderRadius: '4px', background: '#000', border: '1px solid #333', color: '#fff' }}
+                                  />
+                                  <button
+                                    onClick={() => gradeSubmission(sub.id, gradingMarks[sub.id] || sub.marksObtained)}
+                                    style={{ padding: '5px 10px', background: '#7B1F2E', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>

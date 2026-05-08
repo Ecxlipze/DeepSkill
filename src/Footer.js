@@ -133,12 +133,12 @@ const Description = styled.p`
   font-size: 0.95rem;
 `;
 
-const Title = styled.h4`
+const Title = styled.h3`
   font-family: 'Inter', sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
   margin-bottom: 0px;
-  color: #7B1F2E;
+  color: #d94a5e;
   text-transform: uppercase;
   letter-spacing: 1px;
 `;
@@ -192,7 +192,7 @@ const ContactInfo = styled.div`
   }
 
   svg {
-    color: #7B1F2E;
+    color: #d94a5e;
     font-size: 1.1rem;
     margin-top: 0px;
     flex-shrink: 0;
@@ -220,7 +220,7 @@ const Bottom = styled.div`
   align-items: center;
   font-family: 'Inter', sans-serif;
   font-size: 0.85rem;
-  color: #666;
+  color: #8a8a8a;
 
   @media (max-width: 768px) {
     text-align: center;
@@ -239,10 +239,10 @@ const Footer = () => {
             Empowering the next generation of digital professionals with industry-relevant skills and hands-on training. Join our community and build your future today.
           </Description>
           <Socials>
-            <SocialIcon href="https://www.facebook.com/people/Deep-Skills/61585681437310/" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaFacebookF /></SocialIcon>
-            <SocialIcon href="https://www.instagram.com/deepskills.pk" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaInstagram /></SocialIcon>
-            <SocialIcon href="https://www.linkedin.com/company/deep-skills-pk" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaLinkedinIn /></SocialIcon>
-            <SocialIcon href="https://www.tiktok.com/@deep.skills" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaTiktok /></SocialIcon>
+            <SocialIcon aria-label="DeepSkills on Facebook" href="https://www.facebook.com/people/Deep-Skills/61585681437310/" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaFacebookF aria-hidden="true" /></SocialIcon>
+            <SocialIcon aria-label="DeepSkills on Instagram" href="https://www.instagram.com/deepskills.pk" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaInstagram aria-hidden="true" /></SocialIcon>
+            <SocialIcon aria-label="DeepSkills on LinkedIn" href="https://www.linkedin.com/company/deep-skills-pk" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaLinkedinIn aria-hidden="true" /></SocialIcon>
+            <SocialIcon aria-label="DeepSkills on TikTok" href="https://www.tiktok.com/@deep.skills" target="_blank" rel="noopener noreferrer" whileHover={{ y: -5, backgroundColor: "#7B1F2E" }}><FaTiktok aria-hidden="true" /></SocialIcon>
           </Socials>
         </Column>
 
@@ -250,17 +250,18 @@ const Footer = () => {
           <Title>Quick Links</Title>
           <FooterLink to="/" whileHover={{ x: 5 }}>Home</FooterLink>
           <FooterLink to="/about" whileHover={{ x: 5 }}>About Us</FooterLink>
-          <FooterLink to="/#courses" whileHover={{ x: 5 }}>All Courses</FooterLink>
+          <FooterLink to="/courses" whileHover={{ x: 5 }}>All Courses</FooterLink>
+          <FooterLink to="/blogs" whileHover={{ x: 5 }}>Blogs</FooterLink>
           <FooterLink to="/#testimonials" whileHover={{ x: 5 }}>Testimonials</FooterLink>
           <FooterLink to="/contact" whileHover={{ x: 5 }}>Contact Us</FooterLink>
         </Column>
 
         <Column>
           <Title>Programs</Title>
-          <FooterLink to="/graphic-design" whileHover={{ x: 5 }}>Graphic Design</FooterLink>
-          <FooterLink to="/laravel-mastery" whileHover={{ x: 5 }}>Full Stack (Laravel)</FooterLink>
-          <FooterLink to="/full-stack-react" whileHover={{ x: 5 }}>Full Stack (MERN)</FooterLink>
-          <FooterLink to="/wordpress-mastery" whileHover={{ x: 5 }}>WordPress Mastery</FooterLink>
+          <FooterLink to="/courses/graphic-design" whileHover={{ x: 5 }}>Graphic Design</FooterLink>
+          <FooterLink to="/courses/laravel-mastery" whileHover={{ x: 5 }}>Full Stack (Laravel)</FooterLink>
+          <FooterLink to="/courses/full-stack-react" whileHover={{ x: 5 }}>Full Stack (MERN)</FooterLink>
+          <FooterLink to="/courses/wordpress-mastery" whileHover={{ x: 5 }}>WordPress Mastery</FooterLink>
         </Column>
 
         <Column>

@@ -84,8 +84,126 @@ const DownloadButton = styled(motion.button)`
   }
 `;
 
+const PreviewPanel = styled(motion.div)`
+  width: 100%;
+  max-width: 980px;
+  margin-top: 34px;
+  border: 1px solid rgba(${props => props.$accentRGB || '151, 192, 73'}, 0.35);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+`;
+
+const PreviewToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  @media (max-width: 640px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+const PreviewTitle = styled.div`
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
+  letter-spacing: 0.3px;
+`;
+
+const PreviewMessage = styled.div`
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.35);
+`;
+
+const PreviewActions = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+
+  @media (max-width: 640px) {
+    justify-content: stretch;
+
+    button,
+    a {
+      flex: 1;
+    }
+  }
+`;
+
+const ActionButton = styled(motion.button)`
+  background: ${props => props.$primary ? props.$accentColor || '#97C049' : 'rgba(255, 255, 255, 0.08)'};
+  color: #fff;
+  border: 1px solid ${props => props.$primary ? 'transparent' : 'rgba(255, 255, 255, 0.16)'};
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const ActionLink = styled(motion.a)`
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+`;
+
+const PdfFrame = styled.iframe`
+  width: 100%;
+  height: min(72vh, 760px);
+  min-height: 520px;
+  border: 0;
+  display: block;
+  background: #1a1a1a;
+
+  @media (max-width: 768px) {
+    height: 70vh;
+    min-height: 430px;
+  }
+`;
+
 const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
   const [downloadStatus, setDownloadStatus] = React.useState('idle'); // 'idle', 'downloading', 'completed'
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+  const [previewStatus, setPreviewStatus] = React.useState('idle'); // 'idle', 'loading', 'ready', 'failed'
+  const [previewUrl, setPreviewUrl] = React.useState('');
+
+  React.useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        window.URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const getFileName = () => {
+    if (!pdfUrl) return 'Course-Outline.pdf';
+
+    let fileName = pdfUrl.split('/').pop().split('?')[0].replace(/%20/g, ' ');
+    fileName = fileName.replace(/^\d+-/, '');
+
+    return fileName || 'Course-Outline.pdf';
+  };
 
   const handleDownload = async () => {
     if (pdfUrl) {
@@ -100,11 +218,7 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
         const link = document.createElement('a');
         link.href = url;
 
-        // Extract a clean filename and remove leading timestamps
-        let fileName = pdfUrl.split('/').pop().split('?')[0].replace(/%20/g, ' ');
-        fileName = fileName.replace(/^\d+-/, '');
-
-        link.setAttribute('download', fileName || 'Course-Outline.pdf');
+        link.setAttribute('download', getFileName());
 
         document.body.appendChild(link);
         link.click();
@@ -123,6 +237,39 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
       }
     } else {
       alert("Course outline PDF will be available soon!");
+    }
+  };
+
+  const handlePreview = async () => {
+    if (!pdfUrl) {
+      alert("Course outline PDF will be available soon!");
+      return;
+    }
+
+    setIsPreviewOpen(true);
+
+    if (previewUrl) {
+      setPreviewStatus('ready');
+      return;
+    }
+
+    setPreviewStatus('loading');
+
+    try {
+      const response = await fetch(pdfUrl);
+
+      if (!response.ok) {
+        throw new Error(`PDF preview request failed with ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+
+      setPreviewUrl(objectUrl);
+      setPreviewStatus('ready');
+    } catch (error) {
+      console.error("PDF preview failed:", error);
+      setPreviewStatus('failed');
     }
   };
 
@@ -162,13 +309,67 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          onClick={handleDownload}
+          onClick={handlePreview}
           style={{ opacity: downloadStatus === 'downloading' ? 0.8 : 1 }}
         >
-          {downloadStatus === 'idle' && "Download Course PDF"}
-          {downloadStatus === 'downloading' && "Downloading..."}
-          {downloadStatus === 'completed' && "Downloaded "}
+          {isPreviewOpen ? "PDF Preview Opened" : "Download Course PDF"}
         </DownloadButton>
+
+        {isPreviewOpen && (
+          <PreviewPanel
+            $accentRGB={accentRGB}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <PreviewToolbar>
+              <PreviewTitle>{getFileName()}</PreviewTitle>
+              <PreviewActions>
+                <ActionButton
+                  type="button"
+                  $accentColor={accentColor}
+                  $primary
+                  disabled={downloadStatus === 'downloading'}
+                  whileHover={{ scale: downloadStatus === 'downloading' ? 1 : 1.03 }}
+                  whileTap={{ scale: downloadStatus === 'downloading' ? 1 : 0.97 }}
+                  onClick={handleDownload}
+                >
+                  {downloadStatus === 'downloading' && "Downloading..."}
+                  {downloadStatus === 'completed' && "Downloaded"}
+                  {downloadStatus === 'idle' && "Download"}
+                </ActionButton>
+                <ActionLink
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  Open
+                </ActionLink>
+                <ActionButton
+                  type="button"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setIsPreviewOpen(false)}
+                >
+                  Close
+                </ActionButton>
+              </PreviewActions>
+            </PreviewToolbar>
+            {previewStatus === 'loading' && (
+              <PreviewMessage>Preparing PDF preview...</PreviewMessage>
+            )}
+            {previewStatus === 'failed' && (
+              <PreviewMessage>
+                Preview could not be loaded in this browser. Please use Open or Download.
+              </PreviewMessage>
+            )}
+            {previewStatus === 'ready' && (
+              <PdfFrame title="Course PDF preview" src={`${previewUrl}#toolbar=1&navpanes=0`} />
+            )}
+          </PreviewPanel>
+        )}
       </Container>
     </Section>
   );

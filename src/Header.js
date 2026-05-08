@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaBars, FaTimes, FaHome, FaInfoCircle, FaBook, FaUserTie, FaPlayCircle, FaUser, FaSignOutAlt, FaColumns, FaPhoneAlt } from "react-icons/fa";
+import { FaBars, FaTimes, FaHome, FaInfoCircle, FaBook, FaUserTie, FaPlayCircle, FaUser, FaSignOutAlt, FaColumns, FaPhoneAlt, FaPenNib } from "react-icons/fa";
 import { FiChevronRight, FiChevronDown } from "react-icons/fi";
 import logoImg from "./logo.svg";
 import RegisterButton from "./components/RegisterButton";
@@ -112,7 +112,7 @@ const NavPill = styled(motion.div)`
 `;
 
 const NavLink = styled(motion.a)`
-  color: ${props => props.$active ? "#7B1F2E" : "#fff"};
+  color: ${props => props.$active ? "#d94a5e" : "#fff"};
   text-decoration: none;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -133,12 +133,12 @@ const NavLink = styled(motion.a)`
     transform: translateX(-50%);
     width: ${props => props.$active ? "100%" : "0"};
     height: 2px;
-    background-color: #7B1F2E;
+    background-color: #d94a5e;
     transition: width 0.3s ease;
   }
 
   &:hover {
-    color: #7B1F2E;
+    color: #d94a5e;
   }
 `;
 
@@ -158,7 +158,7 @@ const DesktopOnlyBtn = styled.div`
   }
 `;
 
-const LoginLink = styled(motion(Link))`
+const LoginLink = styled(motion.create(Link))`
   color: #fff;
   text-decoration: none;
   font-family: 'Inter', sans-serif;
@@ -276,13 +276,15 @@ const DropdownItem = styled(Link)`
   }
 `;
 
-const MobileMenuBtn = styled.div`
+const MobileMenuBtn = styled.button`
   display: none;
   color: #fff;
   font-size: 1.5rem;
   cursor: pointer;
   transition: transform 0.3s ease;
   padding: 5px; // Better hit area
+  background: transparent;
+  border: 0;
 
   &:active {
     transform: scale(0.9);
@@ -378,12 +380,14 @@ const MobileLogo = styled.div`
   }
 `;
 
-const CloseBtn = styled.div`
+const CloseBtn = styled.button`
   color: #fff;
   font-size: 1.8rem;
   cursor: pointer;
   display: flex;
   align-items: center;
+  background: transparent;
+  border: 0;
 `;
 
 const MobileControls = styled.div`
@@ -534,13 +538,14 @@ const Header = () => {
       icon: <FaBook />,
       hasDropdown: true,
       sublinks: [
-        { name: "Graphic Designing", href: "/graphic-design", isRoute: true },
-        { name: "Full Stack (Laravel)", href: "/laravel-mastery", isRoute: true },
-        { name: "Full Stack (React)", href: "/full-stack-react", isRoute: true },
+        { name: "Graphic Designing", href: "/courses/graphic-design", isRoute: true },
+        { name: "Full Stack (Laravel)", href: "/courses/laravel-mastery", isRoute: true },
+        { name: "Full Stack (React)", href: "/courses/full-stack-react", isRoute: true },
         { name: "View All Courses", href: "/courses", isRoute: true }
       ]
     },
     { name: "Media", href: "/media", isRoute: true, icon: <FaPlayCircle /> },
+    { name: "Blogs", href: "/blogs", isRoute: true, icon: <FaPenNib /> },
     {
       name: "Certificate",
       href: "/verify-certificate",
@@ -718,8 +723,8 @@ const Header = () => {
               Get Enroll
             </RegisterButton>
           </DesktopOnlyBtn>
-          <MobileMenuBtn onClick={() => setMobileMenuOpen(true)}>
-            <FaBars />
+          <MobileMenuBtn type="button" aria-label="Open navigation menu" onClick={() => setMobileMenuOpen(true)}>
+            <FaBars aria-hidden="true" />
           </MobileMenuBtn>
         </RightSection>
       </Nav>
@@ -747,8 +752,8 @@ const Header = () => {
                 <MobileLogo>
                   <img src={logoImg} alt="Deep Skills" />
                 </MobileLogo>
-                <CloseBtn onClick={() => setMobileMenuOpen(false)}>
-                  <FaTimes />
+                <CloseBtn type="button" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)}>
+                  <FaTimes aria-hidden="true" />
                 </CloseBtn>
               </MobileMenuHeader>
 
@@ -798,7 +803,7 @@ const Header = () => {
                   </MobileLinkWrapper>
                   
                   <MobileLinkWrapper>
-                    <MainLink as="div" onClick={handleLogout} style={{ cursor: 'pointer', background: 'rgba(255, 78, 78, 0.1)' }}>
+                    <MainLink as="button" type="button" onClick={handleLogout} style={{ cursor: 'pointer', background: 'rgba(255, 78, 78, 0.1)', width: '100%', border: 0 }}>
                       <LinkLeft style={{ color: '#ff4e4e' }}><FaSignOutAlt /> <span style={{ color: '#ff4e4e' }}>Logout</span></LinkLeft>
                       <FiChevronRight color="#ff4e4e" />
                     </MainLink>

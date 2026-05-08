@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { supabase } from "./supabaseClient";
 import { motion } from "framer-motion";
 import { FaGraduationCap, FaWrench, FaChalkboardTeacher, FaBriefcase } from "react-icons/fa";
 
@@ -184,6 +183,7 @@ const AboutSection = () => {
     const fetchContent = async () => {
       let data = null;
       try {
+        const { supabase } = await import("./supabaseClient");
         const { data: fetchedData } = await supabase.from('settings').select('*');
         data = fetchedData;
       } catch (err) {

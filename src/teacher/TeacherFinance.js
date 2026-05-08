@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
 import { 
-  FaWallet, FaHistory, FaCheckCircle, 
+  FaHistory, FaCheckCircle, 
   FaClock, FaExclamationCircle, FaUserTie
 } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
@@ -14,20 +13,14 @@ const TeacherFinance = () => {
   const [financeData, setFinanceData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user?.cnic) fetchTeacherFinance();
-  }, [user]);
-
-  const fetchTeacherFinance = async () => {
+  const fetchTeacherFinance = useCallback(async () => {
     try {
-      // 1. Get Teacher ID
+      if (!user?.cnic) return;
       const { data: teacher } = await supabase.from('teachers').select('id').eq('cnic', user.cnic).single();
       if (!teacher) return;
 
-      // 2. Get Salary Config
       const { data: config } = await supabase.from('teacher_salaries').select('*').eq('teacher_id', teacher.id).single();
       
-      // 3. Get Payment History
       const { data: payments } = await supabase
         .from('payments')
         .select('*')
@@ -50,7 +43,11 @@ const TeacherFinance = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.cnic]);
+
+  useEffect(() => {
+    fetchTeacherFinance();
+  }, [fetchTeacherFinance]);
 
   if (loading) return <DashboardLayout><p>Loading salary details...</p></DashboardLayout>;
 

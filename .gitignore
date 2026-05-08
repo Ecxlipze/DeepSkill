@@ -10,6 +10,8 @@
 
 # production
 /build
+/.next
+/deepskills-cpanel
 
 # misc
 .DS_Store
@@ -31,6 +33,7 @@ yarn-error.log*
 # logs
 dev-server.log
 dev-server.err.log
+lint_output.txt
 
 # database schemas
 *.sql

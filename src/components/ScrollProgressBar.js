@@ -22,7 +22,7 @@ const ScrollProgressBar = () => {
     restDelta: 0.001
   });
 
-  return <Bar style={{ scaleX }} />;
+  return <Bar aria-hidden="true" style={{ scaleX }} />;
 };
 
 export default ScrollProgressBar;

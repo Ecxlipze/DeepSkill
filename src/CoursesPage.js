@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { supabase } from "./supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress, FaSearchDollar, FaPenNib } from "react-icons/fa";
 
@@ -177,7 +176,7 @@ const CTAButton = styled.button`
 
 const dummyCourses = [
   { id: 'dummy-1', title: 'Graphic Designing', description: 'Learn Adobe Photoshop, Illustrator, and Premiere Pro. Build a stunning portfolio.', category: 'Graphic Design', image_url: null },
-  { id: 'dummy-2', title: 'Laravel PHP Development', description: 'Master backend development with Laravel. Build robust and scalable web applications.', category: 'Laravel / PHP', image_url: null },
+  { id: 'dummy-2', title: 'Full Stack (Laravel)', description: 'Master backend development with Laravel. Build robust and scalable web applications.', category: 'Laravel / PHP', image_url: null },
   { id: 'dummy-3', title: 'Full Stack React JS', description: 'Become a highly paid Frontend Engineer. Learn React, Redux, Node.js, and Modern UI/UX.', category: 'React JS', image_url: null },
   { id: 'dummy-4', title: 'WordPress Mastery', description: 'Create professional websites without coding. Best for freelancers and digital marketers.', category: 'WordPress', image_url: null },
   { id: 'dummy-5', title: 'UI/UX Design', description: 'Master user research, wireframing, prototyping, and visual design using Figma.', category: 'UI/UX', image_url: null },
@@ -208,6 +207,7 @@ const CoursesPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchCourses = async () => {
+      const { supabase } = await import("./supabaseClient");
       const { data, error } = await supabase.from('courses').select('*').order('created_at', { ascending: true });
       if (error) {
         console.error("Error fetching courses", error);

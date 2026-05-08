@@ -328,6 +328,27 @@ const TeacherProfile = () => {
     }
   }, [id, navigate]);
 
+  const syncTeacherLoginAccess = async () => {
+    const { data: currentAssignments, error } = await supabase
+      .from('teacher_batches')
+      .select('batches(batch_name, course)')
+      .eq('teacher_id', id);
+
+    if (error) throw error;
+
+    const assignedBatches = (currentAssignments || []).map(a => a.batches).filter(Boolean);
+    const assignedBatchNames = assignedBatches.map(batch => batch.batch_name);
+    const assignedCourses = Array.from(new Set(assignedBatches.map(batch => batch.course).filter(Boolean)));
+
+    await supabase
+      .from('allowed_cnics')
+      .update({
+        assigned_course: assignedCourses.join(', '),
+        batch: assignedBatchNames.join(', ')
+      })
+      .eq('cnic', teacher.cnic);
+  };
+
   useEffect(() => {
     fetchTeacherData();
   }, [fetchTeacherData]);
@@ -350,6 +371,7 @@ const TeacherProfile = () => {
         role: newAssignment.role
       }]);
       if (error) throw error;
+      await syncTeacherLoginAccess();
       toast.success("Batch assigned successfully");
       fetchTeacherData();
       setNewAssignment({ course: '', batch_id: '', role: 'Main' });
@@ -365,6 +387,7 @@ const TeacherProfile = () => {
     if (!window.confirm(`Remove ${teacher.name} from ${batchName}?`)) return;
     try {
       await supabase.from('teacher_batches').delete().eq('id', assId);
+      await syncTeacherLoginAccess();
       toast.success("Assignment removed");
       fetchTeacherData();
     } catch (err) {

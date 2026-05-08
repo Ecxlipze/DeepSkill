@@ -1,5 +1,4 @@
 import React from 'react';
-import { supabase } from './supabaseClient';
 import styled from 'styled-components';
 import WordPressHero from './components/WordPressHero';
 import WordPressFeatures from './components/WordPressFeatures';
@@ -31,6 +30,7 @@ const WordPressPage = () => {
 
   React.useEffect(() => {
     const fetchPdf = async () => {
+      const { supabase } = await import('./supabaseClient');
       const { data } = await supabase
         .from('courses')
         .select('pdf_url')

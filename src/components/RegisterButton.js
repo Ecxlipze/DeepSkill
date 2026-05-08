@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { trackEvent } from '../../lib/analytics';
 
 const StyledButton = styled(motion.button)`
   background-color: ${props => props.$variant === 'secondary' ? 'rgba(30, 30, 30, 0.8)' : '#7B1F2E'};
@@ -93,6 +94,11 @@ const RegisterButton = ({ children = "REGISTER NOW", to = "/register", onClick, 
       onClick(e);
     }
     if (to) {
+      trackEvent('select_content', {
+        content_type: 'cta',
+        item_id: to,
+        link_text: typeof children === 'string' ? children : 'Register CTA'
+      });
       navigate(to);
     }
   };
@@ -122,10 +128,8 @@ const RegisterButton = ({ children = "REGISTER NOW", to = "/register", onClick, 
   return (
     <StyledButton
       $variant={variant}
-      as={to ? Link : "button"}
-      to={to}
       type={type}
-      onClick={to ? undefined : handleAction}
+      onClick={handleAction}
       {...buttonProps}
     >
       <span>{children}</span>

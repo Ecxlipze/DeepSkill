@@ -3,13 +3,15 @@ import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  FaHome, FaUserGraduate, FaChalkboardTeacher, FaBook, FaUsers, 
+  FaHome, FaUserGraduate, FaChalkboardTeacher, FaBook, 
   FaMoneyBillWave, FaLink, FaChartBar, FaCog, FaChevronDown, 
   FaChevronRight, FaBars, FaTimes, FaBell, FaClipboardList,
-  FaCertificate, FaExclamationCircle, FaBullhorn, FaUserPlus
+  FaExclamationCircle, FaBullhorn, FaUserPlus,
+  FaGraduationCap, FaPen
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useComplaints } from '../context/ComplaintsContext';
+import { buildAdminSidebar } from '../utils/permissions';
 import logoImg from '../logo.svg';
 
 const AdminLayout = ({ children }) => {
@@ -30,69 +32,38 @@ const AdminLayout = ({ children }) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
   };
 
-  const navItems = [
-    { type: 'label', label: 'MAIN' },
-    { icon: <FaHome />, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: <FaUserPlus />, label: 'Admissions', path: '/admin/admissions' },
-    
-    { type: 'label', label: 'MANAGEMENT' },
-    { icon: <FaUserGraduate />, label: 'Students', path: '/admin/students' },
-    { icon: <FaChalkboardTeacher />, label: 'Teachers', path: '/admin/teachers' },
-    { 
-      icon: <FaBook />, 
-      label: 'Courses & Batches', 
-      type: 'dropdown',
-      isOpen: openMenus.courses,
-      onToggle: () => toggleMenu('courses'),
-      items: [
-        { label: 'Courses', path: '/admin/courses' },
-        { label: 'Batches', path: '/admin/batches' }
-      ]
-    },
-    { icon: <FaClipboardList />, label: 'Attendance', path: '/admin/attendance' },
-    { icon: <FaCertificate />, label: 'Certificates', path: '/admin/certificates' },
+  const iconMap = {
+    home: <FaHome />,
+    admissions: <FaUserPlus />,
+    students: <FaUserGraduate />,
+    teachers: <FaChalkboardTeacher />,
+    hr: <FaClipboardList />,
+    users: <FaUserGraduate />,
+    courses: <FaBook />,
+    attendance: <FaClipboardList />,
+    results: <FaGraduationCap />,
+    announcements: <FaBullhorn />,
+    blog: <FaPen />,
+    complaints: <FaExclamationCircle />,
+    finance: <FaMoneyBillWave />,
+    referral: <FaLink />,
+    reports: <FaChartBar />,
+    settings: <FaCog />
+  };
 
-    { type: 'label', label: 'COMMUNICATION' },
-    { icon: <FaBullhorn />, label: 'Announcements', path: '/admin/announcements' },
-    { 
-      icon: <FaExclamationCircle />, 
-      label: 'Complaints', 
-      path: '/admin/complaints',
-      badge: hasOpenComplaints
-    },
-
-    { type: 'label', label: 'FINANCE' },
-    { 
-      icon: <FaMoneyBillWave />, 
-      label: 'Finance', 
-      type: 'dropdown',
-      isOpen: openMenus.finance,
-      onToggle: () => toggleMenu('finance'),
-      items: [
-        { label: 'Overview', path: '/admin/finance' },
-        { label: 'Transactions', path: '/admin/finance/transactions' }
-      ]
-    },
-
-    { type: 'label', label: 'GROWTH' },
-    { icon: <FaLink />, label: 'Referral Program', path: '/admin/referral' },
-
-    { type: 'label', label: 'SYSTEM' },
-    { icon: <FaChartBar />, label: 'Reports', path: '/admin/reports' },
-    { 
-      icon: <FaCog />, 
-      label: 'Settings', 
-      type: 'dropdown',
-      isOpen: openMenus.settings,
-      onToggle: () => toggleMenu('settings'),
-      items: [
-        { label: 'Testimonials', path: '/admin/settings/testimonials' },
-        { label: 'Media Library', path: '/admin/settings/media' },
-        { label: 'Site Content', path: '/admin/settings/content' },
-        { label: 'Media Page', path: '/admin/settings/media-page' }
-      ]
+  const navItems = buildAdminSidebar(user, user?.permissions, hasOpenComplaints).map((item) => {
+    if (item.type === 'label') return item;
+    if (item.type === 'dropdown') {
+      const menuKey = item.label.toLowerCase().includes('user') ? 'users' : item.label.toLowerCase().includes('finance') ? 'finance' : 'settings';
+      return {
+        ...item,
+        icon: iconMap[item.iconKey],
+        isOpen: openMenus[menuKey] || location.pathname.startsWith(item.items?.[0]?.path || ''),
+        onToggle: () => toggleMenu(menuKey)
+      };
     }
-  ];
+    return { ...item, icon: iconMap[item.iconKey] };
+  });
 
   const getBreadcrumbs = () => {
     const paths = location.pathname.split('/').filter(p => p);

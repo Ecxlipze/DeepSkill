@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
-import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '../components/AdminLayout';
 
 const Container = styled.div`
@@ -132,28 +131,28 @@ const UserManager = () => {
     batch: ''
   });
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('allowed_cnics').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('allowed_cnics').select('*').order('created_at', { ascending: false });
     if (data) setUsers(data);
     setLoading(false);
-  };
+  }, []);
 
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     const { data } = await supabase.from('courses').select('title');
     if (data) setCourses(data);
-  };
+  }, []);
 
-  const fetchBatches = async () => {
+  const fetchBatches = useCallback(async () => {
     const { data } = await supabase.from('batches').select('*').eq('status', 'Active');
     if (data) setBatches(data);
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
     fetchCourses();
     fetchBatches();
-  }, []);
+  }, [fetchUsers, fetchCourses, fetchBatches]);
 
   const handleCnicChange = (e) => {
     setFormData({ ...formData, cnic: formatCNIC(e.target.value) });

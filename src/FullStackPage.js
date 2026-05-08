@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { FaUser, FaStar, FaUsers, FaProjectDiagram, FaWallet, FaClock, FaBriefcase, FaChalkboardTeacher, FaDatabase } from 'react-icons/fa';
-import { supabase } from './supabaseClient';
 import mernCard from './assets/mern-card.svg';
 import mernProject from './assets/mern-project.svg';
 import mernTree from './assets/mern-tree.svg';
@@ -473,6 +472,7 @@ const FullStackPage = () => {
 
   React.useEffect(() => {
     const fetchPdf = async () => {
+      const { supabase } = await import('./supabaseClient');
       const { data } = await supabase
         .from('courses')
         .select('pdf_url')

@@ -108,7 +108,7 @@ const IconCircle = styled(motion.div)`
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #7B1F2E;
+  color: #d94a5e;
   font-size: 2.5rem;
   margin-bottom: 25px;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);

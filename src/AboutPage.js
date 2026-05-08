@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import AboutUsHero from './AboutUsHero';
@@ -43,32 +43,47 @@ const Particle = styled(motion.div)`
 `;
 
 const AboutPage = () => {
+  const [particles, setParticles] = useState([]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+    setParticles(
+      [...Array(15)].map((_, i) => ({
+        id: i,
+        initialX: Math.random() * window.innerWidth,
+        initialY: Math.random() * window.innerHeight,
+        initialOpacity: Math.random() * 0.5,
+        y1: Math.random() * -100,
+        y2: Math.random() * 100,
+        duration: 5 + Math.random() * 10,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`
+      }))
+    );
   }, []);
 
   return (
     <PageContainer>
-      {[...Array(15)].map((_, i) => (
+      {particles.map((particle) => (
         <Particle
-          key={i}
+          key={particle.id}
           initial={{ 
-            x: Math.random() * window.innerWidth, 
-            y: Math.random() * window.innerHeight,
-            opacity: Math.random() * 0.5 
+            x: particle.initialX,
+            y: particle.initialY,
+            opacity: particle.initialOpacity
           }}
           animate={{ 
-            y: [null, Math.random() * -100, Math.random() * 100],
+            y: [null, particle.y1, particle.y2],
             opacity: [0.1, 0.4, 0.1]
           }}
           transition={{ 
-            duration: 5 + Math.random() * 10, 
+            duration: particle.duration,
             repeat: Infinity,
             ease: "easeInOut" 
           }}
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            left: particle.left,
+            top: particle.top,
           }}
         />
       ))}

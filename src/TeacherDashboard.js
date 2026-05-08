@@ -4,10 +4,7 @@ import { motion } from 'framer-motion';
 import DashboardLayout from './components/DashboardLayout';
 import { useAuth } from './context/AuthContext';
 import { supabase } from './supabaseClient';
-import { 
-  FaHome, FaTasks, FaExclamationCircle, 
-  FaWallet, FaUserFriends
-} from 'react-icons/fa';
+import { getAssignedTeacherBatches, getTeacherByCnic } from './utils/teacherUtils';
 
 // ----- Styled Components ----- //
 
@@ -29,19 +26,21 @@ const Card = styled(motion.div)`
 
 // 1. Header Card
 const HeaderCard = styled(Card)`
-  display: flex;
-  align-items: center;
-  gap: 25px;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+  overflow: hidden;
   
   @media (max-width: 768px) {
-    flex-direction: column;
-    text-align: center;
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 `;
 
 const Avatar = styled.div`
-  width: 90px;
-  height: 90px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1f427b, #2d55b3);
   display: flex;
@@ -50,19 +49,26 @@ const Avatar = styled.div`
   font-size: 2.5rem;
   font-weight: bold;
   color: #fff;
-  flex-shrink: 0;
   box-shadow: 0 4px 15px rgba(31, 66, 123, 0.4);
+
+  @media (max-width: 768px) {
+    width: 76px;
+    height: 76px;
+    font-size: 2rem;
+  }
 `;
 
 const InfoBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
+  min-width: 0;
+  width: 100%;
 `;
 
 const TeacherName = styled.h2`
   margin: 0;
-  font-size: 1.8rem;
+  font-size: clamp(1.45rem, 2vw, 1.8rem);
   color: #fff;
 `;
 
@@ -74,18 +80,89 @@ const DetailRow = styled.div`
   flex-wrap: wrap;
 
   @media (max-width: 768px) {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   span {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
+    overflow-wrap: anywhere;
     
     strong {
       color: #ccc;
       font-weight: 600;
     }
+  }
+`;
+
+const AssignmentHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .label {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+`;
+
+const ScopeList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+`;
+
+const ScopeOption = styled.button`
+  width: 100%;
+  background: ${props => props.$active ? 'rgba(77, 166, 255, 0.14)' : 'rgba(255, 255, 255, 0.035)'};
+  border: 1px solid ${props => props.$active ? 'rgba(77, 166, 255, 0.45)' : 'rgba(255, 255, 255, 0.08)'};
+  border-radius: 10px;
+  color: ${props => props.$active ? '#fff' : 'rgba(255, 255, 255, 0.72)'};
+  cursor: pointer;
+  font-family: inherit;
+  padding: 12px;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+
+  &:hover {
+    background: rgba(77, 166, 255, 0.1);
+    border-color: #4da6ff;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.65;
+  }
+
+  &:disabled:hover {
+    background: rgba(255, 255, 255, 0.035);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(77, 166, 255, 0.55);
+    outline-offset: 2px;
+  }
+
+  .course {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  .batch {
+    display: block;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
   }
 `;
 
@@ -128,12 +205,8 @@ const StatSub = styled.div`
 // 3. Bottom Two-Column Layout
 const BottomGrid = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 30px;
-  
-  @media (max-width: 992px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 const SectionTitle = styled.h3`
@@ -142,65 +215,6 @@ const SectionTitle = styled.h3`
   color: #fff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 12px;
-`;
-
-// Table Styles
-const TableWrapper = styled.div`
-  overflow-x: auto;
-`;
-
-const StyledTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  
-  th, td {
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  
-  th {
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 500;
-    font-size: 0.9rem;
-  }
-  
-  td {
-    color: #ccc;
-    font-size: 0.95rem;
-  }
-  
-  tr:last-child td {
-    border-bottom: none;
-  }
-`;
-
-const Badge = styled.span`
-  padding: 6px 12px;
-  border-radius: 50px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  
-  ${({ status }) => {
-    switch (status) {
-      case 'Excellent': return 'background: rgba(46, 125, 50, 0.15); color: #4caf50; border: 1px solid rgba(46, 125, 50, 0.3);';
-      case 'Good': return 'background: rgba(77, 166, 255, 0.15); color: #4da6ff; border: 1px solid rgba(77, 166, 255, 0.3);';
-      case 'Average': return 'background: rgba(255, 152, 0, 0.15); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3);';
-      default: return 'background: #333; color: #fff;';
-    }
-  }}
-`;
-
-const ViewAllLink = styled.div`
-  text-align: right;
-  margin-top: 15px;
-  a {
-    color: #4da6ff;
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-    &:hover { text-decoration: underline; }
-  }
 `;
 
 // Progress Rings
@@ -275,138 +289,125 @@ const ProgressRing = ({ radius, stroke, progress, color }) => {
   );
 };
 
-// ----- Mock Data ----- //
-
-const mockTeacherData = {
-  course: "Web Development Bootcamp",
-  batch: "Batch 12",
-  timing: "Morning — 9:00 AM to 12:00 PM",
-  totalStudents: 45,
-  classesConducted: 14,
-  totalClasses: 50,
-  classAverage: 82,
-  assignmentsGraded: 95,
-  courseProgress: 28,
-};
-
-const recentClasses = [
-  { date: "2025-04-16", topic: "React State Management", attendance: "92%", status: "Excellent" },
-  { date: "2025-04-15", topic: "React Components & Props", attendance: "88%", status: "Good" },
-  { date: "2025-04-14", topic: "Intro to React", attendance: "95%", status: "Excellent" },
-  { date: "2025-04-10", topic: "Advanced JavaScript", attendance: "85%", status: "Good" },
-  { date: "2025-04-09", topic: "DOM Manipulation", attendance: "78%", status: "Average" },
-];
-
+// ----- Dashboard Component ----- //
 const TeacherDashboard = () => {
   const { user } = useAuth();
+  const [selectedBatchId, setSelectedBatchId] = useState('');
   const [stats, setStats] = useState({
     assignedBatches: [],
     totalStudents: 0,
-    mainCourse: "---",
-    mainBatch: "---",
-    mainTiming: "---"
+    classesConducted: 0,
+    classAverage: 0,
+    tasksAssigned: 0,
+    assignmentsGraded: 0,
+    overallAttendance: 0
   });
-  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     const fetchTeacherStats = async () => {
       if (!user?.cnic) return;
 
       try {
-        // 1. Get Teacher ID first
-        const { data: teacher, error: tError } = await supabase
-          .from('teachers')
-          .select('id')
-          .eq('cnic', user.cnic)
-          .single();
-        
-        if (tError) throw tError;
+        const teacher = await getTeacherByCnic(user.cnic);
+        const batches = await getAssignedTeacherBatches(teacher.id);
+        const activeBatch = batches.find((batch) => batch.id === selectedBatchId) || batches[0];
+        const batchNames = activeBatch?.batch_name ? [activeBatch.batch_name] : [];
 
-        // 2. Get Assigned Batches
-        const { data: assignments, error: aError } = await supabase
-          .from('teacher_batches')
-          .select(`
-            batch_id,
-            batches (
-              id,
-              batch_name,
-              course,
-              time_shift
-            )
-          `)
-          .eq('teacher_id', teacher.id);
-
-        if (aError) throw aError;
-
-        const batches = assignments.map(a => a.batches).filter(Boolean);
-        
-        // 3. Count Students in these batches
         let studentCount = 0;
-        if (batches.length > 0) {
-          const batchNames = batches.map(b => b.batch_name);
+        let classAverage = 0;
+        let classesConducted = 0;
+        let tasksAssigned = 0;
+        let assignmentsGraded = 0;
+        let overallAttendance = 0;
+
+        if (batchNames.length > 0) {
           const { count, error: cError } = await supabase
             .from('admissions')
             .select('*', { count: 'exact', head: true })
             .in('batch', batchNames);
           
           if (!cError) studentCount = count;
-        }
 
-        const mainBatch = batches[0];
+          const { data: attendanceData } = await supabase
+            .from('attendance')
+            .select('date, status, batch_name')
+            .in('batch_name', batchNames);
+
+          const uniqueClassDates = new Set();
+          let presentCount = 0;
+
+          attendanceData?.forEach((row) => {
+            uniqueClassDates.add(`${row.batch_name}-${row.date}`);
+            if (row.status === 'present' || row.status === 'late') presentCount += 1;
+          });
+
+          classesConducted = uniqueClassDates.size;
+          overallAttendance = attendanceData?.length
+            ? Math.round((presentCount / attendanceData.length) * 100)
+            : 0;
+          classAverage = overallAttendance;
+
+          const { data: taskData } = await supabase
+            .from('tasks')
+            .select(`
+              id,
+              batch,
+              task_submissions(status, marks_obtained)
+            `)
+            .in('batch', batchNames)
+            .eq('assigned_by', user.name);
+
+          tasksAssigned = taskData?.length || 0;
+
+          const submissions = taskData?.flatMap(task => task.task_submissions || []) || [];
+          const gradedCount = submissions.filter(sub => sub.status === 'Graded' || sub.marks_obtained !== null).length;
+          assignmentsGraded = submissions.length > 0 ? Math.round((gradedCount / submissions.length) * 100) : 0;
+        }
 
         setStats({
           assignedBatches: batches,
+          selectedBatch: activeBatch || null,
           totalStudents: studentCount,
-          mainCourse: mainBatch?.course || "None",
-          mainBatch: mainBatch?.batch_name || "None",
-          mainTiming: mainBatch?.time_shift || "---"
+          classesConducted,
+          classAverage,
+          tasksAssigned,
+          assignmentsGraded,
+          overallAttendance
         });
 
       } catch (err) {
         console.error("Error fetching teacher stats:", err);
-      } finally {
-        setLoadingStats(false);
       }
     };
 
     fetchTeacherStats();
-  }, [user]);
+  }, [user, selectedBatchId]);
+
+  useEffect(() => {
+    if (selectedBatchId || stats.assignedBatches.length === 0) return;
+    setSelectedBatchId(stats.assignedBatches[0].id);
+  }, [selectedBatchId, stats.assignedBatches]);
 
   const teacher = {
     name: user?.name || "Loading...",
     cnic: user?.cnic || "---",
-    course: stats.mainCourse,
-    batch: stats.mainBatch,
-    timing: stats.mainTiming,
     totalStudents: stats.totalStudents,
-    classesConducted: 0,
-    totalClasses: 50,
-    classAverage: 0,
+    classesConducted: stats.classesConducted,
+    totalClasses: stats.classesConducted,
+    classAverage: stats.classAverage,
     assignmentsGraded: 0,
-    courseProgress: 0,
+    courseProgress: stats.overallAttendance,
   };
 
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
-  const navItems = [
-    { label: 'Home', path: '/teacher/dashboard', icon: <FaHome /> },
-    { 
-      label: 'Tasks', 
-      icon: <FaTasks />, 
-      subItems: [
-        { label: 'Assign Task', path: '/teacher/tasks/assign' },
-        { label: 'View Tasks', path: '/teacher/tasks/view' }
-      ]
-    },
-    { label: 'Complaints', path: '/teacher/complaints', icon: <FaExclamationCircle /> },
-    { label: 'Finance', path: '/teacher/finance', icon: <FaWallet /> },
-    { label: 'Referral Program', path: '/teacher/referral', icon: <FaUserFriends /> }
-  ];
+  const selectedBatch = stats.selectedBatch;
+  const selectedTiming = selectedBatch?.time_shift || selectedBatch?.batch_timing;
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
         
         {/* 1. Header Card */}
@@ -420,9 +421,36 @@ const TeacherDashboard = () => {
             <TeacherName>{teacher.name}</TeacherName>
             <DetailRow>
               <span><strong>CNIC:</strong> {teacher.cnic}</span>
-              <span><strong>Course:</strong> {teacher.course}</span>
-              <span><strong>Batch:</strong> {teacher.batch} — {teacher.timing}</span>
             </DetailRow>
+            <AssignmentHeader>
+              <div className="label">Course & Batch Scope</div>
+              {stats.assignedBatches.length > 0 && (
+                <ScopeList aria-label="Select dashboard batch">
+                  {stats.assignedBatches.map((batch) => {
+                    const timing = batch.time_shift || batch.batch_timing;
+                    return (
+                      <ScopeOption
+                        key={batch.id}
+                        type="button"
+                        $active={selectedBatch?.id === batch.id}
+                        onClick={() => setSelectedBatchId(batch.id)}
+                      >
+                        <span className="course">{batch.course || 'General Course'}</span>
+                        <span className="batch">
+                          {batch.batch_name || 'Unnamed batch'}{timing ? ` - ${timing}` : ''}
+                        </span>
+                      </ScopeOption>
+                    );
+                  })}
+                </ScopeList>
+              )}
+              {stats.assignedBatches.length === 0 && (
+                <ScopeOption type="button" disabled>
+                  <span className="course">No assignments</span>
+                  <span className="batch">No course or batch assigned yet.</span>
+                </ScopeOption>
+              )}
+            </AssignmentHeader>
           </InfoBlock>
         </HeaderCard>
 
@@ -433,25 +461,35 @@ const TeacherDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
+            <StatLabel>Active Batch</StatLabel>
+            <StatValue>{stats.assignedBatches.length}</StatValue>
+            <StatSub>{selectedBatch?.batch_name || 'none selected'}</StatSub>
+          </StatCard>
+
+          <StatCard
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
             <StatLabel>Total Students</StatLabel>
             <StatValue>{teacher.totalStudents}</StatValue>
-            <StatSub>currently enrolled</StatSub>
+            <StatSub>{selectedBatch?.course || 'selected course'}</StatSub>
           </StatCard>
           
           <StatCard
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
           >
             <StatLabel>Classes Conducted</StatLabel>
-            <StatValue style={{ fontSize: '2rem', lineHeight: '1.2' }}>{teacher.classesConducted} / {teacher.totalClasses}</StatValue>
-            <StatSub>sessions completed</StatSub>
+            <StatValue style={{ fontSize: '2rem', lineHeight: '1.2' }}>{teacher.classesConducted}</StatValue>
+            <StatSub>{selectedTiming || 'timing not set'}</StatSub>
           </StatCard>
           
           <StatCard
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
           >
             <StatLabel>Class Average</StatLabel>
             <StatValue style={{ fontSize: '2.5rem' }}>{teacher.classAverage}%</StatValue>
@@ -461,40 +499,6 @@ const TeacherDashboard = () => {
 
         {/* 3. Bottom Two-Column Layout */}
         <BottomGrid>
-          
-          {/* Left Column - Recent Classes Table */}
-          <Card
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <SectionTitle>Recent Classes Conducted</SectionTitle>
-            <TableWrapper>
-              <StyledTable>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Topic Covered</th>
-                    <th>Attendance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentClasses.map((record, index) => (
-                    <tr key={index}>
-                      <td>{record.date}</td>
-                      <td>{record.topic}</td>
-                      <td>
-                        <Badge status={record.status}>{record.attendance}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </StyledTable>
-            </TableWrapper>
-            <ViewAllLink>
-              <a href="#view-all">View Full Log</a>
-            </ViewAllLink>
-          </Card>
 
           {/* Right Column - Performance Overview */}
           <Card
@@ -512,14 +516,14 @@ const TeacherDashboard = () => {
               
               <RingRow>
                 <RingLabel>Assignments Graded</RingLabel>
-                <ProgressRing radius={25} stroke={4} progress={teacher.assignmentsGraded} color="#00e676" />
-                <RingValue>{teacher.assignmentsGraded}%</RingValue>
+                <ProgressRing radius={25} stroke={4} progress={stats.assignmentsGraded} color="#00e676" />
+                <RingValue>{stats.assignmentsGraded}%</RingValue>
               </RingRow>
               
               <RingRow>
                 <RingLabel>Overall Attendance</RingLabel>
-                <ProgressRing radius={25} stroke={4} progress={88} color="#ffab00" />
-                <RingValue>88%</RingValue>
+                <ProgressRing radius={25} stroke={4} progress={stats.overallAttendance} color="#ffab00" />
+                <RingValue>{stats.overallAttendance}%</RingValue>
               </RingRow>
             </RingsContainer>
           </Card>

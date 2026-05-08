@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Head from 'next/head';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from './supabaseClient';
 import { FaSearch, FaDownload, FaExclamationTriangle } from 'react-icons/fa';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -479,6 +479,7 @@ const VerifyCertificatePage = () => {
     setCertificate(null);
 
     try {
+      const { supabase } = await import('./supabaseClient');
       const { data, error: fetchError } = await supabase
         .from('certificates')
         .select('*')
@@ -605,7 +606,14 @@ const VerifyCertificatePage = () => {
   };
 
   return (
-    <Container>
+    <>
+      <Head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Great+Vibes&family=Montserrat:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
+      <Container>
       <HeaderSection>
         <Title
           initial={{ opacity: 0, y: 20 }}
@@ -717,7 +725,8 @@ const VerifyCertificatePage = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </Container>
+      </Container>
+    </>
   );
 };
 

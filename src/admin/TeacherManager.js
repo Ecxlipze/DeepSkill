@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaSearch, FaFilter, FaPlus, FaUserTie, 
-  FaEnvelope, FaPhone, FaIdCard, FaTimes,
-  FaChevronLeft, FaChevronRight, FaEye
+  FaSearch, FaFilter, FaPlus, FaTimes, FaEye
 } from 'react-icons/fa';
 import AdminLayout from '../components/AdminLayout';
 import { useNavigate } from 'react-router-dom';
@@ -368,11 +366,7 @@ const TeacherManager = () => {
     notes: ''
   });
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     setLoading(true);
     try {
       const [tRes, cRes, bRes] = await Promise.all([
@@ -382,11 +376,9 @@ const TeacherManager = () => {
       ]);
 
       if (tRes.error && tRes.error.code !== 'PGRST116') {
-        // If table doesn't exist, we'll show a message instead of crashing
         console.error("Teachers table error:", tRes.error);
       }
 
-      // Fetch teacher assignments to show batches in table
       const { data: assignments } = await supabase.from('teacher_batches').select('*, batches(batch_name)');
       
       const teacherList = (tRes.data || []).map(t => ({
@@ -399,11 +391,14 @@ const TeacherManager = () => {
       setBatches(bRes.data || []);
     } catch (err) {
       console.error("Initialization error:", err);
-      // Don't show toast for schema errors yet, we'll handle it in the UI
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   const handleCnicChange = (e) => {
     let val = e.target.value.replace(/\D/g, '');
@@ -433,11 +428,19 @@ const TeacherManager = () => {
 
       if (tError) throw tError;
 
+      const assignedBatches = formData.selectedBatches
+        .map(selected => batches.find(batch => batch.id === selected.batch_id))
+        .filter(Boolean);
+      const assignedBatchNames = assignedBatches.map(batch => batch.batch_name);
+      const assignedCourses = Array.from(new Set(assignedBatches.map(batch => batch.course).filter(Boolean)));
+
       // 2. Add/Update allowed_cnics (Upsert to prevent duplicate key error)
       await supabase.from('allowed_cnics').upsert([{
         cnic: formData.cnic,
         name: formData.name,
-        role: 'teacher'
+        role: 'teacher',
+        assigned_course: assignedCourses.join(', '),
+        batch: assignedBatchNames.join(', ')
       }], { onConflict: 'cnic' });
 
       // 3. Add Batch Assignments

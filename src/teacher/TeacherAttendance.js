@@ -5,11 +5,11 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaCheck, FaTimes, FaClock, FaHistory, FaCalendarCheck, 
-  FaUserGraduate, FaChevronRight, FaChevronLeft, FaSave,
-  FaExclamationTriangle, FaFilter, FaSearch
+  FaSave, FaExclamationTriangle, FaFilter
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../components/DashboardLayout';
+import { getAssignedTeacherBatches, getTeacherByCnic } from '../utils/teacherUtils';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -186,26 +186,28 @@ const TeacherAttendance = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [teacherRecord, setTeacherRecord] = useState(null);
 
   // Fetch batches assigned to teacher
   useEffect(() => {
     const fetchBatches = async () => {
+      setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('teacher_batches')
-          .select('*, batches(*)')
-          .eq('teacher_id', user.id);
-        
-        if (error) throw error;
-        const mapped = data.map(b => b.batches);
+        const teacher = await getTeacherByCnic(user.cnic);
+        setTeacherRecord(teacher);
+
+        const mapped = await getAssignedTeacherBatches(teacher.id);
         setBatches(mapped);
         if (mapped.length > 0) setSelectedBatch(mapped[0]);
       } catch (err) {
+        console.error("Batch fetch error:", err);
         toast.error("Error loading batches");
+      } finally {
+        setLoading(false);
       }
     };
-    if (user?.id) fetchBatches();
-  }, [user]);
+    if (user?.cnic) fetchBatches();
+  }, [user?.cnic]);
 
   // Fetch students for selected batch and existing attendance for selected date
   const fetchData = useCallback(async () => {
@@ -278,11 +280,13 @@ const TeacherAttendance = () => {
   };
 
   const handleSave = async () => {
+    if (!teacherRecord?.id || !selectedBatch) return;
     setProcessing(true);
     try {
       const records = students.map(s => ({
         student_id: s.id,
-        teacher_id: user.id,
+        student_name: s.name,
+        teacher_id: teacherRecord.id,
         batch_id: selectedBatch.id,
         batch_name: selectedBatch.batch_name,
         course: selectedBatch.course,
@@ -297,6 +301,18 @@ const TeacherAttendance = () => {
 
       toast.success(`Attendance saved for ${selectedBatch.batch_name} — ${selectedDate}`);
       setIsSaved(true);
+
+      // Trigger result recomputation for all students in this batch
+      try {
+        const { computeAndCacheResult } = await import('../utils/resultUtils');
+        for (const s of students) {
+          await computeAndCacheResult(s.id, 'midterm');
+          await computeAndCacheResult(s.id, 'finalterm');
+        }
+      } catch (calcErr) {
+        console.error("Calculation trigger failed:", calcErr);
+      }
+
       fetchData(); // Refresh stats
     } catch (err) {
       toast.error(err.message);
@@ -349,7 +365,7 @@ const TeacherAttendance = () => {
                     <FormGroup>
                       <label><FaClock /> Class Timing</label>
                       <div style={{ background: '#0a0a0a', padding: '12px', borderRadius: '10px', fontSize: '0.9rem', color: '#378ADD', border: '1px solid rgba(55,138,221,0.2)' }}>
-                        {selectedBatch?.batch_timing || "9:00 AM - 12:00 PM"}
+                        {selectedBatch?.time_shift || selectedBatch?.batch_timing || "Not set"}
                       </div>
                     </FormGroup>
                   </FilterBar>

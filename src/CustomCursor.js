@@ -42,6 +42,7 @@ const CursorDot = styled(motion.div)`
 
 const CustomCursor = () => {
   const [isHovering, setIsHovering] = useState(false);
+  const [enabled, setEnabled] = useState(false);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const location = useLocation();
@@ -81,9 +82,18 @@ const CustomCursor = () => {
   useEffect(() => {
     // Runtime CSS injection for extremely aggressive cursor hiding on Mac/Safari
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
+    const allowsMotion = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+    const shouldEnable = !isMobile && hasFinePointer && allowsMotion;
     let styleEl = null;
 
-    if (!isMobile) {
+    setEnabled(shouldEnable);
+
+    if (!shouldEnable) {
+      return undefined;
+    }
+
+    if (shouldEnable) {
       styleEl = document.createElement('style');
       styleEl.innerHTML = `
         *, *::before, *::after, html, body { cursor: none !important; -webkit-cursor: none !important; }
@@ -133,9 +143,14 @@ const CustomCursor = () => {
     };
   }, [mouseX, mouseY]);
 
+  if (!enabled) {
+    return null;
+  }
+
   return (
     <>
       <CursorWrapper
+        aria-hidden="true"
         style={{
           x: cursorX,
           y: cursorY,
@@ -149,6 +164,7 @@ const CustomCursor = () => {
         }}
       />
       <CursorDot
+        aria-hidden="true"
         style={{
           x: dotX,
           y: dotY,

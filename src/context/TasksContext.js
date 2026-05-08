@@ -34,15 +34,18 @@ export const TasksProvider = ({ children }) => {
         batch: task.batch,
         fileUrl: task.file_url,
         assignedBy: task.assigned_by,
+        totalMarks: task.total_marks,
         createdAt: task.created_at,
         submissions: subData
           .filter(sub => sub.task_id === task.id)
           .map(sub => ({
+            id: sub.id,
             studentName: sub.student_name,
             cnic: sub.cnic,
             fileUrl: sub.file_url,
             status: sub.status,
-            submittedAt: sub.submitted_at
+            submittedAt: sub.submitted_at,
+            marksObtained: sub.marks_obtained
           }))
       }));
 
@@ -95,13 +98,16 @@ export const TasksProvider = ({ children }) => {
         course: newTask.course,
         batch: newTask.batch,
         file_url: fileUrl,
-        assigned_by: newTask.assignedBy
+        assigned_by: newTask.assignedBy,
+        total_marks: newTask.totalMarks
       }]);
 
       if (error) throw error;
       fetchTasks();
+      return true;
     } catch (error) {
       alert("Failed to assign task: " + error.message);
+      return false;
     }
   };
 
@@ -172,8 +178,33 @@ export const TasksProvider = ({ children }) => {
     }
   };
 
+  const gradeSubmission = async (submissionId, marksObtained) => {
+    try {
+      const { data: sub, error: subErr } = await supabase
+        .from('task_submissions')
+        .update({ marks_obtained: marksObtained, status: 'Graded' })
+        .eq('id', submissionId)
+        .select('task_id, cnic')
+        .single();
+
+      if (subErr) throw subErr;
+
+      // Trigger result recomputation
+      const { data: student } = await supabase.from('admissions').select('id').eq('cnic', sub.cnic).single();
+      if (student) {
+        const { computeAndCacheResult } = await import('../utils/resultUtils');
+        await computeAndCacheResult(student.id, 'midterm');
+        await computeAndCacheResult(student.id, 'finalterm');
+      }
+
+      fetchTasks();
+    } catch (error) {
+      alert("Failed to grade submission: " + error.message);
+    }
+  };
+
   return (
-    <TasksContext.Provider value={{ tasks, addTask, submitTask, updateTask, deleteTask, loading }}>
+    <TasksContext.Provider value={{ tasks, addTask, submitTask, updateTask, deleteTask, gradeSubmission, loading }}>
       {children}
     </TasksContext.Provider>
   );

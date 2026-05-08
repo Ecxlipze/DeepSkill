@@ -2,10 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
 import { 
   FaCalendarCheck, FaClock, FaTimesCircle, FaCheckCircle,
-  FaExclamationTriangle, FaFilter, FaListUl
+  FaExclamationTriangle, FaListUl
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../components/DashboardLayout';
@@ -139,10 +138,18 @@ const StudentAttendance = () => {
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
+        const { data: student, error: studentError } = await supabase
+          .from('admissions')
+          .select('id')
+          .eq('cnic', user.cnic)
+          .single();
+
+        if (studentError) throw studentError;
+
         const { data, error } = await supabase
           .from('attendance')
           .select('*')
-          .eq('student_id', user.id)
+          .eq('student_id', student.id)
           .order('date', { ascending: false });
         
         if (error) throw error;
@@ -153,25 +160,35 @@ const StudentAttendance = () => {
         setLoading(false);
       }
     };
-    if (user?.id) fetchAttendance();
+    if (user?.cnic) fetchAttendance();
   }, [user]);
 
+  const filteredRecords = useMemo(
+    () => records.filter(r => r.date?.startsWith(filterMonth)),
+    [records, filterMonth]
+  );
+
   const stats = useMemo(() => {
-    const total = records.length;
-    const present = records.filter(r => r.status === 'present').length;
-    const absent = records.filter(r => r.status === 'absent').length;
-    const late = records.filter(r => r.status === 'late').length;
+    const total = filteredRecords.length;
+    const present = filteredRecords.filter(r => r.status === 'present').length;
+    const absent = filteredRecords.filter(r => r.status === 'absent').length;
+    const late = filteredRecords.filter(r => r.status === 'late').length;
     const pct = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
     
     return { total, present, absent, late, pct };
-  }, [records]);
+  }, [filteredRecords]);
 
   // Group records by date for heatmap
   const recordMap = useMemo(() => {
     const map = {};
-    records.forEach(r => { map[r.date] = r.status; });
+    filteredRecords.forEach(r => { map[r.date] = r.status; });
     return map;
-  }, [records]);
+  }, [filteredRecords]);
+
+  const daysInMonth = useMemo(() => {
+    const [year, month] = filterMonth.split('-').map(Number);
+    return new Date(year, month, 0).getDate();
+  }, [filterMonth]);
 
   return (
     <DashboardLayout>
@@ -242,7 +259,7 @@ const StudentAttendance = () => {
             </div>
             <CalendarGrid>
               {/* Simple grid for the month */}
-              {[...Array(30)].map((_, i) => {
+              {[...Array(daysInMonth)].map((_, i) => {
                 const date = `${filterMonth}-${(i+1).toString().padStart(2, '0')}`;
                 return (
                   <CalendarDay key={i} $status={recordMap[date]}>

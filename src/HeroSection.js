@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import styled from "styled-components";
-import { supabase } from "./supabaseClient";
+import Head from "next/head";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { FaReact, FaNodeJs, FaPhp, FaPython } from "react-icons/fa";
 import { SiMongodb, SiAdobephotoshop } from "react-icons/si";
@@ -161,36 +161,46 @@ const ButtonGroup = styled(motion.div)`
 
 
 const CodeParticles = () => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-  const particles = Array.from({ length: isMobile ? 8 : 18 });
+  const [particles, setParticles] = React.useState([]);
+
+  React.useEffect(() => {
+    const isMobile = window.innerWidth <= 768;
+    setParticles(
+      Array.from({ length: isMobile ? 8 : 18 }, (_, i) => ({
+        id: i,
+        char: Math.random() > 0.5 ? "0" : "1",
+        x: `${Math.random() * 95}%`,
+        y: `${Math.random() * 100}%`,
+        duration: Math.random() * 6 + 6,
+        delay: Math.random() * 5
+      }))
+    );
+  }, []);
 
   return (
     <>
-      {particles.map((_, i) => {
-        const char = Math.random() > 0.5 ? "0" : "1";
-        return (
-          <CodeParticle
-            key={i}
-            initial={{
-              x: (Math.random() * 95) + "%",
-              y: (Math.random() * 100) + "%",
-              opacity: 0,
-            }}
-            animate={{
-              y: [null, "-20%"],
-              opacity: [0, 0.4, 0],
-            }}
-            transition={{
-              duration: Math.random() * 6 + 6,
-              repeat: Infinity,
-              ease: "linear",
-              delay: Math.random() * 5,
-            }}
-          >
-            {char}
-          </CodeParticle>
-        );
-      })}
+      {particles.map((particle) => (
+        <CodeParticle
+          key={particle.id}
+          initial={{
+            x: particle.x,
+            y: particle.y,
+            opacity: 0,
+          }}
+          animate={{
+            y: [null, "-20%"],
+            opacity: [0, 0.4, 0],
+          }}
+          transition={{
+            duration: particle.duration,
+            repeat: Infinity,
+            ease: "linear",
+            delay: particle.delay,
+          }}
+        >
+          {particle.char}
+        </CodeParticle>
+      ))}
     </>
   );
 };
@@ -202,9 +212,11 @@ const HeroSection = () => {
     description: "At Deepskills, we equip young adults with practical, job-ready skills in design and web development, the skills that power today's digital economy. Design, develop and succeed!"
   });
   const [loading, setLoading] = React.useState(true);
+  const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
     const fetchHero = async () => {
+      const { supabase } = await import("./supabaseClient");
       const { data } = await supabase.from('settings').select('*').eq('key', 'hero_content').single();
       if (data) {
         setContent(data.value);
@@ -212,6 +224,13 @@ const HeroSection = () => {
       setLoading(false);
     };
     fetchHero();
+  }, []);
+
+  React.useEffect(() => {
+    const updateViewport = () => setIsMobile(window.innerWidth <= 768);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
   // Use window size or default to 1920x1080
@@ -250,8 +269,6 @@ const HeroSection = () => {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [mouseX, mouseY, initialX, initialY]);
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-
   if (loading && !content.heading) return null;
 
   const renderHeading = (text) => {
@@ -267,8 +284,12 @@ const HeroSection = () => {
 
 
   return (
-    <Section id="hero">
-      <CodeParticles />
+    <>
+      <Head>
+        <link rel="preload" as="image" href={heroBg} fetchPriority="high" />
+      </Head>
+      <Section id="hero">
+        <CodeParticles />
 
       {/* Tech-stacked floating icons */}
       <TechIcon
@@ -326,42 +347,23 @@ const HeroSection = () => {
       </TechIcon>
 
       <ContentWrapper style={!isMobile ? { x: moveX, y: moveY } : {}}>
-        <Heading
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
+        <Heading>
           {renderHeading(content.heading)}
         </Heading>
         
-        <Tagline
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.3 }}
-        >
+        <Tagline>
           {content.tagline}
         </Tagline>
 
         <Divider 
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: "100%", opacity: 1 }}
-          transition={{ duration: 1, delay: 0.5 }}
           style={{ margin: "0 auto 30px" }}
         />
         
-        <Description
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
+        <Description>
           {content.description}
         </Description>
         
-        <ButtonGroup
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-        >
+        <ButtonGroup>
           <RegisterButton
             variant="primary"
             to="/courses"
@@ -381,7 +383,8 @@ const HeroSection = () => {
           </RegisterButton>
         </ButtonGroup>
       </ContentWrapper>
-    </Section>
+      </Section>
+    </>
   );
 };
 

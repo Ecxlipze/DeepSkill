@@ -3,11 +3,14 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import DashboardLayout from './components/DashboardLayout';
 import { useAuth } from './context/AuthContext';
+import { useTasks } from './context/TasksContext';
 import { supabase } from './supabaseClient';
+import { Link } from 'react-router-dom';
 import {
   FaHome, FaTasks, FaChartLine, FaCertificate,
   FaExclamationCircle, FaUserPlus, FaComments,
-  FaWallet, FaUserFriends, FaGraduationCap
+  FaWallet, FaUserFriends, FaGraduationCap, FaCheckCircle,
+  FaBullhorn
 } from 'react-icons/fa';
 
 // ----- Styled Components ----- //
@@ -90,6 +93,83 @@ const DetailRow = styled.div`
   }
 `;
 
+const StatusBadge = styled.span`
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: ${props => props.$graduated ? 'rgba(139, 92, 246, 0.14)' : 'rgba(16, 185, 129, 0.12)'};
+  color: ${props => props.$graduated ? '#c4b5fd' : '#34d399'};
+  border: 1px solid ${props => props.$graduated ? 'rgba(139, 92, 246, 0.3)' : 'rgba(16, 185, 129, 0.25)'};
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+
+  @media (max-width: 768px) {
+    align-self: center;
+  }
+`;
+
+const AlumniPanel = styled(Card)`
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(17, 17, 17, 0.94)),
+    #111;
+  border-color: rgba(139, 92, 246, 0.24);
+
+  @media (max-width: 800px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const AlumniTitle = styled.h3`
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 1.35rem;
+`;
+
+const AlumniText = styled.p`
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.6;
+`;
+
+const AlumniActions = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 800px) {
+    justify-content: flex-start;
+  }
+`;
+
+const ActionLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  background: ${props => props.$primary ? '#7B1F2E' : 'rgba(255,255,255,0.06)'};
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: 1px solid ${props => props.$primary ? 'rgba(123,31,46,0.4)' : 'rgba(255,255,255,0.08)'};
+
+  &:hover {
+    background: ${props => props.$primary ? '#96283a' : 'rgba(255,255,255,0.1)'};
+  }
+`;
+
 // 2. Stats Row
 const StatsGrid = styled.div`
   display: grid;
@@ -129,12 +209,8 @@ const StatSub = styled.div`
 // 3. Bottom Two-Column Layout
 const BottomGrid = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 30px;
-  
-  @media (max-width: 992px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 const SectionTitle = styled.h3`
@@ -143,65 +219,6 @@ const SectionTitle = styled.h3`
   color: #fff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 12px;
-`;
-
-// Table Styles
-const TableWrapper = styled.div`
-  overflow-x: auto;
-`;
-
-const StyledTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  
-  th, td {
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-  
-  th {
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 500;
-    font-size: 0.9rem;
-  }
-  
-  td {
-    color: #ccc;
-    font-size: 0.95rem;
-  }
-  
-  tr:last-child td {
-    border-bottom: none;
-  }
-`;
-
-const Badge = styled.span`
-  padding: 6px 12px;
-  border-radius: 50px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  
-  ${({ status }) => {
-    switch (status) {
-      case 'Present': return 'background: rgba(46, 125, 50, 0.15); color: #4caf50; border: 1px solid rgba(46, 125, 50, 0.3);';
-      case 'Absent': return 'background: rgba(211, 47, 47, 0.15); color: #f44336; border: 1px solid rgba(211, 47, 47, 0.3);';
-      case 'Late': return 'background: rgba(255, 152, 0, 0.15); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3);';
-      default: return 'background: #333; color: #fff;';
-    }
-  }}
-`;
-
-const ViewAllLink = styled.div`
-  text-align: right;
-  margin-top: 15px;
-  a {
-    color: #7B1F2E;
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 600;
-    &:hover { text-decoration: underline; }
-  }
 `;
 
 // Progress Rings
@@ -277,35 +294,11 @@ const ProgressRing = ({ radius, stroke, progress, color }) => {
   );
 };
 
-// ----- Mock Data ----- //
-
-const mockStudentData = {
-  course: "Web Development Bootcamp",
-  batch: "Batch 12",
-  timing: "Morning — 9:00 AM to 12:00 PM",
-  totalClasses: 50,
-  attended: 43,
-  coursesEnrolled: 2,
-  courseCompletion: 62,
-  assignmentCompletion: 74,
-};
-
-const attendanceRecords = [
-  { date: "2025-04-01", day: "Tuesday", status: "Present" },
-  { date: "2025-04-02", day: "Wednesday", status: "Present" },
-  { date: "2025-04-03", day: "Thursday", status: "Absent" },
-  { date: "2025-04-07", day: "Monday", status: "Late" },
-  { date: "2025-04-08", day: "Tuesday", status: "Present" },
-  { date: "2025-04-09", day: "Wednesday", status: "Present" },
-  { date: "2025-04-10", day: "Thursday", status: "Present" },
-  { date: "2025-04-14", day: "Monday", status: "Absent" },
-  { date: "2025-04-15", day: "Tuesday", status: "Present" },
-  { date: "2025-04-16", day: "Wednesday", status: "Late" },
-];
+// ----- Dashboard Component ----- //
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const { tasks } = useTasks();
   const [studentData, setStudentData] = useState(null);
-  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     const fetchLiveStats = async () => {
@@ -326,25 +319,30 @@ const StudentDashboard = () => {
         if (admission.batch) {
           const { data: bData } = await supabase
             .from('batches')
-            .select('time_shift')
+            .select('time_shift, completed_at, status')
             .eq('batch_name', admission.batch)
             .eq('course', admission.course)
             .single();
           batchInfo = bData;
         }
 
+        const { data: attendance } = await supabase
+          .from('attendance')
+          .select('status')
+          .eq('student_id', admission.id);
+
+        const totalClasses = attendance?.length || 0;
+        const attended = attendance?.filter(r => r.status === 'present' || r.status === 'late').length || 0;
+
         setStudentData({
           ...admission,
-          timing: batchInfo?.time_shift || "Timing not assigned",
-          totalClasses: 50, // Placeholder for now
-          attended: 0,      // Placeholder for now
-          courseCompletion: 0,
-          assignmentCompletion: 0
+          timing: batchInfo?.time_shift || admission.batch_timing || "Timing not assigned",
+          batchCompletedAt: batchInfo?.completed_at,
+          totalClasses,
+          attended
         });
       } catch (err) {
         console.error("Error syncing student dashboard:", err);
-      } finally {
-        setLoadingData(false);
       }
     };
 
@@ -357,34 +355,32 @@ const StudentDashboard = () => {
     course: studentData?.course || "No Course Assigned",
     batch: studentData?.batch || "No Batch Assigned",
     timing: studentData?.timing || "---",
-    totalClasses: studentData?.totalClasses || 50,
+    status: studentData?.status || user?.status || 'Active',
+    graduatedAt: studentData?.graduated_at || studentData?.batchCompletedAt,
+    totalClasses: studentData?.totalClasses || 0,
     attended: studentData?.attended || 0,
-    courseCompletion: studentData?.courseCompletion || 0,
-    assignmentCompletion: studentData?.assignmentCompletion || 0,
   };
+  const isGraduated = student.status === 'Graduated';
+
+  const myTasks = tasks.filter(t => t.course === student.course && t.batch === student.batch);
+  const submittedTasks = myTasks.filter(task => task.submissions?.some(sub => sub.cnic === student.cnic));
+  const assignmentCompletion = myTasks.length > 0 ? Math.round((submittedTasks.length / myTasks.length) * 100) : 0;
 
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
-  const attendancePercent = ((student.attended / student.totalClasses) * 100).toFixed(1);
+  const attendancePercent = student.totalClasses > 0 ? Number(((student.attended / student.totalClasses) * 100).toFixed(1)) : 0;
+  const courseCompletion = myTasks.length > 0 || student.totalClasses > 0
+    ? Math.round((assignmentCompletion + attendancePercent) / 2)
+    : 0;
 
-  const navItems = [
-    { label: 'Home', path: '/student/dashboard', icon: <FaHome /> },
-    { label: 'Tasks', path: '/student/tasks', icon: <FaTasks /> },
-    { label: 'Progress', path: '/student/progress', icon: <FaChartLine /> },
-    { label: 'Certificate', path: '/student/certificate', icon: <FaCertificate /> },
-    { label: 'Complaints', path: '/student/complaints', icon: <FaExclamationCircle /> },
-    { label: 'Results (Mid Term)', path: '/student/results/mid', icon: <FaGraduationCap /> },
-    { label: 'Results (Final Term)', path: '/student/results/final', icon: <FaGraduationCap /> },
-    { label: 'New Enrollment', path: '/student/enrollment', icon: <FaUserPlus /> },
-    { label: 'Group Chat', path: '/student/chat', icon: <FaComments /> },
-    { label: 'Finance', path: '/student/finance', icon: <FaWallet /> },
-    { label: 'Referral Program', path: '/student/referral', icon: <FaUserFriends /> }
-  ];
+  const displayDate = student.graduatedAt
+    ? new Date(student.graduatedAt).toLocaleDateString()
+    : null;
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
 
         {/* 1. Header Card */}
@@ -395,14 +391,39 @@ const StudentDashboard = () => {
         >
           <Avatar>{getInitials(student.name)}</Avatar>
           <InfoBlock>
+            <StatusBadge $graduated={isGraduated}>
+              {isGraduated ? <FaGraduationCap /> : <FaCheckCircle />}
+              {isGraduated ? 'Graduated' : 'Active Student'}
+            </StatusBadge>
             <StudentName>{student.name}</StudentName>
             <DetailRow>
               <span><strong>CNIC:</strong> {student.cnic}</span>
               <span><strong>Course:</strong> {student.course}</span>
               <span><strong>Batch:</strong> {student.batch} — {student.timing}</span>
+              {isGraduated && displayDate && <span><strong>Graduated:</strong> {displayDate}</span>}
             </DetailRow>
           </InfoBlock>
         </HeaderCard>
+
+        {isGraduated && (
+          <AlumniPanel
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+          >
+            <div>
+              <AlumniTitle>Course completed</AlumniTitle>
+              <AlumniText>
+                Your batch is closed now, so live classroom tools are hidden. You can still view your progress,
+                results, finance history, certificate, referrals, and start a new enrollment.
+              </AlumniText>
+            </div>
+            <AlumniActions>
+              <ActionLink to="/student/certificate" $primary><FaCertificate /> Certificate</ActionLink>
+              <ActionLink to="/student/new-enrollment"><FaUserPlus /> New Enrollment</ActionLink>
+            </AlumniActions>
+          </AlumniPanel>
+        )}
 
         {/* 2. Stats Row */}
         <StatsGrid>
@@ -411,7 +432,7 @@ const StudentDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <StatLabel>Total Attendance</StatLabel>
+            <StatLabel>{isGraduated ? 'Final Attendance' : 'Total Attendance'}</StatLabel>
             <StatValue>{student.attended} / {student.totalClasses}</StatValue>
             <StatSub>days attended</StatSub>
           </StatCard>
@@ -421,9 +442,9 @@ const StudentDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <StatLabel>Course Enrolled</StatLabel>
+            <StatLabel>{isGraduated ? 'Course Completed' : 'Course Enrolled'}</StatLabel>
             <StatValue style={{ fontSize: '1.3rem', lineHeight: '1.2' }}>{student.course}</StatValue>
-            <StatSub>Active course</StatSub>
+            <StatSub>{isGraduated ? 'Alumni record' : 'Active course'}</StatSub>
           </StatCard>
 
           <StatCard
@@ -431,48 +452,13 @@ const StudentDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <StatLabel>Batch / Timing</StatLabel>
+            <StatLabel>{isGraduated ? 'Completed Batch' : 'Batch / Timing'}</StatLabel>
             <StatValue style={{ fontSize: '1.8rem' }}>{student.batch || 'Batch 12'}</StatValue>
-            <StatSub>{student.timing.split('—')[1]?.trim() || '9:00 AM – 12:00 PM'}</StatSub>
+            <StatSub>{isGraduated ? (displayDate || 'Completed') : (student.timing.split('—')[1]?.trim() || '9:00 AM – 12:00 PM')}</StatSub>
           </StatCard>
         </StatsGrid>
 
-        {/* 3. Bottom Two-Column Layout */}
         <BottomGrid>
-
-          {/* Left Column - Attendance Table */}
-          <Card
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <SectionTitle>Recent Attendance</SectionTitle>
-            <TableWrapper>
-              <StyledTable>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Day</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceRecords.map((record, index) => (
-                    <tr key={index}>
-                      <td>{record.date}</td>
-                      <td>{record.day}</td>
-                      <td>
-                        <Badge status={record.status}>{record.status}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </StyledTable>
-            </TableWrapper>
-            <ViewAllLink>
-              <a href="#view-all">View All</a>
-            </ViewAllLink>
-          </Card>
 
           {/* Right Column - Progress Circles */}
           <Card
@@ -480,7 +466,7 @@ const StudentDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            <SectionTitle>My Progress</SectionTitle>
+            <SectionTitle>{isGraduated ? 'Final Summary' : 'My Progress'}</SectionTitle>
             <RingsContainer>
               <RingRow>
                 <RingLabel>Attendance</RingLabel>
@@ -490,14 +476,14 @@ const StudentDashboard = () => {
 
               <RingRow>
                 <RingLabel>Course Completion</RingLabel>
-                <ProgressRing radius={25} stroke={4} progress={student.courseCompletion} color="#00e676" />
-                <RingValue>{student.courseCompletion}%</RingValue>
+                <ProgressRing radius={25} stroke={4} progress={courseCompletion} color="#00e676" />
+                <RingValue>{courseCompletion}%</RingValue>
               </RingRow>
 
               <RingRow>
                 <RingLabel>Assignments</RingLabel>
-                <ProgressRing radius={25} stroke={4} progress={student.assignmentCompletion} color="#ffab00" />
-                <RingValue>{student.assignmentCompletion}%</RingValue>
+                <ProgressRing radius={25} stroke={4} progress={assignmentCompletion} color="#ffab00" />
+                <RingValue>{assignmentCompletion}%</RingValue>
               </RingRow>
             </RingsContainer>
           </Card>

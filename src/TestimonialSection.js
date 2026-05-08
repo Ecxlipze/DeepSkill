@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { supabase } from "./supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlay, FaTimes } from "react-icons/fa";
 import Slider from "react-slick";
@@ -11,7 +10,7 @@ import rightBtnIcon from "./assets/right-btn.svg";
 
 const dummyTestimonials = [
   { id: 'dummy-1', student_name: 'Ali Khan', course_name: 'Graphic Design Mastery', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null },
-  { id: 'dummy-2', student_name: 'Ayesha Rahman', course_name: 'Laravel PHP Development', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null },
+  { id: 'dummy-2', student_name: 'Ayesha Rahman', course_name: 'Full Stack (Laravel)', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null },
   { id: 'dummy-3', student_name: 'Usman Tariq', course_name: 'Full Stack React JS', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null },
   { id: 'dummy-4', student_name: 'Fatima Noor', course_name: 'WordPress Mastery', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null }
 ];
@@ -82,8 +81,9 @@ const SliderWrapper = styled.div`
   }
 `;
 
-const VideoCard = styled(motion.div)`
+const VideoCard = styled(motion.button)`
   background-color: #d9d9d9;
+  border: 0;
   border-radius: 20px;
   height: 500px;
   display: flex !important;
@@ -140,8 +140,8 @@ const ArrowBtn = styled(motion.div)`
 const PrevArrow = (props) => {
   const { onClick } = props;
   return (
-    <ArrowBtn className="slick-prev" onClick={onClick} whileHover={{ x: -10 }}>
-      <img src={leftBtnIcon} alt="Previous" style={{ width: 45, height: 45 }} />
+    <ArrowBtn className="slick-prev" role="button" aria-label="Previous testimonial" tabIndex={0} onClick={onClick} whileHover={{ x: -10 }}>
+      <img src={leftBtnIcon} alt="" aria-hidden="true" style={{ width: 45, height: 45 }} />
     </ArrowBtn>
   );
 };
@@ -149,8 +149,8 @@ const PrevArrow = (props) => {
 const NextArrow = (props) => {
   const { onClick } = props;
   return (
-    <ArrowBtn className="slick-next" onClick={onClick} whileHover={{ x: 10 }}>
-      <img src={rightBtnIcon} alt="Next" style={{ width: 45, height: 45 }} />
+    <ArrowBtn className="slick-next" role="button" aria-label="Next testimonial" tabIndex={0} onClick={onClick} whileHover={{ x: 10 }}>
+      <img src={rightBtnIcon} alt="" aria-hidden="true" style={{ width: 45, height: 45 }} />
     </ArrowBtn>
   );
 };
@@ -249,7 +249,7 @@ const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayC
   const isDirectVideo = videoUrl && videoUrl.match(/\.(mp4|webm|ogg)$/i);
 
   return (
-    <VideoCard whileHover={{ scale: 1.02 }} onClick={() => onPlayClick(videoUrl)}>
+    <VideoCard type="button" aria-label={`Play testimonial video${studentName ? ` from ${studentName}` : ''}`} whileHover={{ scale: 1.02 }} onClick={() => onPlayClick(videoUrl)}>
       {/* Background Image/Thumbnail */}
       {thumbnail ? (
         <img src={thumbnail} alt="Video Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', zIndex: 0 }} />
@@ -258,6 +258,7 @@ const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayC
           src={videoUrl}
           muted
           playsInline
+          preload="none"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, pointerEvents: 'none' }}
         />
       ) : videoUrl ? (
@@ -265,6 +266,7 @@ const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayC
           title="Student Testimonial Thumbnail"
           src={`${videoUrl}${videoUrl.includes('?') ? '&' : '?'}controls=0`}
           frameBorder="0"
+          loading="lazy"
           className="thumbnail-iframe"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }}
         ></iframe>
@@ -296,6 +298,7 @@ const TestimonialSection = ({ courseName = "General" }) => {
   useEffect(() => {
     const fetchTestimonials = async () => {
       setLoading(true);
+      const { supabase } = await import("./supabaseClient");
       let query = supabase.from('testimonials').select('*').order('created_at', { ascending: false });
       
       if (courseName !== "All") {
@@ -386,8 +389,8 @@ const TestimonialSection = ({ courseName = "General" }) => {
             onClick={() => setModalVideo(null)}
           >
             <div style={{ position: 'relative', width: '100%', maxWidth: '900px' }} onClick={e => e.stopPropagation()}>
-              <CloseButton onClick={() => setModalVideo(null)}>
-                <FaTimes />
+              <CloseButton type="button" aria-label="Close testimonial video" onClick={() => setModalVideo(null)}>
+                <FaTimes aria-hidden="true" />
               </CloseButton>
               <ModalContent
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -395,11 +398,12 @@ const TestimonialSection = ({ courseName = "General" }) => {
                 exit={{ scale: 0.9, opacity: 0 }}
               >
                 {modalVideo.match(/\.(mp4|webm|ogg)$/i) ? (
-                  <video src={modalVideo} controls autoPlay playsInline />
+                  <video src={modalVideo} controls autoPlay playsInline preload="metadata" />
                 ) : (
                   <iframe
                     title="Student Testimonial Video"
                     src={`${modalVideo}${modalVideo.includes('?') ? '&' : '?'}autoplay=1`}
+                    loading="lazy"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>

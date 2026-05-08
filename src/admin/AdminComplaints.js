@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { 
   FaPaperPlane, FaExclamationCircle, 
-  FaCheckCircle, FaInbox, FaFilter, FaUserShield
+  FaCheckCircle, FaInbox, FaUserShield
 } from 'react-icons/fa';
-import DashboardLayout from '../components/DashboardLayout';
+
 import AdminLayout from '../components/AdminLayout';
 import { useComplaints } from '../context/ComplaintsContext';
+import { Skeleton } from '../components/Skeleton';
 
 const Container = styled.div`
   display: flex;
@@ -359,7 +360,20 @@ const ComplaintsContent = () => {
           </SidebarHeader>
           
           <TicketList>
-            {filteredComplaints.map(ticket => (
+            {loading ? (
+              [...Array(6)].map((_, i) => (
+                <div key={i} style={{ padding: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <Skeleton height="15px" width="100px" />
+                    <Skeleton height="15px" width="40px" />
+                  </div>
+                  <Skeleton height="20px" width="200px" />
+                  <div style={{ marginTop: '10px' }}>
+                    <Skeleton height="15px" width="80px" />
+                  </div>
+                </div>
+              ))
+            ) : filteredComplaints.map(ticket => (
               <TicketCard 
                 key={ticket.id} 
                 active={activeId === ticket.id}

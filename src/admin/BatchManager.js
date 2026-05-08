@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
@@ -38,13 +38,7 @@ const Label = styled.label`
   color: #ccc;
 `;
 
-const Input = styled.input`
-  padding: 10px;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: #fff;
-`;
+
 
 const Select = styled.select`
   padding: 10px;
@@ -115,12 +109,7 @@ function BatchManager() {
   });
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    fetchCourses();
-    fetchBatches();
-  }, []);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     const { data, error } = await supabase.from('courses').select('title');
     if (!error && data) {
       setCourses(data);
@@ -128,29 +117,63 @@ function BatchManager() {
         setFormData(prev => ({ ...prev, course: data[0].title }));
       }
     }
-  };
+  }, []);
 
-  const fetchBatches = async () => {
+  const fetchBatches = useCallback(async () => {
     const { data, error } = await supabase.from('batches').select('*').order('created_at', { ascending: false });
     if (!error && data) {
       setBatches(data);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+    fetchBatches();
+  }, [fetchCourses, fetchBatches]);
+
+  const graduateBatchStudents = async (batchData, completedAt) => {
+    if (batchData.status !== 'Completed') return;
+
+    const { error } = await supabase
+      .from('admissions')
+      .update({ status: 'Graduated', graduated_at: completedAt })
+      .eq('course', batchData.course)
+      .eq('batch', batchData.batch_name)
+      .eq('status', 'Active');
+
+    if (error) throw error;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const completedAt = formData.status === 'Completed' ? new Date().toISOString() : null;
+    const batchPayload = { ...formData };
+    if (completedAt) batchPayload.completed_at = completedAt;
+
     if (editingId) {
-      const { error } = await supabase.from('batches').update(formData).eq('id', editingId);
+      const { error } = await supabase.from('batches').update(batchPayload).eq('id', editingId);
       if (error) alert(error.message);
       else {
+        try {
+          await graduateBatchStudents(batchPayload, completedAt);
+        } catch (graduateError) {
+          alert(graduateError.message);
+          return;
+        }
         setEditingId(null);
         setFormData({ course: courses[0]?.title || '', batch_name: 'Batch 1', time_shift: 'Morning (9:00 AM - 12:00 PM)', status: 'Active' });
         fetchBatches();
       }
     } else {
-      const { error } = await supabase.from('batches').insert([formData]);
+      const { error } = await supabase.from('batches').insert([batchPayload]);
       if (error) alert(error.message);
       else {
+        try {
+          await graduateBatchStudents(batchPayload, completedAt);
+        } catch (graduateError) {
+          alert(graduateError.message);
+          return;
+        }
         setFormData({ course: courses[0]?.title || '', batch_name: 'Batch 1', time_shift: 'Morning (9:00 AM - 12:00 PM)', status: 'Active' });
         fetchBatches();
       }
@@ -231,6 +254,7 @@ function BatchManager() {
           >
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
+            <option value="Completed">Completed</option>
           </Select>
         </InputGroup>
 
@@ -255,7 +279,7 @@ function BatchManager() {
               <Td>{batch.batch_name}</Td>
               <Td>{batch.time_shift}</Td>
               <Td>
-                <span style={{ color: batch.status === 'Active' ? '#4caf50' : '#f44336' }}>
+                <span style={{ color: batch.status === 'Active' ? '#4caf50' : batch.status === 'Completed' ? '#8b5cf6' : '#f44336' }}>
                   {batch.status}
                 </span>
               </Td>

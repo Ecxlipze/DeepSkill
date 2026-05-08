@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
+import { getAssignedTeacherBatches, getTeacherByCnic } from '../utils/teacherUtils';
 
 const ComplaintsContext = createContext();
 
@@ -9,7 +10,7 @@ export const ComplaintsProvider = ({ children }) => {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchComplaints = async () => {
+  const fetchComplaints = useCallback(async () => {
     if (!user) return;
     try {
       let query = supabase.from('complaints').select(`
@@ -17,15 +18,25 @@ export const ComplaintsProvider = ({ children }) => {
         messages:complaint_messages(*)
       `).order('updated_at', { ascending: false });
 
-      // Apply filtering based on role
       if (user.role === 'student') {
         query = query.eq('student_cnic', user.cnic);
       } else if (user.role === 'teacher') {
-        query = query.eq('send_to', 'My Batch Teacher');
-        const filters = [];
-        if (user.batch) filters.push(`batch.eq.${user.batch}`);
-        if (user.assigned_course) filters.push(`course.eq.${user.assigned_course}`);
-        if (filters.length > 0) query = query.or(filters.join(','));
+        const teacher = await getTeacherByCnic(user.cnic);
+        const assignedBatches = await getAssignedTeacherBatches(teacher.id);
+        const teacherBatchNames = assignedBatches
+          .filter(batch => batch.status === 'Active')
+          .map(batch => batch.batch_name)
+          .filter(Boolean);
+
+        if (teacherBatchNames.length === 0) {
+          setComplaints([]);
+          setLoading(false);
+          return;
+        }
+
+        query = query
+          .eq('send_to', 'My Batch Teacher')
+          .in('batch', teacherBatchNames);
       } else if (user.role === 'admin') {
         query = query.eq('send_to', 'Admin');
       }
@@ -44,40 +55,36 @@ export const ComplaintsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
       fetchComplaints();
 
-      // Real-time Subscription - Listening to all changes in the public schema
+      const channelName = `complaints-channel-${user.id || user.cnic || user.role || 'user'}-${Date.now()}`;
       const channel = supabase
-        .channel('complaints-channel')
+        .channel(channelName)
         .on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
           table: 'complaints' 
-        }, (payload) => {
-          console.log('Complaint change detected:', payload);
+        }, () => {
           fetchComplaints();
         })
         .on('postgres_changes', { 
           event: '*', 
           schema: 'public', 
           table: 'complaint_messages' 
-        }, (payload) => {
-          console.log('Message change detected:', payload);
+        }, () => {
           fetchComplaints();
         })
-        .subscribe((status) => {
-          console.log('Supabase real-time status:', status);
-        });
+        .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, fetchComplaints]);
 
   const createComplaint = async (complaintData, initialMessage) => {
     try {

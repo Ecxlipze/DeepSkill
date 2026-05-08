@@ -120,8 +120,8 @@ const RightSide = styled(motion.div)`
   }
 `;
 
-const CheckIcon = styled(motion(FaCheckCircle))`
-  color: #7B1F2E;
+const CheckIcon = styled(motion.create(FaCheckCircle))`
+  color: #d94a5e;
   font-size: 1.8rem;
   flex-shrink: 0;
 `;
@@ -154,7 +154,7 @@ const FooterText = styled(motion.div)`
   margin-top: 60px;
   
   span {
-    color: #7B1F2E;
+    color: #d94a5e;
     font-weight: bold;
     display: inline-block;
     position: relative;

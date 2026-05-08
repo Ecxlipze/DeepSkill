@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
 import { 
-  FaSearch, FaFilter, FaDownload, FaArrowUp, 
-  FaArrowDown, FaExchangeAlt, FaHistory
+  FaSearch, FaDownload, FaArrowUp, 
+  FaArrowDown, FaExchangeAlt
 } from 'react-icons/fa';
 import AdminLayout from '../components/AdminLayout';
 import { supabase } from '../supabaseClient';

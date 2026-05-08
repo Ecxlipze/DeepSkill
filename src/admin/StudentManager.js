@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FaSearch, FaFilter, FaDownload, FaUserGraduate, 
-  FaCalendarAlt, FaChevronLeft, FaChevronRight, FaTimes,
-  FaFileCsv, FaEllipsisV, FaEye
+
+import {
+  FaSearch, FaFilter,
+  FaEye, FaChevronLeft,
+  FaChevronRight, FaFileCsv, FaUserGraduate, FaTimes
 } from 'react-icons/fa';
 import AdminLayout from '../components/AdminLayout';
 import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '../components/Skeleton';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -96,6 +97,48 @@ const StatCard = styled.div`
   }
 `;
 
+const StatusBadge = styled.span`
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: ${props => {
+    switch (props.status?.toLowerCase()) {
+      case 'active': return 'rgba(46, 204, 113, 0.1)';
+      case 'graduated': return 'rgba(52, 152, 219, 0.1)';
+      case 'dropped': return 'rgba(231, 76, 60, 0.1)';
+      default: return 'rgba(255, 255, 255, 0.05)';
+    }
+  }};
+  color: ${props => {
+    switch (props.status?.toLowerCase()) {
+      case 'active': return '#2ecc71';
+      case 'graduated': return '#3498db';
+      case 'dropped': return '#e74c3c';
+      default: return '#888';
+    }
+  }};
+`;
+
+const Pagination = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+`;
+
+const PageBtn = styled.button`
+  padding: 8px 12px;
+  background: ${props => props.active ? '#7B1F2E' : '#111'};
+  color: #fff;
+  border: 1px solid ${props => props.active ? '#7B1F2E' : '#333'};
+  border-radius: 6px;
+  cursor: pointer;
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  &:hover:not(:disabled) { border-color: #7B1F2E; }
+`;
+
 const FilterSection = styled.div`
   background: #111318;
   padding: 20px;
@@ -120,7 +163,7 @@ const FilterGrid = styled.div`
 
 const InputWrapper = styled.div`
   position: relative;
-  
+
   svg {
     position: absolute;
     left: 12px;
@@ -156,7 +199,7 @@ const DateRangeWrapper = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   input {
     flex: 1;
     background: #0a0a0a;
@@ -166,7 +209,7 @@ const DateRangeWrapper = styled.div`
     color: #fff;
     font-size: 0.85rem;
     outline: none;
-    
+
     &::-webkit-calendar-picker-indicator {
       filter: invert(1);
       cursor: pointer;
@@ -262,57 +305,13 @@ const StudentInfo = styled.div`
   }
 `;
 
-
-
-const StatusBadge = styled.span`
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  background: ${props => props.$active ? 'rgba(46, 204, 113, 0.1)' : 'rgba(107, 114, 128, 0.1)'};
-  color: ${props => props.$active ? '#2ecc71' : '#9ca3af'};
-  border: 1px solid ${props => props.$active ? 'rgba(46, 204, 113, 0.2)' : 'rgba(107, 114, 128, 0.2)'};
-`;
-
-const Pagination = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-
-  .info { color: #888; font-size: 0.9rem; }
-  .controls {
-    display: flex;
-    gap: 10px;
-  }
-`;
-
-const PageBtn = styled.button`
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.05)'};
-  border: 1px solid ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
-  color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:disabled { opacity: 0.3; cursor: not-allowed; }
-  &:hover:not(:disabled) { border-color: #7B1F2E; }
-`;
-
 const StudentManager = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [filters, setFilters] = useState({
     search: '',
     course: 'All',
@@ -326,10 +325,38 @@ const StudentManager = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 20;
 
+  const fetchStudents = useCallback(async () => {
+    const { data } = await supabase
+      .from('admissions')
+      .select('*')
+      .in('status', ['Active', 'Inactive', 'Graduated']);
+
+    if (data) setStudents(data);
+  }, []);
+
+  const fetchCourses = useCallback(async () => {
+    const { data } = await supabase.from('courses').select('title');
+    if (data) setCourses(data);
+  }, []);
+
+  const fetchBatches = useCallback(async () => {
+    const { data } = await supabase.from('batches').select('batch_name, course');
+    if (data) setBatches(data);
+  }, []);
+
+  const fetchInitialData = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchStudents(),
+      fetchCourses(),
+      fetchBatches()
+    ]);
+    setLoading(false);
+  }, [fetchStudents, fetchCourses, fetchBatches]);
+
   useEffect(() => {
     fetchInitialData();
-    
-    // Real-time subscription
+
     const channel = supabase
       .channel('students-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'admissions' }, () => {
@@ -338,36 +365,7 @@ const StudentManager = () => {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, []);
-
-  const fetchInitialData = async () => {
-    setLoading(true);
-    await Promise.all([
-      fetchStudents(),
-      fetchCourses(),
-      fetchBatches()
-    ]);
-    setLoading(false);
-  };
-
-  const fetchStudents = async () => {
-    const { data, error } = await supabase
-      .from('admissions')
-      .select('*')
-      .neq('status', 'Pending'); // Show all processed admissions (Active/Inactive/Rejected)
-    
-    if (data) setStudents(data);
-  };
-
-  const fetchCourses = async () => {
-    const { data } = await supabase.from('courses').select('title');
-    if (data) setCourses(data);
-  };
-
-  const fetchBatches = async () => {
-    const { data } = await supabase.from('batches').select('*');
-    if (data) setBatches(data);
-  };
+  }, [fetchInitialData, fetchStudents]);
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -380,16 +378,16 @@ const StudentManager = () => {
   const filteredStudents = useMemo(() => {
     return students
       .filter(s => {
-        const searchMatch = !filters.search || 
+        const searchMatch = !filters.search ||
           s.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
           s.cnic?.toLowerCase().includes(filters.search.toLowerCase()) ||
           s.email?.toLowerCase().includes(filters.search.toLowerCase()) ||
           s.phone?.toLowerCase().includes(filters.search.toLowerCase());
-        
+
         const courseMatch = filters.course === 'All' || s.course === filters.course;
         const batchMatch = filters.batch === 'All' || s.batch === filters.batch;
         const statusMatch = filters.status === 'All' || s.status === filters.status;
-        
+
         const dateMatch = (!filters.dateFrom || new Date(s.submitted_at) >= new Date(filters.dateFrom)) &&
                           (!filters.dateTo || new Date(s.submitted_at) <= new Date(filters.dateTo));
 
@@ -406,7 +404,7 @@ const StudentManager = () => {
     return {
       total: students.length,
       active: students.filter(s => s.status === 'Active').length,
-      inactive: students.filter(s => s.status === 'Inactive' || s.status === 'Rejected').length
+      inactive: students.filter(s => s.status === 'Inactive').length
     };
   }, [students]);
 
@@ -418,8 +416,8 @@ const StudentManager = () => {
     const rows = filteredStudents.map(s => [
       s.name, s.email, s.cnic, s.phone, s.course, s.batch, s.status, new Date(s.submitted_at).toLocaleDateString()
     ]);
-    
-    let csvContent = "data:text/csv;charset=utf-8," 
+
+    let csvContent = "data:text/csv;charset=utf-8,"
       + headers.join(",") + "\n"
       + rows.map(e => e.join(",")).join("\n");
 
@@ -460,7 +458,7 @@ const StudentManager = () => {
             <span className="value">{stats.active}</span>
           </StatCard>
           <StatCard color="#9ca3af">
-            <span className="label">Inactive / Rejected</span>
+            <span className="label">Inactive</span>
             <span className="value">{stats.inactive}</span>
           </StatCard>
         </StatsGrid>
@@ -469,9 +467,9 @@ const StudentManager = () => {
           <FilterGrid>
             <InputWrapper>
               <FaSearch />
-              <input 
-                type="text" 
-                placeholder="Search name, cnic, email, phone..." 
+              <input
+                type="text"
+                placeholder="Search name, cnic, email, phone..."
                 value={filters.search}
                 onChange={e => setFilters({...filters, search: e.target.value})}
               />
@@ -501,7 +499,7 @@ const StudentManager = () => {
                 <option value="All">All Status</option>
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
-                <option value="Rejected">Rejected</option>
+                <option value="Graduated">Graduated</option>
               </select>
             </InputWrapper>
 
@@ -511,7 +509,7 @@ const StudentManager = () => {
               <input type="date" value={filters.dateTo} onChange={e => setFilters({...filters, dateTo: e.target.value})} />
             </DateRangeWrapper>
           </FilterGrid>
-          
+
           {(filters.search || filters.course !== 'All' || filters.batch !== 'All' || filters.status !== 'All' || filters.dateFrom || filters.dateTo) && (
             <ClearFilters onClick={() => setFilters({ search: '', course: 'All', batch: 'All', status: 'All', dateFrom: '', dateTo: '' })}>
               <FaTimes /> Clear all filters
@@ -536,9 +534,17 @@ const StudentManager = () => {
             </thead>
             <tbody>
               {loading ? (
-                [...Array(5)].map((_, i) => (
+                [...Array(6)].map((_, i) => (
                   <tr key={i}>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '30px', color: '#555' }}>Loading records...</td>
+                    <td><Skeleton height="30px" width="150px" /></td>
+                    <td className="mobile-hide"><Skeleton height="20px" width="100px" /></td>
+                    <td className="mobile-hide"><Skeleton height="20px" width="100px" /></td>
+                    <td><Skeleton height="20px" width="120px" /></td>
+                    <td className="mobile-hide"><Skeleton height="20px" width="80px" /></td>
+                    <td className="mobile-hide"><Skeleton height="20px" width="100px" /></td>
+                    <td className="mobile-hide"><Skeleton height="20px" width="100px" /></td>
+                    <td><Skeleton height="24px" width="60px" radius="12px" /></td>
+                    <td><Skeleton height="30px" width="30px" /></td>
                   </tr>
                 ))
               ) : paginatedStudents.length === 0 ? (
@@ -583,7 +589,7 @@ const StudentManager = () => {
                     <td className="mobile-hide">{student.education}</td>
                     <td className="mobile-hide">{new Date(student.submitted_at).toLocaleDateString()}</td>
                     <td>
-                      <StatusBadge $active={student.status === 'Active'}>
+                      <StatusBadge status={student.status}>
                         {student.status}
                       </StatusBadge>
                     </td>
@@ -608,9 +614,9 @@ const StudentManager = () => {
                   <FaChevronLeft />
                 </PageBtn>
                 {[...Array(totalPages)].map((_, i) => (
-                  <PageBtn 
-                    key={i} 
-                    active={currentPage === i + 1} 
+                  <PageBtn
+                    key={i}
+                    active={currentPage === i + 1}
                     onClick={() => setCurrentPage(i + 1)}
                   >
                     {i + 1}

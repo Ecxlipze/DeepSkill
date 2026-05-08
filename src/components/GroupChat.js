@@ -503,8 +503,8 @@ const BatchCard = styled(motion.div)`
 const GroupChat = () => {
   const { user } = useAuth();
   const {
-    messages, members, mutes, isMuted,
-    sendMessage, sendReaction, muteStudent, unmuteStudent,
+    messages, members, mutes, loading, isMuted,
+    sendMessage, sendReaction, uploadChatFile, muteStudent, unmuteStudent,
     activeBatch, setActiveBatch, availableBatches
   } = useGroupChat();
 
@@ -527,6 +527,12 @@ const GroupChat = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (user?.role === 'teacher' && availableBatches.length === 1 && !showLobby) {
+      setActiveBatch(availableBatches[0].batch);
+    }
+  }, [availableBatches, setActiveBatch, showLobby, user?.role]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -557,18 +563,20 @@ const GroupChat = () => {
       return;
     }
 
-    // Mock file upload logic
-    const reader = new FileReader();
-    reader.onload = async () => {
+    try {
+      const fileUrl = await uploadChatFile(file);
       await sendMessage({
         type: type === 'image' ? 'image' : 'file',
         text: type === 'image' ? '' : file.name,
         file_name: file.name,
         file_size: (file.size / 1024 / 1024).toFixed(1) + ' MB',
-        file_url: reader.result // Base64 mock
+        file_url: fileUrl
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      alert("Failed to upload file.");
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const filteredMessages = useMemo(() => {
@@ -595,7 +603,6 @@ const GroupChat = () => {
   }, [filteredMessages]);
 
   const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
     const today = new Date().toLocaleDateString();
     const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
 
@@ -620,26 +627,34 @@ const GroupChat = () => {
         <LobbyContainer>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h2 style={{ fontSize: '2rem', marginBottom: '10px' }}>Welcome, Sir {user.name}</h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)' }}>Select a batch to enter the group chat</p>
+            <p style={{ color: 'rgba(255,255,255,0.5)' }}>
+              {loading ? 'Loading your batches...' : 'Select a batch to enter the group chat'}
+            </p>
           </motion.div>
-          <LobbyGrid>
-            {availableBatches.map((item, idx) => (
-              <BatchCard
-                key={item.batch}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                onClick={() => {
-                  setActiveBatch(item.batch);
-                  setShowLobby(false);
-                }}
-              >
-                <div className="icon"><FaUserGraduate /></div>
-                <h4>{item.course}</h4>
-                <p>{item.batch}</p>
-              </BatchCard>
-            ))}
-          </LobbyGrid>
+          {!loading && availableBatches.length === 0 ? (
+            <div style={{ marginTop: '30px', color: 'rgba(255,255,255,0.45)' }}>
+              No assigned batches found for your teacher profile.
+            </div>
+          ) : (
+            <LobbyGrid>
+              {availableBatches.map((item, idx) => (
+                <BatchCard
+                  key={item.batch}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  onClick={() => {
+                    setActiveBatch(item.batch);
+                    setShowLobby(false);
+                  }}
+                >
+                  <div className="icon"><FaUserGraduate /></div>
+                  <h4>{item.course}</h4>
+                  <p>{item.batch}</p>
+                </BatchCard>
+              ))}
+            </LobbyGrid>
+          )}
         </LobbyContainer>
       </ChatContainer>
     );
@@ -769,7 +784,7 @@ const GroupChat = () => {
             const isTeacher = item.sender_role === 'teacher';
 
             // Special handling for warning bubble - only visible to target student
-            if (item.type === 'warning' && item.target_cnic !== user?.cnic && !isTeacher) {
+            if (item.type === 'warning' && item.target_cnic !== user?.cnic && user?.role !== 'teacher') {
               return null;
             }
 
@@ -844,7 +859,7 @@ const GroupChat = () => {
                   placeholder={`Message ${activeBatch || 'Group'}...`}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 />
                 <SendButton
                   onClick={handleSend}

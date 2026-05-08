@@ -6,10 +6,11 @@ import { useAuth } from "./context/AuthContext";
 import {
   FaUser, FaEnvelope, FaGraduationCap, FaPhone,
   FaChevronDown, FaCheckCircle, FaFacebook,
-  FaInstagram, FaLinkedin, FaGlobe, FaUsers, FaUniversity,
+  FaInstagram, FaLinkedin, FaGlobe, FaUsers, FaUniversity, FaGift,
   FaCode, FaLaptop, FaPaintBrush, FaWordpress, FaPenNib, FaChartLine
 } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { trackEvent } from "../lib/analytics";
 
 const PageContainer = styled(motion.div)`
   background-color: #000;
@@ -412,6 +413,7 @@ const RegisterPage = () => {
     source: "",
     selectedCourse: "",
     cnic: "",
+    referredBy: "", // Capture referral code
     'bot-field': "" // Honeypot
   });
 
@@ -446,6 +448,16 @@ const RegisterPage = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Capture Referral Code from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get('ref');
+    if (refCode) {
+      setFormData(prev => ({ ...prev, referredBy: refCode }));
+      toast.success("Referral applied!", { icon: "🎁" });
+    }
   }, []);
 
   // Success Countdown Timer
@@ -583,9 +595,14 @@ const RegisterPage = () => {
           education: formData.lastEducation,
           hear_about_us: formData.source,
           gender: formData.gender,
-          age: formData.age
+          age: formData.age,
+          referred_by: formData.referredBy
         };
         await register(applicationData);
+        trackEvent('generate_lead', {
+          form_name: 'registration',
+          course: formData.selectedCourse
+        });
         setIsSuccess(true);
       } catch (err) {
         console.error("Registration failed", err);
@@ -607,7 +624,7 @@ const RegisterPage = () => {
 
   const courseOptions = [
     { label: "Full Stack React JS", icon: <FaCode /> },
-    { label: "Laravel PHP Development", icon: <FaLaptop /> },
+    { label: "Full Stack (Laravel)", icon: <FaLaptop /> },
     { label: "Graphic Design Mastery", icon: <FaPaintBrush /> },
     { label: "WordPress Mastery", icon: <FaWordpress /> },
     { label: "UI/UX Design", icon: <FaPenNib /> },
@@ -951,6 +968,24 @@ const RegisterPage = () => {
               >{errors.gender}</ErrorMsg>
             )}
           </AnimatePresence>
+        </FormCard>
+
+        {/* Referral Code (Optional) */}
+        <FormCard
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(123, 31, 46, 0.4)" }}
+        >
+          <Label><FaGift /> Referral Code (Optional)</Label>
+          <Input
+            name="referredBy"
+            placeholder="e.g. DS-XXXX-XXXX"
+            value={formData.referredBy}
+            onChange={handleChange}
+            maxLength={12}
+          />
         </FormCard>
 
         {/* Source Dropdown with Icons */}

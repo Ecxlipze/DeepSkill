@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FaPlus, FaPaperPlane, FaTimes, FaCircle, 
-  FaExclamationCircle, FaCheckCircle, FaInbox,
-  FaUndo
+  FaPlus, FaPaperPlane, FaTimes, FaInbox, FaUndo
 } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
@@ -363,7 +361,7 @@ const EmptyState = styled.div`
 `;
 
 const StudentComplaints = () => {
-  const { user } = useAuth();
+  useAuth();
   const { complaints, loading, createComplaint, sendMessage, closeComplaint, reopenComplaint } = useComplaints();
   
   const [activeId, setActiveId] = useState(null);

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { FaEnvelope, FaMapMarkerAlt, FaBullseye, FaLightbulb, FaBars, FaUsers } from "react-icons/fa";
 import RegisterButton from "./components/RegisterButton";
 import GlowCard from "./components/GlowCard";
+import { trackEvent } from "../lib/analytics";
 
 // Import assets
 import contactBg from "./assets/contact-bg.png";
@@ -265,7 +266,7 @@ const WhyHeader = styled(motion.div)`
   }
 
   h2.brand {
-    color: #7B1F2E;
+    color: #d94a5e;
     position: relative;
     display: inline-block;
     transition: all 0.4s ease;
@@ -719,6 +720,9 @@ const ContactPage = () => {
       if (response.ok && result.status === "success") {
         setSubmitSuccess(true);
         setSubmitError(null);
+        trackEvent('generate_lead', {
+          form_name: 'contact'
+        });
         setFormData({
           name: '',
           email: '',

@@ -45,8 +45,8 @@ const FeaturesList = styled(motion.ul)`
   gap: 0px;
 `;
 
-const Checkmark = styled(motion(FaCheckCircle))`
-  color: #7B1F2E;
+const Checkmark = styled(motion.create(FaCheckCircle))`
+  color: #d94a5e;
   margin-right: 20px;
   font-size: 1.4rem;
   flex-shrink: 0;

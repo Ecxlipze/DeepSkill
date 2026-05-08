@@ -294,26 +294,14 @@ const UploadArea = styled.div`
   }
 `;
 
-const navItems = [
-  { label: 'Home', path: '/student/dashboard', icon: <FaHome /> },
-  { label: 'Tasks', path: '/student/tasks', icon: <FaTasks /> },
-  { label: 'Progress', path: '/student/progress', icon: <FaChartLine /> },
-  { label: 'Certificate', path: '/student/certificate', icon: <FaCertificate /> },
-  { label: 'Complaints', path: '/student/complaints', icon: <FaExclamationCircle /> },
-  { label: 'Results (Mid Term)', path: '/student/results/mid', icon: <FaGraduationCap /> },
-  { label: 'Results (Final Term)', path: '/student/results/final', icon: <FaGraduationCap /> },
-  { label: 'New Enrollment', path: '/student/enrollment', icon: <FaUserPlus /> },
-  { label: 'Group Chat', path: '/student/chat', icon: <FaComments /> },
-  { label: 'Finance', path: '/student/finance', icon: <FaWallet /> },
-  { label: 'Referral Program', path: '/student/referral', icon: <FaUserFriends /> }
-];
+// Nav items handled by DashboardLayout
 
 const StudentTasks = () => {
   const { user } = useAuth();
   const { tasks, submitTask } = useTasks();
   
   const studentName = user?.name || "Ali Hassan";
-  const studentCnic = user?.cnic || "35202-1234567-9";
+  const studentCnic = user?.cnic || "";
   const studentCourse = user?.assigned_course || "Web Development Bootcamp";
   const studentBatch = user?.batch || "Batch 12";
 
@@ -378,7 +366,7 @@ const StudentTasks = () => {
   };
 
   return (
-    <DashboardLayout navItems={navItems}>
+    <DashboardLayout>
       <Container>
         
         {/* Top Stats */}

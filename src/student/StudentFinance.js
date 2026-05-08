@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { 
-  FaWallet, FaHistory, FaClock, FaCheckCircle, 
+  FaWallet, FaClock, FaCheckCircle, 
   FaExclamationCircle, FaInfoCircle, FaCalendarAlt
 } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
@@ -14,22 +14,21 @@ const StudentFinance = () => {
   const [feePlan, setFeePlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user?.cnic) fetchFeeData();
-  }, [user]);
-
-  const fetchFeeData = async () => {
+  const fetchFeeData = useCallback(async () => {
     try {
-      // 1. Get Student ID from admissions
+      if (!user?.cnic) return;
       const { data: student } = await supabase.from('admissions').select('id').eq('cnic', user.cnic).single();
       if (!student) return;
 
-      // 2. Get Fee Plan
       const { data: plan } = await supabase.from('fee_plans').select('*').eq('student_id', student.id).single();
       if (!plan) return;
 
-      // 3. Get Payments
-      const { data: payments } = await supabase.from('payments').select('*').eq('entity_id', student.id).order('installment_number');
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('entity_id', student.id)
+        .eq('entity_type', 'student')
+        .order('installment_number');
       
       const paidAmount = payments?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
 
@@ -44,7 +43,11 @@ const StudentFinance = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.cnic]);
+
+  useEffect(() => {
+    fetchFeeData();
+  }, [fetchFeeData]);
 
   if (loading) return <DashboardLayout><p>Loading finance details...</p></DashboardLayout>;
   if (!feePlan) return (

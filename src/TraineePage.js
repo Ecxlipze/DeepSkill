@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { supabase } from "./supabaseClient";
 import { motion } from "framer-motion";
 import { FaBrain, FaRegHandPointer, FaWalking, FaLeaf } from "react-icons/fa";
 
@@ -421,6 +420,7 @@ const TraineePage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchInstructors = async () => {
+      const { supabase } = await import("./supabaseClient");
       const { data, error } = await supabase.from('instructors').select('*').order('created_at', { ascending: true });
       if (error) {
         console.error(error);
@@ -447,132 +447,132 @@ const TraineePage = () => {
         animate={{ opacity: loading ? 0 : 1 }}
         transition={{ duration: 0.6 }}
       >
-      <InstructorSection>
-        <ContentWrapper>
-          <SectionHeader
-            initial={{ y: 30, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <h1>MEET OUR INSTRUCTOR</h1>
-            <p>
-              At DeepSkills, our instructors are industry professionals with real-world experience. 
-              They are not just teachers — they are mentors who guide students with practical 
-              knowledge, modern tools, and hands-on training.
-            </p>
-          </SectionHeader>
+        <InstructorSection>
+          <ContentWrapper>
+            <SectionHeader
+              initial={{ y: 30, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <h1>MEET OUR INSTRUCTOR</h1>
+              <p>
+                At DeepSkills, our instructors are industry professionals with real-world experience.
+                They are not just teachers — they are mentors who guide students with practical
+                knowledge, modern tools, and hands-on training.
+              </p>
+            </SectionHeader>
 
-          <InstructorGrid>
-            {instructors.map((inst, idx) => (
-              <GlowCard
-                key={inst.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                borderRadius="20px"
-                bg="rgba(123, 31, 46, 0.4)"
-                hoverBg="rgba(123, 31, 46, 0.6)"
-                style={{ border: '4px solid #7B1F2E' }}
-              >
-                <InstructorCard style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}>
-                  <ImageBox>
-                    <img src={inst.image_url || traineeImg} alt={inst.name} />
-                  </ImageBox>
-                </InstructorCard>
-              </GlowCard>
-            ))}
-          </InstructorGrid>
+            <InstructorGrid>
+              {instructors.map((inst, idx) => (
+                <GlowCard
+                  key={inst.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  borderRadius="20px"
+                  bg="rgba(123, 31, 46, 0.4)"
+                  hoverBg="rgba(123, 31, 46, 0.6)"
+                  style={{ border: '4px solid #7B1F2E' }}
+                >
+                  <InstructorCard style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}>
+                    <ImageBox>
+                      <img src={inst.image_url || traineeImg} alt={inst.name} />
+                    </ImageBox>
+                  </InstructorCard>
+                </GlowCard>
+              ))}
+            </InstructorGrid>
 
-          <CtaBox
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5 }}
-          >
-            <p>
-              At DeepSkills, our instructors are industry professionals with real-world experience. 
-              They are not just teachers, industry professionals with real-world experience. They
-            </p>
-          </CtaBox>
-        </ContentWrapper>
-      </InstructorSection>
-
-      <WhySection>
-        <WhyTitle
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          Why Choose DeepSkill Instructors
-        </WhyTitle>
-
-        <FeatureGrid>
-          {features.map((feature, idx) => (
-            <GlowCard
-              key={idx}
+            <CtaBox
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              borderRadius="20px"
-              bg="transparent"
-              hoverBg="rgba(123, 31, 46, 0.1)"
-              style={{ height: '100%', border: '1px solid transparent' }}
+              transition={{ delay: 0.5 }}
             >
-              <FeatureCard style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%' }}>
-                <FeatureTop>{feature.icon}</FeatureTop>
-                <FeatureBottom>
-                  <span>{feature.text}</span>
-                </FeatureBottom>
-              </FeatureCard>
-            </GlowCard>
-          ))}
-        </FeatureGrid>
-      </WhySection>
-
-      {instructors.slice(0, 4).map((inst, idx) => (
-        <DetailSection key={inst.id}>
-          <DetailWrapper $reverse={idx % 2 !== 0}>
-            <DetailImageArea
-              initial={{ x: idx % 2 === 0 ? -50 : 50, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="img-container">
-                <img src={inst.image_url || founderImg} alt={inst.name} />
-              </div>
-              <div className="instructor-info">
-                <h3>{inst.name.toUpperCase()}</h3>
-                <p>({inst.role.toUpperCase()})</p>
-              </div>
-            </DetailImageArea>
-            <DetailTextArea
-              initial={{ x: idx % 2 === 0 ? 50 : -50, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <h2>{inst.role.toUpperCase()}</h2>
-              <p className="main-desc">
-                {inst.bio || "At DeepSkills, our instructors are industry professionals with real-world experience. They are not just teachers — they are mentors who guide students with practical knowledge, modern tools, and hands-on training."}
+              <p>
+                At DeepSkills, our instructors are industry professionals with real-world experience.
+                They are not just teachers, industry professionals with real-world experience.
               </p>
-              <h4>EXPERIENCE</h4>
-              <p className="exp-desc">
-                {inst.bio || "At DeepSkills, our instructors are industry professionals with real-world experience. They are not just teachers — they are mentors who guide students with practical knowledge, modern tools, and hands-on training."}
-              </p>
-            </DetailTextArea>
-          </DetailWrapper>
-        </DetailSection>
-      ))}
+            </CtaBox>
+          </ContentWrapper>
+        </InstructorSection>
 
-      <FinalCTASection>
-        <RegisterButton>
-          REGISTER NOW
-        </RegisterButton>
-      </FinalCTASection>
+        <WhySection>
+          <WhyTitle
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            Why Choose DeepSkill Instructors
+          </WhyTitle>
+
+          <FeatureGrid>
+            {features.map((feature, idx) => (
+              <GlowCard
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                borderRadius="20px"
+                bg="transparent"
+                hoverBg="rgba(123, 31, 46, 0.1)"
+                style={{ height: '100%', border: '1px solid transparent' }}
+              >
+                <FeatureCard style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%' }}>
+                  <FeatureTop>{feature.icon}</FeatureTop>
+                  <FeatureBottom>
+                    <span>{feature.text}</span>
+                  </FeatureBottom>
+                </FeatureCard>
+              </GlowCard>
+            ))}
+          </FeatureGrid>
+        </WhySection>
+
+        {instructors.slice(0, 4).map((inst, idx) => (
+          <DetailSection key={inst.id}>
+            <DetailWrapper $reverse={idx % 2 !== 0}>
+              <DetailImageArea
+                initial={{ x: idx % 2 === 0 ? -50 : 50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              >
+                <div className="img-container">
+                  <img src={inst.image_url || founderImg} alt={inst.name} />
+                </div>
+                <div className="instructor-info">
+                  <h3>{inst.name.toUpperCase()}</h3>
+                  <p>({inst.role.toUpperCase()})</p>
+                </div>
+              </DetailImageArea>
+              <DetailTextArea
+                initial={{ x: idx % 2 === 0 ? 50 : -50, opacity: 0 }}
+                whileInView={{ x: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              >
+                <h2>{inst.role.toUpperCase()}</h2>
+                <p className="main-desc">
+                  {inst.bio || "At DeepSkills, our instructors are industry professionals with real-world experience. They are not just teachers — they are mentors who guide students with practical knowledge, modern tools, and hands-on training."}
+                </p>
+                <h4>EXPERIENCE</h4>
+                <p className="exp-desc">
+                  {inst.bio || "At DeepSkills, our instructors are industry professionals with real-world experience. They are not just teachers — they are mentors who guide students with practical knowledge, modern tools, and hands-on training."}
+                </p>
+              </DetailTextArea>
+            </DetailWrapper>
+          </DetailSection>
+        ))}
+
+        <FinalCTASection>
+          <RegisterButton>
+            REGISTER NOW
+          </RegisterButton>
+        </FinalCTASection>
       </PageContainer>
     </>
   );

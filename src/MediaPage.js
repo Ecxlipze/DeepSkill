@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { supabase } from './supabaseClient';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import Slider from 'react-slick';
 import MediaCard from './components/MediaCard';
 import AwardsCard from './components/AwardsCard';
 import RegisterButton from './components/RegisterButton';
-
-// Slick Carousel CSS
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 
 // Import assets
 import featureBg from './assets/feature-bg.png';
@@ -267,10 +262,12 @@ const StayUpdatedSection = styled.section`
   overflow: hidden;
 `;
 
-const MediaPage = () => {
+const MediaPage = ({ initialItems = [] }) => {
   const { scrollYProgress } = useScroll();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState(() => (
+    initialItems.length > 0 ? [...initialItems, ...dummyData] : []
+  ));
+  const [loading, setLoading] = useState(initialItems.length === 0);
   
   const yParallax = useTransform(scrollYProgress, [0, 1], [0, 200]);
 
@@ -300,16 +297,17 @@ const MediaPage = () => {
 
     const fetchItems = async () => {
       try {
+        const { supabase } = await import('./supabaseClient');
         const { data, error } = await supabase.from('media_items').select('*').order('created_at', { ascending: true });
         if (error) {
           console.error('Supabase error:', error);
-          setItems(dummyData);
+          setItems(initialItems.length > 0 ? [...initialItems, ...dummyData] : dummyData);
         } else {
           setItems([...(data || []), ...dummyData]);
         }
       } catch (err) {
         console.error('Fetch failed, using fallback data:', err);
-        setItems(dummyData);
+        setItems(initialItems.length > 0 ? [...initialItems, ...dummyData] : dummyData);
       } finally {
         setLoading(false);
       }
@@ -318,7 +316,7 @@ const MediaPage = () => {
     window.addEventListener('mousemove', handleMouseMove);
     fetchItems();
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY, spotlightX, spotlightY]);
+  }, [initialItems, mouseX, mouseY, spotlightX, spotlightY]);
 
   const groupByType = (type) => items.filter(i => i.type === type);
 

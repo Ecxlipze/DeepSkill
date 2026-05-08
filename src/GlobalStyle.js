@@ -1,26 +1,23 @@
 import { createGlobalStyle } from 'styled-components';
 
 const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
   @font-face {
     font-family: 'Asimovian';
-    src: url('./assets/fonts/Asimovian/Asimovian-Regular.ttf') format('truetype');
+    src: url('/fonts/Asimovian-Regular.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
+    font-display: swap;
   }
 
   *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    cursor: none !important;
   }
 
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
-    cursor: none !important;
   }
 
   body {
@@ -34,7 +31,6 @@ const GlobalStyle = createGlobalStyle`
     overflow-x: hidden;
     position: relative;
     width: 100%;
-    cursor: none !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -47,10 +43,44 @@ const GlobalStyle = createGlobalStyle`
   }
 
   button {
-    cursor: none !important;
     border: none;
     outline: none;
     background: none;
+  }
+
+  a, button, input, textarea, select, [role="button"] {
+    cursor: pointer;
+  }
+
+  input, textarea, select {
+    cursor: text;
+  }
+
+  :focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    *, *::before, *::after, html, body {
+      cursor: none !important;
+    }
+
+    a, button, input, textarea, select, [role="button"], [class*="Button"] {
+      cursor: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   ul {
