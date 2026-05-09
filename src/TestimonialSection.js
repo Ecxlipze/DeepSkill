@@ -290,29 +290,32 @@ const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayC
   );
 };
 
-const TestimonialSection = ({ courseName = "General" }) => {
+const TestimonialSection = ({ courseName = "All" }) => {
   const [modalVideo, setModalVideo] = useState(null);
-  const [testimonials, setTestimonials] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [testimonials, setTestimonials] = useState(dummyTestimonials);
 
   useEffect(() => {
     const fetchTestimonials = async () => {
-      setLoading(true);
-      const { supabase } = await import("./supabaseClient");
-      let query = supabase.from('testimonials').select('*').order('created_at', { ascending: false });
-      
-      if (courseName !== "All") {
-        query = query.eq('course_name', courseName);
-      }
+      try {
+        const { supabase } = await import("./supabaseClient");
+        let query = supabase.from('testimonials').select('*').order('created_at', { ascending: false });
+        
+        if (courseName !== "All") {
+          query = query.eq('course_name', courseName);
+        }
 
-      const { data, error } = await query;
-      if (error) {
+        const { data, error } = await query;
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        const liveTestimonials = data || [];
+        setTestimonials(liveTestimonials.length ? [...liveTestimonials, ...dummyTestimonials] : dummyTestimonials);
+      } catch (error) {
         console.error(error);
         setTestimonials(dummyTestimonials);
-      } else {
-        setTestimonials([...(data || []), ...dummyTestimonials]);
       }
-      setLoading(false);
     };
     fetchTestimonials();
   }, [courseName]);
@@ -343,8 +346,7 @@ const TestimonialSection = ({ courseName = "General" }) => {
     ]
   };
 
-  if (loading) return null;
-  if (!loading && testimonials.length === 0) return null;
+  if (testimonials.length === 0) return null;
 
   return (
     <Section id="testimonials">

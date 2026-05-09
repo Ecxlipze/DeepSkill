@@ -9,6 +9,7 @@ import btnIcon from "./assets/btn-icon.svg";
 import mernCardThumb from "./assets/mern-card.png";
 import graphicsCardThumb from "./assets/graphics-card.png";
 import wpCardThumb from "./assets/wp-card.png";
+import laravelCardThumb from "./assets/php-card.svg";
 import { getCourseDetailPath, getCourseSlugFromCategory } from "./utils/enrollmentNavigation";
 
 const dummyCourses = [
@@ -258,6 +259,7 @@ const CoursesSection = () => {
     const cat = category?.toLowerCase();
     if (cat?.includes('react')) return mernCardThumb;
     if (cat?.includes('graphic')) return graphicsCardThumb;
+    if (cat?.includes('laravel') || cat?.includes('php')) return laravelCardThumb;
     if (cat?.includes('wordpress')) return wpCardThumb;
     return null;
   };
