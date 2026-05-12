@@ -5,13 +5,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FaHome, FaUserGraduate, FaChalkboardTeacher, FaBook, 
   FaMoneyBillWave, FaLink, FaChartBar, FaCog, FaChevronDown, 
-  FaChevronRight, FaBars, FaTimes, FaBell, FaClipboardList,
+  FaChevronRight, FaBars, FaTimes, FaClipboardList,
   FaExclamationCircle, FaBullhorn, FaUserPlus,
   FaGraduationCap, FaPen
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useComplaints } from '../context/ComplaintsContext';
 import { buildAdminSidebar } from '../utils/permissions';
+import NotificationBell from './NotificationBell';
 import logoImg from '../logo.svg';
 
 const AdminLayout = ({ children }) => {
@@ -186,10 +187,7 @@ const AdminLayout = ({ children }) => {
             </div>
           </div>
           <div className="right">
-            <IconButton>
-              <FaBell />
-              <span className="notif-badge" />
-            </IconButton>
+            <NotificationBell />
             <AvatarCircle onClick={() => navigate('/profile')}>
               {user?.name?.[0] || 'A'}
             </AvatarCircle>

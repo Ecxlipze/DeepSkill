@@ -19,6 +19,10 @@ const CursorWrapper = styled(motion.div)`
   align-items: center;
   transition: border-color 0.3s ease;
 
+  body.ds-native-cursor & {
+    display: none;
+  }
+
   @media (max-width: 768px) {
     display: none;
   }
@@ -34,6 +38,10 @@ const CursorDot = styled(motion.div)`
   border-radius: 50%;
   pointer-events: none;
   z-index: 10000;
+
+  body.ds-native-cursor & {
+    display: none;
+  }
 
   @media (max-width: 768px) {
     display: none;
@@ -98,6 +106,9 @@ const CustomCursor = () => {
       styleEl.innerHTML = `
         *, *::before, *::after, html, body { cursor: none !important; -webkit-cursor: none !important; }
         a, button, input, textarea, select, [role="button"], [class*="Button"] { cursor: none !important; -webkit-cursor: none !important; }
+        body.ds-native-cursor, body.ds-native-cursor *, body.ds-native-cursor *::before, body.ds-native-cursor *::after { cursor: auto !important; -webkit-cursor: auto !important; }
+        body.ds-native-cursor a, body.ds-native-cursor button, body.ds-native-cursor [role="button"] { cursor: pointer !important; -webkit-cursor: pointer !important; }
+        body.ds-native-cursor input, body.ds-native-cursor textarea, body.ds-native-cursor select { cursor: text !important; -webkit-cursor: text !important; }
       `;
       document.head.appendChild(styleEl);
     }
@@ -116,7 +127,7 @@ const CustomCursor = () => {
 
       // Aggressive inline style override to ensure no bleeding
       try {
-        if (target.style && !isMobile) {
+        if (target.style && !isMobile && !document.body.classList.contains('ds-native-cursor')) {
           target.style.setProperty('cursor', 'none', 'important');
         }
       } catch (err) { }
@@ -150,6 +161,7 @@ const CustomCursor = () => {
   return (
     <>
       <CursorWrapper
+        className="ds-custom-cursor"
         aria-hidden="true"
         style={{
           x: cursorX,
@@ -164,6 +176,7 @@ const CustomCursor = () => {
         }}
       />
       <CursorDot
+        className="ds-custom-cursor"
         aria-hidden="true"
         style={{
           x: dotX,

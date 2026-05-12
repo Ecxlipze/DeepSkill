@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
+import { createBatchNotifications } from '../utils/notifications';
 
 const AnnouncementsContext = createContext();
 
@@ -144,6 +145,62 @@ export const AnnouncementsProvider = ({ children }) => {
           file_type: att.file_type
         }));
         await supabase.from('announcement_attachments').insert(attachmentRows);
+      }
+
+      const isLiveNow = newAnn.is_active !== false && (!newAnn.scheduled_at || new Date(newAnn.scheduled_at) <= new Date());
+      if (isLiveNow) {
+        const roles = newAnn.audience_roles || [];
+        const title = 'New Announcement';
+        const message = `${newAnn.posted_by_name || 'DeepSkills'}: "${newAnn.title}"`;
+
+        if (roles.includes('student')) {
+          const { data: allStudents } = await supabase
+            .from('admissions')
+            .select('id, batch, course')
+            .eq('status', 'Active');
+          const batches = newAnn.audience_batches || [];
+          const courses = newAnn.audience_courses || [];
+          const students = newAnn.audience_type === 'targeted'
+            ? (allStudents || []).filter((student) => batches.includes(student.batch) || courses.includes(student.course))
+            : (allStudents || []);
+
+          await createBatchNotifications(students.map((student) => student.id), {
+            role: 'student',
+            type: 'announcement',
+            title,
+            message,
+            link: '/student/announcements'
+          });
+        }
+
+        if (roles.includes('teacher')) {
+          let teacherIds = [];
+          if (newAnn.audience_type === 'targeted' && (newAnn.audience_batches || []).length) {
+            const { data: batches } = await supabase
+              .from('batches')
+              .select('id')
+              .in('batch_name', newAnn.audience_batches);
+            const batchIds = (batches || []).map((batch) => batch.id);
+            if (batchIds.length) {
+              const { data: assignments } = await supabase
+                .from('teacher_batches')
+                .select('teacher_id')
+                .in('batch_id', batchIds);
+              teacherIds = (assignments || []).map((assignment) => assignment.teacher_id);
+            }
+          } else {
+            const { data: teachers } = await supabase.from('teachers').select('id').eq('status', 'Active');
+            teacherIds = (teachers || []).map((teacher) => teacher.id);
+          }
+
+          await createBatchNotifications(teacherIds, {
+            role: 'teacher',
+            type: 'announcement',
+            title,
+            message,
+            link: '/teacher/announcements'
+          });
+        }
       }
 
       await fetchAnnouncements();

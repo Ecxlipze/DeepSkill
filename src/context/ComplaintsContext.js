@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../supabaseClient';
 import { useAuth } from './AuthContext';
 import { getAssignedTeacherBatches, getTeacherByCnic } from '../utils/teacherUtils';
+import { createBatchNotifications, createNotification, getTeachersForBatch, notifyAdmins } from '../utils/notifications';
 
 const ComplaintsContext = createContext();
 
@@ -113,6 +114,24 @@ export const ComplaintsProvider = ({ children }) => {
 
       if (msgError) throw msgError;
 
+      if (newComplaint.send_to === 'Admin') {
+        await notifyAdmins({
+          type: 'complaint_new',
+          title: 'New Complaint Raised',
+          message: `${user.name} raised: "${newComplaint.subject}"`,
+          link: '/admin/complaints'
+        });
+      } else {
+        const teachers = await getTeachersForBatch(newComplaint.batch);
+        await createBatchNotifications(teachers.map((teacher) => teacher.id), {
+          role: 'teacher',
+          type: 'complaint_new',
+          title: 'New Complaint Raised',
+          message: `${user.name} raised: "${newComplaint.subject}"`,
+          link: '/teacher/complaints'
+        });
+      }
+
       await fetchComplaints();
       return newComplaint;
     } catch (err) {
@@ -140,6 +159,46 @@ export const ComplaintsProvider = ({ children }) => {
         .update({ updated_at: new Date().toISOString(), status: newStatus })
         .eq('id', complaintId);
 
+      const complaint = complaints.find((item) => item.id === complaintId);
+      if (complaint) {
+        if (user.role === 'student') {
+          if (complaint.send_to === 'Admin') {
+            await notifyAdmins({
+              type: 'complaint',
+              title: 'New Reply on Complaint',
+              message: `${user.name} replied to: "${complaint.subject}"`,
+              link: '/admin/complaints'
+            });
+          } else {
+            const teachers = await getTeachersForBatch(complaint.batch);
+            await createBatchNotifications(teachers.map((teacher) => teacher.id), {
+              role: 'teacher',
+              type: 'complaint',
+              title: 'New Reply on Complaint',
+              message: `${user.name} replied to: "${complaint.subject}"`,
+              link: '/teacher/complaints'
+            });
+          }
+        } else {
+          const { data: student } = await supabase
+            .from('admissions')
+            .select('id')
+            .eq('cnic', complaint.student_cnic)
+            .maybeSingle();
+
+          if (student?.id) {
+            await createNotification({
+              userId: student.id,
+              role: 'student',
+              type: 'complaint',
+              title: 'New Reply on Your Complaint',
+              message: `${user.name} replied to: "${complaint.subject}"`,
+              link: '/student/complaints'
+            });
+          }
+        }
+      }
+
       // fetchComplaints will be called by real-time subscription or manually
       await fetchComplaints();
     } catch (err) {
@@ -156,6 +215,24 @@ export const ComplaintsProvider = ({ children }) => {
         .eq('id', id);
 
       if (error) throw error;
+      const complaint = complaints.find((item) => item.id === id);
+      if (complaint) {
+        const { data: student } = await supabase
+          .from('admissions')
+          .select('id')
+          .eq('cnic', complaint.student_cnic)
+          .maybeSingle();
+        if (student?.id) {
+          await createNotification({
+            userId: student.id,
+            role: 'student',
+            type: 'complaint_resolved',
+            title: 'Complaint Resolved',
+            message: `Your complaint "${complaint.subject}" has been marked resolved.`,
+            link: '/student/complaints'
+          });
+        }
+      }
       await fetchComplaints();
     } catch (err) {
       console.error('Error closing complaint:', err);

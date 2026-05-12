@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Skeleton } from '../components/Skeleton';
 import { EMAIL_EVENTS, sendAdmissionEmail } from '../utils/emailNotifications';
+import { createNotification } from '../utils/notifications';
 
 const Container = styled.div`
   padding: 10px 0;
@@ -456,6 +457,24 @@ const EnrollmentManager = () => {
       );
       if (!emailResult.ok) toast.error(`Rejected, but email failed: ${emailResult.message}`);
 
+      await createNotification({
+        userId: selectedApp.isReEnrollment ? selectedApp.original_admission_id : selectedApp.id,
+        role: 'student',
+        type: 'enrollment_rejected',
+        title: 'Enrollment Rejected',
+        message: `Your ${selectedApp.isReEnrollment ? 're-enrollment' : 'admission'} request for ${selectedApp.course || selectedApp.selectedCourse} was rejected.`,
+        link: '/student/new-enrollment',
+        sendEmail: false,
+        emailData: {
+          email: selectedApp.email,
+          name: selectedApp.name,
+          cnic: selectedApp.cnic,
+          course: selectedApp.course || selectedApp.selectedCourse,
+          reason: rejectionReason,
+          event: selectedApp.isReEnrollment ? EMAIL_EVENTS.RE_ENROLLMENT_REJECTED : EMAIL_EVENTS.ADMISSION_REJECTED
+        }
+      });
+
       setIsReviewModalOpen(false);
       setRejectionReason('');
       fetchData();
@@ -584,6 +603,25 @@ const EnrollmentManager = () => {
         }
       );
       if (!emailResult.ok) toast.error(`Access granted, but email failed: ${emailResult.message}`);
+
+      await createNotification({
+        userId: selectedApp.isReEnrollment ? selectedApp.original_admission_id : selectedApp.id,
+        role: 'student',
+        type: selectedApp.isReEnrollment ? 'enrollment_approved' : 'batch',
+        title: selectedApp.isReEnrollment ? 'Re-enrollment Approved' : 'Enrollment Confirmed',
+        message: `You have been enrolled in ${batch.batch_name} — ${selectedApp.course || selectedApp.selectedCourse}.`,
+        link: '/student/dashboard',
+        sendEmail: false,
+        emailData: {
+          email: selectedApp.email,
+          name: selectedApp.name,
+          cnic: selectedApp.cnic,
+          course: selectedApp.course || selectedApp.selectedCourse,
+          batch: batch.batch_name,
+          timing: batch.time_shift,
+          event: selectedApp.isReEnrollment ? EMAIL_EVENTS.RE_ENROLLMENT_APPROVED : EMAIL_EVENTS.ADMISSION_APPROVED
+        }
+      });
 
       // 4. Referral Program Logic
       if (selectedApp.referred_by) {

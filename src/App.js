@@ -80,6 +80,8 @@ import { TasksProvider } from './context/TasksContext';
 import { ComplaintsProvider } from './context/ComplaintsContext';
 import { GroupChatProvider } from './context/GroupChatContext';
 import { AnnouncementsProvider } from './context/AnnouncementsContext';
+import { NotificationsProvider } from './hooks/useNotifications';
+import ToastNotifications from './components/ToastNotifications';
 import ProtectedRoute from './components/ProtectedRoute';
 import PermissionGuard from './components/PermissionGuard';
 import ResetPasswordModal from './components/ResetPasswordModal';
@@ -170,6 +172,7 @@ function AppContent() {
       {!isDashboardRoute && <ScrollProgressBar />}
       {!isDashboardRoute && <GoToTopButton />}
       <CustomCursor />
+      {isDashboardRoute && <ToastNotifications />}
 
       {!isDashboardRoute && <Header />}
 
@@ -443,7 +446,9 @@ function App() {
         <ComplaintsProvider>
           <GroupChatProvider>
             <AnnouncementsProvider>
-              <AppContent />
+              <NotificationsProvider>
+                <AppContent />
+              </NotificationsProvider>
             </AnnouncementsProvider>
           </GroupChatProvider>
         </ComplaintsProvider>

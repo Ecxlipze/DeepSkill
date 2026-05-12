@@ -34,11 +34,9 @@ const HomePage = () => {
       </ScrollReveal>
 
 
-      <ScrollReveal>
-        <div id="testimonials">
-          <TestimonialSection />
-        </div>
-      </ScrollReveal>
+      <div id="testimonials">
+        <TestimonialSection />
+      </div>
       
       <ScrollReveal>
         <div id="join">

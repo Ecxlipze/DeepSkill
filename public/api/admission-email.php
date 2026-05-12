@@ -43,6 +43,9 @@ $cnic = clean_text($data['cnic'] ?? '', 30);
 $reason = clean_text($data['reason'] ?? 'Please contact admin for details.', 300);
 $batch = clean_text($data['batch'] ?? '', 120);
 $timing = clean_text($data['timing'] ?? '', 120);
+$title = clean_text($data['title'] ?? '', 160);
+$messageText = clean_text($data['message'] ?? '', 500);
+$link = clean_text($data['link'] ?? '', 200);
 
 if (!$email) {
     http_response_code(400);
@@ -57,7 +60,8 @@ $allowedEvents = [
     'admission_inactive',
     're_enrollment_requested',
     're_enrollment_approved',
-    're_enrollment_rejected'
+    're_enrollment_rejected',
+    'notification'
 ];
 
 if (!in_array($event, $allowedEvents, true)) {
@@ -126,6 +130,13 @@ switch ($event) {
         $intro = "Please contact admin";
         $body = "Your re-enrollment request for <strong>{$course}</strong> was not approved at this time.<p><strong>Reason:</strong> {$reason}</p>";
         $cta = "Please contact DeepSkills admin for next steps.";
+        break;
+
+    case 'notification':
+        $subject = $title ? "DeepSkills: {$title}" : "DeepSkills: Important notification";
+        $intro = $title ?: "Important notification";
+        $body = $messageText ?: "You have a new important notification from DeepSkills.";
+        $cta = $link ? "Open: https://deepskills.pk{$link}" : "Login at https://deepskills.pk/login";
         break;
 }
 

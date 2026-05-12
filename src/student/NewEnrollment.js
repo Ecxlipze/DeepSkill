@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import { EMAIL_EVENTS, sendAdmissionEmail } from '../utils/emailNotifications';
+import { notifyAdmins } from '../utils/notifications';
 import { 
   FaHome, FaTasks, FaChartLine, FaCertificate, 
   FaExclamationCircle, FaUserPlus, FaComments, 
@@ -265,6 +266,19 @@ const NewEnrollment = () => {
       }]);
 
       if (error) throw error;
+
+      await notifyAdmins({
+        type: 'enrollment',
+        title: 'New Re-enrollment Request',
+        message: `${admissionData.name || user.name} requested enrollment in ${selectedCourse.title}`,
+        link: '/admin/admissions',
+        sendEmail: true,
+        emailData: {
+          name: admissionData.name || user.name,
+          course: selectedCourse.title,
+          cnic: user.cnic
+        }
+      });
 
       const emailResult = await sendAdmissionEmail(EMAIL_EVENTS.RE_ENROLLMENT_REQUESTED, {
         email: admissionData.email || user.email,

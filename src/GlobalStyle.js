@@ -69,6 +69,28 @@ const GlobalStyle = createGlobalStyle`
     a, button, input, textarea, select, [role="button"], [class*="Button"] {
       cursor: none !important;
     }
+
+    body.ds-native-cursor,
+    body.ds-native-cursor *,
+    body.ds-native-cursor *::before,
+    body.ds-native-cursor *::after {
+      cursor: auto !important;
+      -webkit-cursor: auto !important;
+    }
+
+    body.ds-native-cursor a,
+    body.ds-native-cursor button,
+    body.ds-native-cursor [role="button"] {
+      cursor: pointer !important;
+      -webkit-cursor: pointer !important;
+    }
+
+    body.ds-native-cursor input,
+    body.ds-native-cursor textarea,
+    body.ds-native-cursor select {
+      cursor: text !important;
+      -webkit-cursor: text !important;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

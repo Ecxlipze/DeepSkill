@@ -5,10 +5,16 @@ import { useEffect } from 'react';
 import Script from 'next/script';
 import { useRouter } from 'next/router';
 import { AuthProvider } from '../src/context/AuthContext';
+import { NotificationsProvider } from '../src/hooks/useNotifications';
+import ToastNotifications from '../src/components/ToastNotifications';
 import { GA_MEASUREMENT_ID, pageview } from '../lib/analytics';
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
+  const isDashboardRoute =
+    router.asPath.startsWith('/student') ||
+    router.asPath.startsWith('/teacher') ||
+    router.asPath.startsWith('/admin');
 
   useEffect(() => {
     const handleRouteChange = (url) => {
@@ -38,7 +44,10 @@ export default function App({ Component, pageProps }) {
         </>
       ) : null}
       <AuthProvider>
-        <Component {...pageProps} />
+        <NotificationsProvider>
+          <Component {...pageProps} />
+          {isDashboardRoute && <ToastNotifications />}
+        </NotificationsProvider>
       </AuthProvider>
     </>
   );

@@ -101,15 +101,26 @@ const VideoThumb = styled.video`
   border-radius: 4px;
 `;
 
+const ImageThumb = styled.img`
+  width: 100px;
+  height: 60px;
+  object-fit: cover;
+  background: #000;
+  border-radius: 4px;
+`;
+
+const emptyFormData = {
+  student_name: '',
+  video_url: '',
+  thumbnail_url: '',
+  course_name: 'General'
+};
+
 const TestimonialManager = () => {
   const [testimonials, setTestimonials] = useState([]);
   const [courses, setCourses] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    student_name: '',
-    video_url: '',
-    course_name: 'General'
-  });
+  const [formData, setFormData] = useState(emptyFormData);
 
   useEffect(() => {
     fetchTestimonials();
@@ -133,7 +144,7 @@ const TestimonialManager = () => {
       const { error } = await supabase.from('testimonials').update(formData).eq('id', editingId);
       if (error) alert(error.message);
       else {
-        setFormData({ student_name: '', video_url: '', course_name: 'General' });
+        setFormData(emptyFormData);
         setEditingId(null);
         fetchTestimonials();
       }
@@ -142,7 +153,7 @@ const TestimonialManager = () => {
       if (error) {
         alert(error.message);
       } else {
-        setFormData({ student_name: '', video_url: '', course_name: 'General' });
+        setFormData(emptyFormData);
         fetchTestimonials();
       }
     }
@@ -153,6 +164,7 @@ const TestimonialManager = () => {
     setFormData({
       student_name: testi.student_name || '',
       video_url: testi.video_url || '',
+      thumbnail_url: testi.thumbnail_url || '',
       course_name: testi.course_name || 'General'
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -182,6 +194,10 @@ const TestimonialManager = () => {
           <Input value={formData.video_url} onChange={e => setFormData({...formData, video_url: e.target.value})} placeholder="e.g. https://.../media/vid.mp4" required />
         </InputGroup>
         <InputGroup>
+          <Label>Thumbnail URL (optional)</Label>
+          <Input value={formData.thumbnail_url} onChange={e => setFormData({...formData, thumbnail_url: e.target.value})} placeholder="e.g. https://.../media/testimonial-thumb.jpg" />
+        </InputGroup>
+        <InputGroup>
           <Label>Course Assignment</Label>
           <select 
             style={{ padding: '10px', background: '#2a2a2a', color: '#fff', border: '1px solid #444', borderRadius: '6px' }}
@@ -200,7 +216,7 @@ const TestimonialManager = () => {
             type="button" 
             onClick={() => {
               setEditingId(null);
-              setFormData({ student_name: '', video_url: '', course_name: 'General' });
+              setFormData(emptyFormData);
             }}
             style={{ background: '#444' }}
           >
@@ -221,7 +237,13 @@ const TestimonialManager = () => {
         <tbody>
           {testimonials.map(t => (
             <tr key={t.id}>
-              <Td><VideoThumb src={t.video_url} /></Td>
+              <Td>
+                {t.thumbnail_url ? (
+                  <ImageThumb src={t.thumbnail_url} alt="" />
+                ) : (
+                  <VideoThumb src={t.video_url} />
+                )}
+              </Td>
               <Td>{t.student_name}</Td>
               <Td>{t.course_name}</Td>
               <Td>

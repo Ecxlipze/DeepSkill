@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import DashboardLayout from '../components/DashboardLayout';
 import { getAssignedTeacherBatches, getTeacherByCnic } from '../utils/teacherUtils';
+import { createNotification, notifyAdmins } from '../utils/notifications';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -301,6 +302,63 @@ const TeacherAttendance = () => {
 
       toast.success(`Attendance saved for ${selectedBatch.batch_name} — ${selectedDate}`);
       setIsSaved(true);
+
+      const { data: updatedAttendance } = await supabase
+        .from('attendance')
+        .select('student_id, status')
+        .eq('batch_id', selectedBatch.id);
+
+      const statsByStudent = {};
+      (updatedAttendance || []).forEach((record) => {
+        if (!statsByStudent[record.student_id]) statsByStudent[record.student_id] = { total: 0, present: 0 };
+        statsByStudent[record.student_id].total += 1;
+        if (record.status === 'present' || record.status === 'late') statsByStudent[record.student_id].present += 1;
+      });
+
+      await Promise.all(students.map(async (student) => {
+        const markedStatus = markingData[student.id];
+        await createNotification({
+          userId: student.id,
+          role: 'student',
+          type: 'attendance',
+          title: 'Attendance Marked',
+          message: `Your attendance for ${selectedDate} was marked ${markedStatus}.`,
+          link: '/student/attendance'
+        });
+
+        const stats = statsByStudent[student.id];
+        const attendancePct = stats?.total ? Math.round((stats.present / stats.total) * 100) : 100;
+        if (attendancePct < 75) {
+          await createNotification({
+            userId: student.id,
+            role: 'student',
+            type: 'attendance_warning',
+            title: 'Low Attendance Alert',
+            message: `Your attendance has dropped to ${attendancePct}%. Minimum required is 75%.`,
+            link: '/student/attendance',
+            sendEmail: true,
+            emailData: {
+              email: student.email,
+              name: student.name,
+              title: 'Low Attendance Alert',
+              message: `Your attendance has dropped to ${attendancePct}%. Minimum required is 75%.`
+            }
+          });
+
+          await notifyAdmins({
+            type: 'attendance_warning',
+            title: 'Student Attendance Below 75%',
+            message: `${student.name}'s attendance is ${attendancePct}% in ${selectedBatch.batch_name}.`,
+            link: '/admin/attendance',
+            sendEmail: true,
+            emailData: {
+              name: student.name,
+              title: 'Student Attendance Below 75%',
+              message: `${student.name}'s attendance is ${attendancePct}% in ${selectedBatch.batch_name}.`
+            }
+          });
+        }
+      }));
 
       // Trigger result recomputation for all students in this batch
       try {

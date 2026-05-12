@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { createBatchNotifications, createNotification, getStudentsForCourseBatch } from '../utils/notifications';
 
 const TasksContext = createContext();
 
@@ -103,6 +104,16 @@ export const TasksProvider = ({ children }) => {
       }]);
 
       if (error) throw error;
+
+      const students = await getStudentsForCourseBatch(newTask.course, newTask.batch);
+      await createBatchNotifications(students.map((student) => student.id), {
+        role: 'student',
+        type: 'task',
+        title: 'New Task Assigned',
+        message: `${newTask.assignedBy || 'Your teacher'} assigned: "${newTask.title}" — due ${newTask.dueDate}`,
+        link: '/student/tasks'
+      });
+
       fetchTasks();
       return true;
     } catch (error) {
@@ -140,6 +151,32 @@ export const TasksProvider = ({ children }) => {
       }]);
 
       if (error) throw error;
+
+      const { data: task } = await supabase
+        .from('tasks')
+        .select('title, assigned_by')
+        .eq('id', taskId)
+        .maybeSingle();
+
+      if (task?.assigned_by) {
+        const { data: teacher } = await supabase
+          .from('teachers')
+          .select('id')
+          .eq('name', task.assigned_by)
+          .maybeSingle();
+
+        if (teacher?.id) {
+          await createNotification({
+            userId: teacher.id,
+            role: 'teacher',
+            type: 'task_submitted',
+            title: 'Task Submitted',
+            message: `${submission.studentName} submitted: "${task.title}"`,
+            link: '/teacher/tasks/view'
+          });
+        }
+      }
+
       fetchTasks();
     } catch (error) {
       alert("Failed to submit task: " + error.message);

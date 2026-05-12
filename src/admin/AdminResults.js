@@ -8,6 +8,7 @@ import AdminLayout from '../components/AdminLayout';
 import { supabase } from '../supabaseClient';
 import toast from 'react-hot-toast';
 import { SkeletonTable } from '../components/Skeleton';
+import { createBatchNotifications } from '../utils/notifications';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -156,6 +157,13 @@ const AdminResults = () => {
         for (const s of students) {
           await computeAndCacheResult(s.id, filters.type);
         }
+        await createBatchNotifications(students.map((student) => student.id), {
+          role: 'student',
+          type: 'result',
+          title: 'Result Published',
+          message: `${filters.type === 'midterm' ? 'Mid Term' : 'Final Term'} result has been published.`,
+          link: `/student/results/${filters.type}`
+        });
         toast.success(`Recomputed ${students.length} results for ${filters.batch}`);
         fetchResults();
       }

@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlay, FaTimes } from "react-icons/fa";
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import leftBtnIcon from "./assets/left-btn.svg";
 import rightBtnIcon from "./assets/right-btn.svg";
+import graphicThumb from "./assets/graphic-card1.png";
+import laravelThumb from "./assets/php-card.svg";
+import reactThumb from "./assets/mern-card.png";
+import wordpressThumb from "./assets/wp-card.png";
+import generalThumb from "./assets/slider-bg.png";
 
 const dummyTestimonials = [
   { id: 'dummy-1', student_name: 'Ali Khan', course_name: 'Graphic Design Mastery', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null },
@@ -15,13 +17,30 @@ const dummyTestimonials = [
   { id: 'dummy-4', student_name: 'Fatima Noor', course_name: 'WordPress Mastery', video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail_url: null }
 ];
 
+const thumbnailByCourse = [
+  { match: ['graphic', 'design', 'figma'], src: graphicThumb },
+  { match: ['laravel', 'php'], src: laravelThumb },
+  { match: ['react', 'mern', 'full stack'], src: reactThumb },
+  { match: ['wordpress', 'word press'], src: wordpressThumb },
+  { match: ['general', 'homepage', 'all'], src: generalThumb }
+];
+
+const getFallbackThumbnail = (courseName = '') => {
+  const normalizedCourse = String(courseName).toLowerCase();
+  const fallback = thumbnailByCourse.find(({ match }) =>
+    match.some((keyword) => normalizedCourse.includes(keyword))
+  );
+
+  return fallback?.src || generalThumb || null;
+};
+
 const Section = styled.section`
   padding: 40px 20px;
   background-color: #000;
   text-align: center;
 `;
 
-const Title = styled.h2`
+const Title = styled(motion.h2)`
   font-family: 'Inter', sans-serif;
   font-size: 2.4rem;
   font-weight: 700;
@@ -66,18 +85,44 @@ const SliderWrapper = styled.div`
   max-width: 900px;
   margin: 0 auto;
   position: relative;
-  /* Add padding to wrapper to make room for absolute arrows */
   padding: 0 40px;
-
-  .slick-list {
-    margin: 0 -15px;
-  }
-  .slick-slide > div {
-    padding: 0 15px;
-  }
 
   @media (max-width: 768px) {
     padding: 0;
+  }
+`;
+
+const CarouselViewport = styled.div`
+  overflow: hidden;
+  min-height: 500px;
+`;
+
+const CarouselTrack = styled.div`
+  display: flex;
+  align-items: stretch;
+  transform: translateX(${({ $offset }) => $offset}%);
+  transition: transform 500ms ease;
+  will-change: transform;
+`;
+
+const SlideItem = styled.div`
+  flex: 0 0 50%;
+  min-width: 0;
+  padding: 0 15px;
+
+  @media (max-width: 768px) {
+    flex-basis: 100%;
+    padding: 0;
+  }
+`;
+
+const StaticFallbackGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 30px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   }
 `;
 
@@ -86,6 +131,7 @@ const VideoCard = styled(motion.button)`
   border: 0;
   border-radius: 20px;
   height: 500px;
+  width: 100%;
   display: flex !important;
   flex-direction: column;
   align-items: center;
@@ -103,7 +149,7 @@ const VideoCard = styled(motion.button)`
   }
 `;
 
-const ArrowBtn = styled(motion.div)`
+const ArrowBtn = styled(motion.button)`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -114,16 +160,18 @@ const ArrowBtn = styled(motion.div)`
   align-items: center;
   justify-content: center;
   transition: opacity 0.3s ease;
+  border: 0;
+  background: transparent;
+  padding: 0;
 
   &:hover {
     opacity: 1;
   }
 
-  /* Position arrows in the wrapper padding, outside the cards */
-  &.slick-prev {
+  &.prev {
     left: -90px;
   }
-  &.slick-next {
+  &.next {
     right: -90px;
   }
 
@@ -137,23 +185,45 @@ const ArrowBtn = styled(motion.div)`
   }
 `;
 
-const PrevArrow = (props) => {
-  const { onClick } = props;
+const PrevArrow = ({ onClick }) => {
   return (
-    <ArrowBtn className="slick-prev" role="button" aria-label="Previous testimonial" tabIndex={0} onClick={onClick} whileHover={{ x: -10 }}>
+    <ArrowBtn type="button" className="prev" aria-label="Previous testimonial" onClick={onClick} whileHover={{ x: -10 }}>
       <img src={leftBtnIcon} alt="" aria-hidden="true" style={{ width: 45, height: 45 }} />
     </ArrowBtn>
   );
 };
 
-const NextArrow = (props) => {
-  const { onClick } = props;
+const NextArrow = ({ onClick }) => {
   return (
-    <ArrowBtn className="slick-next" role="button" aria-label="Next testimonial" tabIndex={0} onClick={onClick} whileHover={{ x: 10 }}>
+    <ArrowBtn type="button" className="next" aria-label="Next testimonial" onClick={onClick} whileHover={{ x: 10 }}>
       <img src={rightBtnIcon} alt="" aria-hidden="true" style={{ width: 45, height: 45 }} />
     </ArrowBtn>
   );
 };
+
+const Dots = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 28px;
+`;
+
+const Dot = styled.button`
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: ${({ $active }) => ($active ? '#000' : 'rgba(0, 0, 0, 0.3)')};
+  transition: background 200ms ease, transform 200ms ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: scale(1.25);
+    outline: none;
+  }
+`;
 
 const PlayIconWrapper = styled.div`
   position: absolute;
@@ -178,6 +248,25 @@ const PlayIconWrapper = styled.div`
     transform: translate(-50%, -50%) scale(1.1);
     background: #e62e4d;
   }
+`;
+
+const VideoFallback = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18), transparent 26%),
+    linear-gradient(135deg, #232323 0%, #7b1f2e 52%, #151515 100%);
+`;
+
+const ThumbnailImage = styled.img`
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.01);
 `;
 
 const ModalOverlay = styled(motion.div)`
@@ -246,32 +335,14 @@ const CloseButton = styled.button`
 `;
 
 const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayClick }) => {
-  const isDirectVideo = videoUrl && videoUrl.match(/\.(mp4|webm|ogg)$/i);
+  const resolvedThumbnail = thumbnail || getFallbackThumbnail(course);
 
   return (
     <VideoCard type="button" aria-label={`Play testimonial video${studentName ? ` from ${studentName}` : ''}`} whileHover={{ scale: 1.02 }} onClick={() => onPlayClick(videoUrl)}>
-      {/* Background Image/Thumbnail */}
-      {thumbnail ? (
-        <img src={thumbnail} alt="Video Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', zIndex: 0 }} />
-      ) : isDirectVideo ? (
-        <video
-          src={videoUrl}
-          muted
-          playsInline
-          preload="none"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, pointerEvents: 'none' }}
-        />
-      ) : videoUrl ? (
-        <iframe
-          title="Student Testimonial Thumbnail"
-          src={`${videoUrl}${videoUrl.includes('?') ? '&' : '?'}controls=0`}
-          frameBorder="0"
-          loading="lazy"
-          className="thumbnail-iframe"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }}
-        ></iframe>
+      {resolvedThumbnail ? (
+        <ThumbnailImage src={resolvedThumbnail} alt="" aria-hidden="true" loading="lazy" />
       ) : (
-        <div style={{ width: '100%', height: '100%', background: '#333', position: 'absolute', zIndex: 0 }} />
+        <VideoFallback aria-hidden="true" />
       )}
       
       <PlayIconWrapper>
@@ -291,10 +362,15 @@ const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayC
 };
 
 const TestimonialSection = ({ courseName = "All" }) => {
+  const [isClient, setIsClient] = useState(false);
   const [modalVideo, setModalVideo] = useState(null);
   const [testimonials, setTestimonials] = useState(dummyTestimonials);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [slidesPerView, setSlidesPerView] = useState(2);
 
   useEffect(() => {
+    setIsClient(true);
+
     const fetchTestimonials = async () => {
       try {
         const { supabase } = await import("./supabaseClient");
@@ -320,31 +396,54 @@ const TestimonialSection = ({ courseName = "All" }) => {
     fetchTestimonials();
   }, [courseName]);
 
-  const settings = {
-    dots: true,
-    infinite: testimonials.length > 2,
-    speed: 500,
-    slidesToShow: 2,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    pauseOnHover: true,
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
-    responsive: [
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          arrows: false,
-          dots: true,
-          centerMode: false,
-          adaptiveHeight: true
-        }
-      }
-    ]
+  useEffect(() => {
+    if (!isClient) return undefined;
+
+    const updateSlidesPerView = () => {
+      setSlidesPerView(window.matchMedia('(max-width: 768px)').matches ? 1 : 2);
+    };
+
+    updateSlidesPerView();
+    window.addEventListener('resize', updateSlidesPerView);
+
+    return () => window.removeEventListener('resize', updateSlidesPerView);
+  }, [isClient]);
+
+  const maxSlide = Math.max(testimonials.length - slidesPerView, 0);
+
+  useEffect(() => {
+    setActiveSlide((current) => Math.min(current, maxSlide));
+  }, [maxSlide]);
+
+  useEffect(() => {
+    if (!isClient || testimonials.length <= slidesPerView) return undefined;
+
+    const timer = window.setInterval(() => {
+      setActiveSlide((current) => (current >= maxSlide ? 0 : current + 1));
+    }, 4000);
+
+    return () => window.clearInterval(timer);
+  }, [isClient, maxSlide, slidesPerView, testimonials.length]);
+
+  useEffect(() => {
+    if (!modalVideo || typeof document === 'undefined') return undefined;
+
+    document.body.classList.add('ds-native-cursor');
+
+    return () => {
+      document.body.classList.remove('ds-native-cursor');
+    };
+  }, [modalVideo]);
+
+  const goToPrevious = () => {
+    setActiveSlide((current) => (current <= 0 ? maxSlide : current - 1));
   };
+
+  const goToNext = () => {
+    setActiveSlide((current) => (current >= maxSlide ? 0 : current + 1));
+  };
+
+  const slideOffset = activeSlide * (100 / slidesPerView) * -1;
 
   if (testimonials.length === 0) return null;
 
@@ -366,8 +465,41 @@ const TestimonialSection = ({ courseName = "All" }) => {
       >
         <MainBox>
           <SliderWrapper>
-            <Slider {...settings}>
-              {testimonials.map((testimonial) => (
+            {isClient ? (
+              <>
+                {testimonials.length > slidesPerView && <PrevArrow onClick={goToPrevious} />}
+                <CarouselViewport>
+                  <CarouselTrack $offset={slideOffset}>
+                    {testimonials.map((testimonial) => (
+                      <SlideItem key={testimonial.id}>
+                        <FunctionalVideoCard
+                          studentName={testimonial.student_name}
+                          videoUrl={testimonial.video_url}
+                          thumbnail={testimonial.thumbnail_url}
+                          course={testimonial.course_name}
+                          onPlayClick={setModalVideo}
+                        />
+                      </SlideItem>
+                    ))}
+                  </CarouselTrack>
+                </CarouselViewport>
+                {testimonials.length > slidesPerView && <NextArrow onClick={goToNext} />}
+                <Dots aria-label="Choose testimonial slide">
+                  {Array.from({ length: maxSlide + 1 }).map((_, index) => (
+                    <Dot
+                      key={index}
+                      type="button"
+                      $active={index === activeSlide}
+                      aria-label={`Show testimonial slide ${index + 1}`}
+                      aria-current={index === activeSlide ? 'true' : undefined}
+                      onClick={() => setActiveSlide(index)}
+                    />
+                  ))}
+                </Dots>
+              </>
+            ) : (
+              <StaticFallbackGrid>
+                {testimonials.slice(0, 2).map((testimonial) => (
                 <FunctionalVideoCard
                   key={testimonial.id}
                   studentName={testimonial.student_name}
@@ -377,7 +509,8 @@ const TestimonialSection = ({ courseName = "All" }) => {
                   onPlayClick={setModalVideo}
                 />
               ))}
-            </Slider>
+              </StaticFallbackGrid>
+            )}
           </SliderWrapper>
         </MainBox>
       </GlowContainer>

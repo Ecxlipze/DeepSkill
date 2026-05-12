@@ -7,7 +7,8 @@ export const EMAIL_EVENTS = {
   ADMISSION_INACTIVE: 'admission_inactive',
   RE_ENROLLMENT_REQUESTED: 're_enrollment_requested',
   RE_ENROLLMENT_APPROVED: 're_enrollment_approved',
-  RE_ENROLLMENT_REJECTED: 're_enrollment_rejected'
+  RE_ENROLLMENT_REJECTED: 're_enrollment_rejected',
+  NOTIFICATION: 'notification'
 };
 
 export async function sendAdmissionEmail(event, payload = {}) {

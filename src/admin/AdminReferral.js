@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import { createNotification } from '../utils/notifications';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -226,6 +227,16 @@ const AdminReferral = () => {
         .eq('id', showPayoutModal.id);
       
       if (error) throw error;
+
+      await createNotification({
+        userId: showPayoutModal.referrer_id,
+        role: showPayoutModal.referrer_role || 'student',
+        type: 'referral_payout',
+        title: 'Referral Reward Paid',
+        message: `Your referral reward of Rs. ${(payoutData.type === 'cash' ? settings.cash_reward : settings.fee_discount).toLocaleString()} has been approved and processed.`,
+        link: showPayoutModal.referrer_role === 'teacher' ? '/teacher/referral' : '/student/referral',
+        sendEmail: false
+      });
       
       toast.success(`Payout approved for ${showPayoutModal.referred_name}`);
       setShowPayoutModal(null);

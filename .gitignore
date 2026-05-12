@@ -12,6 +12,8 @@
 /build
 /.next
 /deepskills-cpanel
+/deepskills-deploy
+/deepskills-deploy 2
 
 # misc
 .DS_Store
@@ -37,3 +39,4 @@ lint_output.txt
 
 # database schemas
 *.sql
+!supabase/**/*.sql

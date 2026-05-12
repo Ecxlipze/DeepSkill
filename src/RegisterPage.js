@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { trackEvent } from "../lib/analytics";
 import { COURSE_LABEL_BY_SLUG } from "./utils/enrollmentNavigation";
 import { EMAIL_EVENTS, sendAdmissionEmail } from "./utils/emailNotifications";
+import { notifyAdmins } from "./utils/notifications";
 
 const PageContainer = styled(motion.div)`
   background-color: #000;
@@ -611,6 +612,18 @@ const RegisterPage = () => {
           referred_by: formData.referredBy
         };
         await register(applicationData);
+        await notifyAdmins({
+          type: 'admission',
+          title: 'New Student Registered',
+          message: `${applicationData.name} applied for ${applicationData.course}`,
+          link: '/admin/admissions',
+          sendEmail: true,
+          emailData: {
+            name: applicationData.name,
+            course: applicationData.course,
+            cnic: applicationData.cnic
+          }
+        });
         const emailResult = await sendAdmissionEmail(EMAIL_EVENTS.REGISTRATION_RECEIVED, applicationData);
         if (!emailResult.ok) {
           console.warn("Registration email failed:", emailResult.message);

@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 import { getTeacherByCnic } from './teacherUtils';
 import { buildJdDraft } from './hrJdBuilder';
 import { uploadHrAsset, uploadHrBlob } from './hrStorage';
+import { createNotification } from './notifications';
 
 const nowIso = () => new Date().toISOString();
 
@@ -383,6 +384,30 @@ export const sendJD = async (profileId, jdPayload) => {
     body: JSON.stringify({ profileId, jd: jdPayload })
   }).catch(() => null);
 
+  const { data: profile } = await supabase
+    .from('hr_profiles')
+    .select('teacher_id, full_name, personal_email')
+    .eq('id', profileId)
+    .maybeSingle();
+
+  if (profile?.teacher_id) {
+    await createNotification({
+      userId: profile.teacher_id,
+      role: 'teacher',
+      type: 'hr_jd',
+      title: 'JD Ready',
+      message: `Your job description is ready for review.`,
+      link: '/teacher/hr',
+      sendEmail: true,
+      emailData: {
+        email: profile.personal_email,
+        name: profile.full_name,
+        title: 'JD Ready',
+        message: 'Your job description is ready for review.'
+      }
+    });
+  }
+
   return saved;
 };
 
@@ -491,6 +516,22 @@ export const finalizeHiring = async ({
       files: rows
     })
   }).catch(() => null);
+
+  await createNotification({
+    userId: teacher.id,
+    role: 'teacher',
+    type: 'hr_hired',
+    title: 'Hiring Finalized',
+    message: `Your DeepSkills hiring process has been finalized.`,
+    link: '/teacher/hr',
+    sendEmail: true,
+    emailData: {
+      email: teacher.email || profile.personal_email,
+      name: teacher.name || profile.full_name,
+      title: 'Hiring Finalized',
+      message: 'Your DeepSkills hiring process has been finalized.'
+    }
+  });
 };
 
 export const shareHiringFiles = async (profileId) => {

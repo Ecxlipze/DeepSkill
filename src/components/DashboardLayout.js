@@ -10,6 +10,7 @@ import {
   FaUserGraduate, FaChalkboardTeacher, FaMoneyBillWave, FaBullhorn, FaIdBadge
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import logoImg from '../logo.svg';
 
 const LayoutContainer = styled.div`
@@ -416,6 +417,7 @@ const DashboardLayout = ({ children, navItems }) => {
           </div>
           
           <UserInfo>
+            <NotificationBell />
             <LogoutBtn onClick={handleLogout}>
               <FaSignOutAlt />
               <span className="hide-mobile">Logout</span>
