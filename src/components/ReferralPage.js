@@ -293,7 +293,7 @@ const ReferralPage = () => {
   };
 
   const shareWhatsapp = () => {
-    const link = `https://deepskills.pk/register?ref=${refCode}`;
+    const link = `https://deepskills.pk/inquiry?ref=${refCode}`;
     const text = `Join DeepSkill with my referral link and get enrolled in top tech courses: ${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -335,7 +335,7 @@ const ReferralPage = () => {
               <button className="share-btn whatsapp" onClick={shareWhatsapp}>
                 <FaWhatsapp /> Share on WhatsApp
               </button>
-              <button className="share-btn" onClick={() => copyToClipboard(`https://deepskills.pk/register?ref=${refCode}`, "Link")}>
+              <button className="share-btn" onClick={() => copyToClipboard(`https://deepskills.pk/inquiry?ref=${refCode}`, "Link")}>
                 <FaShareAlt /> Copy Link
               </button>
             </ShareActions>

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaIdCard, FaArrowRight } from 'react-icons/fa';
+import { FaIdCard, FaArrowRight, FaMapMarkerAlt, FaCheckCircle, FaClock, FaTimesCircle, FaInfoCircle, FaEnvelope } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 import { getFirstAccessibleAdminPath } from './utils/permissions';
+import { triggerAutoAttendance } from './utils/autoAttendance';
 
 const PageContainer = styled(motion.div)`
   min-height: 100vh;
@@ -157,6 +158,97 @@ const ErrorMessage = styled(motion.div)`
   border-radius: 4px;
 `;
 
+const ModalOverlay = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+`;
+
+const AttendanceModal = styled(motion.div)`
+  width: 100%;
+  max-width: 520px;
+  background: #111318;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 34px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+
+  .icon {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: rgba(55, 138, 221, 0.14);
+    color: #378ADD;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 18px;
+  }
+
+  h2 {
+    margin: 0 0 10px;
+    font-size: 1.7rem;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 1.7;
+    margin: 0 0 22px;
+  }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const ModalButton = styled.button`
+  border: 1px solid ${props => props.$secondary ? 'rgba(255,255,255,0.14)' : 'rgba(55, 138, 221, 0.45)'};
+  background: ${props => props.$secondary ? 'rgba(255,255,255,0.04)' : '#378ADD'};
+  color: #fff;
+  border-radius: 12px;
+  padding: 15px 18px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+`;
+
+const ResultCard = styled.div`
+  border-radius: 16px;
+  padding: 18px;
+  text-align: left;
+  border: 1px solid ${props => props.$color || 'rgba(255,255,255,0.12)'};
+  background: ${props => props.$bg || 'rgba(255,255,255,0.04)'};
+  margin-bottom: 18px;
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+
+  .meta {
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 1.65;
+    font-size: 0.92rem;
+  }
+`;
+
 const formatCNIC = (value) => {
   const cnic = value.replace(/\D/g, '');
   let formatted = cnic;
@@ -172,13 +264,24 @@ const LoginPage = () => {
   const [cnic, setCnic] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpStep, setOtpStep] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpInfo, setOtpInfo] = useState('');
+  const [attendanceUser, setAttendanceUser] = useState(null);
+  const [attendanceState, setAttendanceState] = useState('permission');
+  const [attendanceResult, setAttendanceResult] = useState(null);
 
-  const { login } = useAuth();
+  const { login, requestLoginOtp, verifyLoginOtp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleCnicChange = (e) => {
     setCnic(formatCNIC(e.target.value));
+    if (otpStep) {
+      setOtpStep(false);
+      setOtp('');
+      setOtpInfo('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -193,16 +296,31 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const user = await login(cnic);
+      if (!otpStep) {
+        const result = await requestLoginOtp(cnic);
+        setOtpStep(true);
+        setOtpInfo(result.email ? `OTP sent to ${result.email}` : 'OTP sent to your registered email.');
+        return;
+      }
+
+      if (otp.replace(/\D/g, '').length !== 6) {
+        setError('Please enter the 6-digit OTP from your email.');
+        return;
+      }
+
+      const verified = await verifyLoginOtp(cnic, otp);
+      const user = await login(cnic, { verificationToken: verified.verificationToken });
       
       const from = location.state?.from?.pathname;
-      if (from && from !== '/' && from !== '/login') {
+      if (user.role === 'student') {
+        setAttendanceUser(user);
+        setAttendanceState('permission');
+        setAttendanceResult(null);
+      } else if (from && from !== '/' && from !== '/login') {
         navigate(from, { replace: true });
       } else {
         if (user.role === 'teacher') {
           navigate('/teacher/dashboard', { replace: true });
-        } else if (user.role === 'student') {
-          navigate('/student/dashboard', { replace: true });
         } else {
           const adminPath = user.role === 'admin'
             ? '/admin/dashboard'
@@ -216,6 +334,112 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  const finishStudentLogin = () => {
+    navigate('/student/dashboard', { replace: true });
+  };
+
+  const runAutoAttendance = async (options = {}) => {
+    if (!attendanceUser) return;
+    setAttendanceState('checking');
+    try {
+      const result = await triggerAutoAttendance(attendanceUser, options);
+      setAttendanceResult(result);
+      setAttendanceState('result');
+      setTimeout(finishStudentLogin, 3000);
+    } catch (err) {
+      setAttendanceResult({ status: 'error', reason: err.message || 'Attendance check failed' });
+      setAttendanceState('result');
+      setTimeout(finishStudentLogin, 3000);
+    }
+  };
+
+  const getResultDisplay = () => {
+    const result = attendanceResult || {};
+    const batchStart = result.batch?.start_time || result.batch?.startTime || result.batch?.time_shift || result.batch?.timing_label || 'not set';
+    const distance = typeof result.distance === 'number' ? `${result.distance}m from the institute` : null;
+    const allowed = result.effectiveRadius
+      ? `allowed within ${result.effectiveRadius}m after GPS accuracy`
+      : result.settings?.radiusMeters
+        ? `allowed within ${result.settings.radiusMeters}m`
+        : null;
+    const accuracy = typeof result.accuracy === 'number' ? `GPS accuracy: ${result.accuracy}m` : null;
+
+    if (result.status === 'present') {
+      return {
+        icon: <FaCheckCircle />,
+        title: 'You are on time. Attendance marked as Present.',
+        color: 'rgba(46, 204, 113, 0.35)',
+        bg: 'rgba(46, 204, 113, 0.12)',
+        meta: [distance, accuracy, `Logged in now. Batch starts at ${batchStart}.`].filter(Boolean)
+      };
+    }
+    if (result.status === 'late') {
+      return {
+        icon: <FaClock />,
+        title: 'You are late. Attendance marked as Late.',
+        color: 'rgba(241, 196, 15, 0.4)',
+        bg: 'rgba(241, 196, 15, 0.12)',
+        meta: [distance, accuracy, `Batch starts at ${batchStart}. Late arrival noted.`].filter(Boolean)
+      };
+    }
+    if (result.status === 'too_early') {
+      return {
+        icon: <FaInfoCircle />,
+        title: `You are early. Class starts at ${batchStart}.`,
+        color: 'rgba(55, 138, 221, 0.4)',
+        bg: 'rgba(55, 138, 221, 0.12)',
+        meta: [distance, accuracy, 'No attendance was saved yet. Log in closer to class time.'].filter(Boolean)
+      };
+    }
+    if (result.status === 'already_marked') {
+      return {
+        icon: <FaCheckCircle />,
+        title: `Attendance already marked as ${String(result.existing?.status || '').toUpperCase()}.`,
+        color: 'rgba(55, 138, 221, 0.4)',
+        bg: 'rgba(55, 138, 221, 0.12)',
+        meta: [`Date: ${result.existing?.date || 'today'}`]
+      };
+    }
+    if (result.status === 'disabled' || result.status === 'no_class') {
+      return {
+        icon: <FaInfoCircle />,
+        title: result.status === 'disabled' ? 'Auto-attendance is disabled.' : 'No class attendance is needed today.',
+        color: 'rgba(156, 163, 175, 0.35)',
+        bg: 'rgba(156, 163, 175, 0.10)',
+        meta: ['You can continue to your dashboard.']
+      };
+    }
+    if (result.status === 'missing_time' || result.status === 'batch_not_found') {
+      return {
+        icon: <FaInfoCircle />,
+        title: 'Attendance could not be marked because batch timing is not configured.',
+        color: 'rgba(241, 196, 15, 0.4)',
+        bg: 'rgba(241, 196, 15, 0.12)',
+        meta: ['Admin has been notified to configure this batch.']
+      };
+    }
+    if (result.status === 'location_denied') {
+      return {
+        icon: <FaTimesCircle />,
+        title: 'Location access was denied. Attendance marked as Absent.',
+        color: 'rgba(156, 163, 175, 0.35)',
+        bg: 'rgba(156, 163, 175, 0.10)',
+        meta: ['Enable location in your browser settings if this was a mistake.']
+      };
+    }
+    return {
+      icon: <FaTimesCircle />,
+      title: result.reason === 'outside_location'
+        ? 'You appear to be outside the institute. Attendance marked as Absent.'
+        : 'Attendance marked as Absent.',
+      color: 'rgba(231, 76, 60, 0.4)',
+      bg: 'rgba(231, 76, 60, 0.12)',
+      meta: [distance && allowed ? `${distance} (${allowed})` : distance, accuracy, result.reason ? `Reason: ${result.reason.replace(/_/g, ' ')}` : null].filter(Boolean)
+    };
+  };
+
+  const resultDisplay = getResultDisplay();
 
   return (
     <PageContainer
@@ -238,7 +462,7 @@ const LoginPage = () => {
         transition={{ duration: 0.8, type: 'spring' }}
       >
         <Title>Welcome Back</Title>
-        <Subtitle>Enter your CNIC to access your dashboard</Subtitle>
+        <Subtitle>{otpStep ? 'Enter the OTP sent to your registered email' : 'Enter your CNIC to receive a secure login OTP'}</Subtitle>
 
         <Form onSubmit={handleSubmit}>
           <AnimatePresence>
@@ -249,6 +473,19 @@ const LoginPage = () => {
                 exit={{ opacity: 0, x: 20 }}
               >
                 {error}
+              </ErrorMessage>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {otpInfo && !error && (
+              <ErrorMessage
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                style={{ background: 'rgba(46, 204, 113, 0.1)', borderColor: 'rgba(46, 204, 113, 0.3)', color: '#2ecc71' }}
+              >
+                {otpInfo}
               </ErrorMessage>
             )}
           </AnimatePresence>
@@ -268,16 +505,105 @@ const LoginPage = () => {
             </InputWrapper>
           </InputGroup>
 
+          {otpStep && (
+            <InputGroup>
+              <Label>Email OTP</Label>
+              <InputWrapper>
+                <FaEnvelope />
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Enter 6-digit OTP"
+                  required
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength="6"
+                  autoFocus
+                />
+              </InputWrapper>
+            </InputGroup>
+          )}
+
           <SubmitButton
             type="submit"
-            disabled={loading || cnic.length !== 15}
+            disabled={loading || cnic.length !== 15 || (otpStep && otp.length !== 6)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            {loading ? "Authenticating..." : "Sign In"} <FaArrowRight />
+            {loading ? 'Authenticating...' : otpStep ? 'Verify OTP & Sign In' : 'Send OTP'} <FaArrowRight />
           </SubmitButton>
+          {otpStep && (
+            <SubmitButton
+              type="button"
+              disabled={loading}
+              onClick={async () => {
+                setError('');
+                setLoading(true);
+                try {
+                  const result = await requestLoginOtp(cnic);
+                  setOtp('');
+                  setOtpInfo(result.email ? `New OTP sent to ${result.email}` : 'New OTP sent to your registered email.');
+                } catch (err) {
+                  setError(err.message || 'Unable to resend OTP.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              style={{ background: 'rgba(255,255,255,0.08)', boxShadow: 'none' }}
+            >
+              Resend OTP
+            </SubmitButton>
+          )}
         </Form>
       </LoginCard>
+
+      <AnimatePresence>
+        {attendanceUser && (
+          <ModalOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <AttendanceModal initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}>
+              {attendanceState === 'permission' && (
+                <>
+                  <div className="icon"><FaMapMarkerAlt /></div>
+                  <h2>Attendance Check</h2>
+                  <p>
+                    DeepSkill needs your location to automatically mark attendance for today's class.
+                    Your location is only used for attendance verification.
+                  </p>
+                  <ModalActions>
+                    <ModalButton type="button" onClick={() => runAutoAttendance()}>Allow Location & Continue</ModalButton>
+                    <ModalButton type="button" $secondary onClick={() => runAutoAttendance({ selfReportedAbsent: true })}>
+                      I am not on campus today
+                    </ModalButton>
+                  </ModalActions>
+                </>
+              )}
+
+              {attendanceState === 'checking' && (
+                <>
+                  <div className="icon"><FaMapMarkerAlt /></div>
+                  <h2>Checking your location...</h2>
+                  <p>Please keep this page open while we verify your attendance.</p>
+                  <ModalActions>
+                    <ModalButton type="button" disabled>Checking...</ModalButton>
+                  </ModalActions>
+                </>
+              )}
+
+              {attendanceState === 'result' && (
+                <>
+                  <ResultCard $color={resultDisplay.color} $bg={resultDisplay.bg}>
+                    <div className="title">{resultDisplay.icon} {resultDisplay.title}</div>
+                    <div className="meta">
+                      {resultDisplay.meta.map((line) => <div key={line}>{line}</div>)}
+                    </div>
+                  </ResultCard>
+                  <p>Redirecting to your dashboard...</p>
+                </>
+              )}
+            </AttendanceModal>
+          </ModalOverlay>
+        )}
+      </AnimatePresence>
     </PageContainer>
   );
 };

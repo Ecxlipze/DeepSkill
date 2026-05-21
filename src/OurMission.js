@@ -148,8 +148,8 @@ const OurMission = () => {
       </motion.div>
 
       <div style={{ position: 'relative' }}>
-        <RegisterButton to="/register">
-          Register Now
+        <RegisterButton to="/inquiry">
+          Inquire Now
         </RegisterButton>
       </div>
     </Section>

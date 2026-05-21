@@ -96,15 +96,15 @@ export async function computeAndCacheResult(studentId, examType) {
     if (!student) return;
 
     // 2. Fetch Attendance Records
-    const { data: attendance } = await supabase.from('attendance').select('*').eq('cnic', student.cnic);
+    const { data: attendance } = await supabase.from('attendance').select('*').eq('student_id', studentId);
 
     // 3. Fetch Tasks and Submissions
     const { data: tasks } = await supabase.from('tasks').select('*').eq('batch', student.batch);
     const { data: submissions } = await supabase.from('task_submissions').select('*').eq('cnic', student.cnic);
 
     // 4. Merge Submissions into Tasks for Calculation
-    const mergedTasks = tasks.map(t => {
-      const sub = submissions.find(s => s.task_id === t.id);
+    const mergedTasks = (tasks || []).map(t => {
+      const sub = (submissions || []).find(s => s.task_id === t.id);
       return {
         ...t,
         category: t.category,

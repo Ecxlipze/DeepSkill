@@ -73,12 +73,12 @@ const TabBar = styled.div`
 const Tab = styled.button`
   padding: 20px 30px;
   background: none; border: none;
-  color: ${props => props.active ? '#378ADD' : '#888'};
+  color: ${props => props.$active ? '#378ADD' : '#888'};
   font-weight: 600; cursor: pointer; position: relative;
   transition: all 0.2s;
   &:after {
     content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-    background: #378ADD; transform: scaleX(${props => props.active ? 1 : 0});
+    background: #378ADD; transform: scaleX(${props => props.$active ? 1 : 0});
     transition: transform 0.2s;
   }
   &:hover { color: #fff; }
@@ -296,9 +296,9 @@ const AdminReferral = () => {
 
         <TabContainer>
           <TabBar>
-            <Tab active={activeTab === 'All Referrals'} onClick={() => setActiveTab('All Referrals')}>All Referrals</Tab>
-            <Tab active={activeTab === 'Pending Payouts'} onClick={() => setActiveTab('Pending Payouts')}>Pending Payouts ({stats.pendingPayouts})</Tab>
-            <Tab active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')}>Settings</Tab>
+            <Tab $active={activeTab === 'All Referrals'} onClick={() => setActiveTab('All Referrals')}>All Referrals</Tab>
+            <Tab $active={activeTab === 'Pending Payouts'} onClick={() => setActiveTab('Pending Payouts')}>Pending Payouts ({stats.pendingPayouts})</Tab>
+            <Tab $active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')}>Settings</Tab>
           </TabBar>
 
           <TabBody>

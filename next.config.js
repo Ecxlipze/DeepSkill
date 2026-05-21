@@ -11,7 +11,13 @@ const supabaseHost = (() => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: 'next-build',
   transpilePackages: ['react-router-dom'],
+  turbopack: {
+    resolveAlias: {
+      'react-router-dom': path.resolve(__dirname, 'lib/nextRouterDomCompat.js')
+    }
+  },
   compiler: {
     styledComponents: true
   },
@@ -84,6 +90,11 @@ const nextConfig = {
       {
         source: '/blog/:slug',
         destination: '/blogs/:slug',
+        permanent: true
+      },
+      {
+        source: '/register',
+        destination: '/inquiry',
         permanent: true
       }
     ];

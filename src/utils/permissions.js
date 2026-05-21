@@ -1,5 +1,6 @@
 export const MODULE_KEYS = [
   'dashboard',
+  'counsellor',
   'students',
   'teachers',
   'courses',
@@ -26,10 +27,6 @@ export const BUILTIN_ROLE_COLORS = {
   student: 'blue',
   teacher: 'green',
   admin: 'charcoal',
-  hr_manager: 'purple',
-  accountant: 'amber',
-  receptionist: 'pink',
-  blog: 'green',
   custom: 'gray'
 };
 
@@ -43,16 +40,12 @@ export const ROLE_COLOR_STYLES = {
   gray: { bg: 'rgba(107, 114, 128, 0.14)', text: '#9ca3af', border: 'rgba(107, 114, 128, 0.25)' }
 };
 
-export const STAFF_ROLES = ['admin', 'hr_manager', 'accountant', 'receptionist', 'blog', 'custom'];
+export const STAFF_ROLES = ['admin', 'custom'];
 
 export const BUILTIN_ROLE_NAMES = {
   student: 'Student',
   teacher: 'Teacher',
   admin: 'Admin',
-  hr_manager: 'HR Manager',
-  accountant: 'Accountant',
-  receptionist: 'Receptionist',
-  blog: 'Blog',
   custom: 'Custom'
 };
 
@@ -67,10 +60,6 @@ export const getBuiltinPermissions = (role) => {
     return { ...ADMIN_FULL_PERMISSIONS };
   }
 
-  if (role === 'blog') {
-    return normalizePermissionMap({ blog: 'full' });
-  }
-
   if (role === 'student' || role === 'teacher') {
     return {};
   }
@@ -82,7 +71,6 @@ export const resolvePermissions = (user, customRole) => {
   if (!user) return {};
   if (user.role === 'admin') return getBuiltinPermissions('admin');
   if (user.role === 'student' || user.role === 'teacher') return {};
-  if (user.role === 'blog' && !customRole) return getBuiltinPermissions('blog');
   return normalizePermissionMap(customRole?.permissions || user.permissions || {});
 };
 
@@ -96,20 +84,21 @@ export const canAccess = (permissions = {}, key, minimum = 'view') => {
 export const getFirstAccessibleAdminPath = (permissions = {}) => {
   const routeOrder = [
     { key: 'dashboard', path: '/admin/dashboard' },
-    { key: 'students', path: '/admin/admissions' },
-    { key: 'teachers', path: '/admin/teachers' },
+    { key: 'counsellor', path: '/admin/counsellor' },
+    { key: 'students', path: '/admin/management/students' },
+    { key: 'teachers', path: '/admin/management/teachers' },
     { key: 'hr', path: '/admin/hr' },
-    { key: 'users', path: '/admin/users' },
-    { key: 'courses', path: '/admin/courses' },
-    { key: 'attendance', path: '/admin/attendance' },
-    { key: 'announcements', path: '/admin/announcements' },
-    { key: 'blog', path: '/admin/blog' },
-    { key: 'complaints', path: '/admin/complaints' },
+    { key: 'users', path: '/admin/management/users' },
+    { key: 'courses', path: '/admin/management/courses' },
+    { key: 'attendance', path: '/admin/academic/attendance' },
+    { key: 'announcements', path: '/admin/academic/announcements' },
+    { key: 'blog', path: '/admin/management/blog' },
+    { key: 'complaints', path: '/admin/academic/complaints' },
     { key: 'finance', path: '/admin/finance' },
-    { key: 'referral', path: '/admin/referral' },
-    { key: 'results', path: '/admin/results' },
-    { key: 'reports', path: '/admin/reports' },
-    { key: 'settings', path: '/admin/settings/testimonials' }
+    { key: 'referral', path: '/admin/management/referral' },
+    { key: 'results', path: '/admin/academic/results' },
+    { key: 'reports', path: '/admin/management/reports' },
+    { key: 'settings', path: '/admin/management/settings' }
   ];
 
   const match = routeOrder.find((item) => canAccess(permissions, item.key, 'view'));
@@ -129,8 +118,9 @@ export const buildAdminSidebar = (user, permissions = {}, hasOpenComplaints = fa
     { iconKey: 'home', label: 'Dashboard', path: '/admin/dashboard', permissionKey: 'dashboard' },
     { iconKey: 'admissions', label: 'Admissions', path: '/admin/admissions', permissionKey: 'students' },
     { type: 'label', label: 'MANAGEMENT' },
-    { iconKey: 'students', label: 'Students', path: '/admin/students', permissionKey: 'students' },
-    { iconKey: 'teachers', label: 'Teachers', path: '/admin/teachers', permissionKey: 'teachers' },
+    { iconKey: 'counsellor', label: 'Counsellor', path: '/admin/counsellor', permissionKey: 'counsellor' },
+    { iconKey: 'students', label: 'Students', path: '/admin/management/students', permissionKey: 'students' },
+    { iconKey: 'teachers', label: 'Teachers', path: '/admin/management/teachers', permissionKey: 'teachers' },
     { iconKey: 'hr', label: 'HR Management', path: '/admin/hr', permissionKey: 'hr' },
     {
       iconKey: 'users',
@@ -138,17 +128,26 @@ export const buildAdminSidebar = (user, permissions = {}, hasOpenComplaints = fa
       type: 'dropdown',
       permissionKey: 'users',
       items: [
-        { label: 'Overview', path: '/admin/users', permissionKey: 'users' },
-        { label: 'Activity Logs', path: '/admin/users/activity', permissionKey: 'users' }
+        { label: 'Overview', path: '/admin/management/users', permissionKey: 'users' },
+        { label: 'Activity Logs', path: '/admin/management/users/activity', permissionKey: 'users' }
       ]
     },
-    { iconKey: 'courses', label: 'Courses & Batches', path: '/admin/courses', permissionKey: 'courses' },
-    { iconKey: 'attendance', label: 'Attendance', path: '/admin/attendance', permissionKey: 'attendance' },
-    { iconKey: 'results', label: 'Certificates', path: '/admin/certificates', permissionKey: 'results' },
+    { iconKey: 'courses', label: 'Courses & Batches', path: '/admin/management/courses', permissionKey: 'courses' },
+    {
+      iconKey: 'attendance',
+      label: 'Attendance',
+      type: 'dropdown',
+      permissionKey: 'attendance',
+      items: [
+        { label: 'Overview', path: '/admin/academic/attendance', permissionKey: 'attendance' },
+        { label: 'Settings', path: '/admin/academic/attendance', permissionKey: 'attendance' }
+      ]
+    },
+    { iconKey: 'results', label: 'Certificates', path: '/admin/management/certificates', permissionKey: 'results' },
     { type: 'label', label: 'COMMUNICATION' },
-    { iconKey: 'announcements', label: 'Announcements', path: '/admin/announcements', permissionKey: 'announcements' },
-    { iconKey: 'blog', label: 'Blog', path: '/admin/blog', permissionKey: 'blog' },
-    { iconKey: 'complaints', label: 'Complaints', path: '/admin/complaints', permissionKey: 'complaints', badge: hasOpenComplaints },
+    { iconKey: 'announcements', label: 'Announcements', path: '/admin/academic/announcements', permissionKey: 'announcements' },
+    { iconKey: 'blog', label: 'Blog', path: '/admin/management/blog', permissionKey: 'blog' },
+    { iconKey: 'complaints', label: 'Complaints', path: '/admin/academic/complaints', permissionKey: 'complaints', badge: hasOpenComplaints },
     { type: 'label', label: 'FINANCE' },
     {
       iconKey: 'finance',
@@ -161,20 +160,20 @@ export const buildAdminSidebar = (user, permissions = {}, hasOpenComplaints = fa
       ]
     },
     { type: 'label', label: 'GROWTH' },
-    { iconKey: 'referral', label: 'Referral Program', path: '/admin/referral', permissionKey: 'referral' },
+    { iconKey: 'referral', label: 'Referral Program', path: '/admin/management/referral', permissionKey: 'referral' },
     { type: 'label', label: 'SYSTEM' },
-    { iconKey: 'results', label: 'Exam Results', path: '/admin/results', permissionKey: 'results' },
-    { iconKey: 'reports', label: 'Reports', path: '/admin/reports', permissionKey: 'reports' },
+    { iconKey: 'results', label: 'Exam Results', path: '/admin/academic/results', permissionKey: 'results' },
+    { iconKey: 'reports', label: 'Reports', path: '/admin/management/reports', permissionKey: 'reports' },
     {
       iconKey: 'settings',
       label: 'Settings',
       type: 'dropdown',
       permissionKey: 'settings',
       items: [
-        { label: 'Testimonials', path: '/admin/settings/testimonials', permissionKey: 'settings' },
-        { label: 'Media Library', path: '/admin/settings/media', permissionKey: 'settings' },
-        { label: 'Site Content', path: '/admin/settings/content', permissionKey: 'settings' },
-        { label: 'Media Page', path: '/admin/settings/media-page', permissionKey: 'settings' }
+        { label: 'Testimonials', path: '/admin/management/settings', permissionKey: 'settings' },
+        { label: 'Media Library', path: '/admin/management/media', permissionKey: 'settings' },
+        { label: 'Site Content', path: '/admin/management/settings', permissionKey: 'settings' },
+        { label: 'Media Page', path: '/admin/management/media', permissionKey: 'settings' }
       ]
     }
   ];

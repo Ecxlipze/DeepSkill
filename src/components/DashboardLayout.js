@@ -315,7 +315,6 @@ const DashboardLayout = ({ children, navItems }) => {
             { label: 'View Tasks', path: '/teacher/tasks/view' }
           ]
         },
-        { label: 'Attendance', path: '/teacher/attendance', icon: <FaCalendarCheck /> },
         { label: 'Complaints', path: '/teacher/complaints', icon: <FaExclamationCircle /> },
         { label: 'Announcements', path: '/teacher/announcements', icon: <FaBullhorn /> },
         {
@@ -335,14 +334,14 @@ const DashboardLayout = ({ children, navItems }) => {
       return [
         { label: 'Dashboard', path: '/admin/dashboard', icon: <FaHome /> },
         { label: 'Admissions', path: '/admin/admissions', icon: <FaUserPlus /> },
-        { label: 'Students', path: '/admin/students', icon: <FaUserGraduate /> },
-        { label: 'Teachers', path: '/admin/teachers', icon: <FaChalkboardTeacher /> },
-        { label: 'Attendance', path: '/admin/attendance', icon: <FaCalendarCheck /> },
-        { label: 'Complaints', path: '/admin/complaints', icon: <FaExclamationCircle /> },
-        { label: 'Certificates', path: '/admin/certificates', icon: <FaCertificate /> },
+        { label: 'Students', path: '/admin/management/students', icon: <FaUserGraduate /> },
+        { label: 'Teachers', path: '/admin/management/teachers', icon: <FaChalkboardTeacher /> },
+        { label: 'Attendance', path: '/admin/academic/attendance', icon: <FaCalendarCheck /> },
+        { label: 'Complaints', path: '/admin/academic/complaints', icon: <FaExclamationCircle /> },
+        { label: 'Certificates', path: '/admin/management/certificates', icon: <FaCertificate /> },
         { label: 'Finance', path: '/admin/finance', icon: <FaMoneyBillWave /> },
-        { label: 'Referral Program', path: '/admin/referral', icon: <FaGift /> },
-        { label: 'Exam Results', path: '/admin/results', icon: <FaGraduationCap /> }
+        { label: 'Referral Program', path: '/admin/management/referral', icon: <FaGift /> },
+        { label: 'Exam Results', path: '/admin/academic/results', icon: <FaGraduationCap /> }
       ];
     }
     

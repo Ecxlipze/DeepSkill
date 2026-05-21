@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../lib/nextRouterDomCompat";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress, FaSearchDollar, FaPenNib } from "react-icons/fa";
 import { getCourseDetailPath, getCourseSlugFromCategory } from './utils/enrollmentNavigation';
 
@@ -242,7 +242,7 @@ const CoursesPage = () => {
   const getPath = (category) => {
     const slug = getCourseSlugFromCategory(category);
     if (slug) return getCourseDetailPath(slug);
-    return '/register';
+    return '/inquiry';
   };
 
   return (

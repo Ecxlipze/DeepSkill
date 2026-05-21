@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../lib/nextRouterDomCompat';
 import { useAuth } from './context/AuthContext';
 import { FaUser, FaStar, FaUsers, FaProjectDiagram, FaWallet, FaClock, FaBriefcase, FaChalkboardTeacher, FaDatabase } from 'react-icons/fa';
 import mernCard from './assets/mern-card.svg';
@@ -469,12 +469,12 @@ const OutcomesDescription = styled(motion.p)`
 const FullStackPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [pdfUrl, setPdfUrl] = React.useState('/assets/course-pdfs/fullstack-mern.pdf'); // Fallback
+  const [pdfUrl, setPdfUrl] = React.useState('');
 
   React.useEffect(() => {
     const fetchPdf = async () => {
-      const { supabase } = await import('./supabaseClient');
-      const { data } = await supabase
+      const { supabasePublic } = await import('./supabasePublicClient');
+      const { data } = await supabasePublic
         .from('courses')
         .select('pdf_url')
         .ilike('category', '%react%')

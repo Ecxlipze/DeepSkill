@@ -159,8 +159,8 @@ const StatusBadge = styled.span`
   font-size: 0.75rem;
   font-weight: 600;
   
-  ${({ status }) => {
-    switch(status) {
+  ${({ $status }) => {
+    switch($status) {
       case 'Submitted': return 'background: rgba(46, 125, 50, 0.15); color: #4caf50; border: 1px solid rgba(46, 125, 50, 0.3);';
       case 'Overdue': return 'background: rgba(211, 47, 47, 0.15); color: #f44336; border: 1px solid rgba(211, 47, 47, 0.3);';
       case 'Pending': return 'background: rgba(255, 152, 0, 0.15); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3);';
@@ -411,7 +411,7 @@ const StudentTasks = () => {
                     {task.status === 'Pending' ? (
                       <SubmitBtn onClick={() => setSelectedTaskToSubmit(task)}>Submit Task</SubmitBtn>
                     ) : (
-                      <StatusBadge status={task.status}>{task.status}</StatusBadge>
+                      <StatusBadge $status={task.status}>{task.status}</StatusBadge>
                     )}
                   </TaskFooter>
                 </TaskCard>
@@ -462,7 +462,7 @@ const StudentTasks = () => {
                   </div>
                   
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '15px' }}>
-                    <StatusBadge status={task.status}>{task.status}</StatusBadge>
+                    <StatusBadge $status={task.status}>{task.status}</StatusBadge>
                     {task.status === 'Pending' && (
                       <SubmitBtn onClick={() => setSelectedTaskToSubmit(task)}>Submit</SubmitBtn>
                     )}

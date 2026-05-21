@@ -566,7 +566,7 @@ const TeacherManager = () => {
                 <tr><td colSpan="7" style={{ textAlign: 'center', padding: '50px', color: '#555' }}>No teachers found</td></tr>
               ) : (
                 filteredTeachers.map(teacher => (
-                  <tr key={teacher.id} onClick={() => navigate(`/admin/teachers/${teacher.id}`)}>
+                  <tr key={teacher.id} onClick={() => navigate(`/admin/management/teachers/${teacher.id}`)}>
                     <td>
                       <TeacherInfo>
                         <div className="avatar">{getInitials(teacher.name)}</div>
@@ -597,7 +597,7 @@ const TeacherManager = () => {
                     <td><StatusBadge $active={teacher.status === 'Active'}>{teacher.status}</StatusBadge></td>
                     <td>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); navigate(`/admin/teachers/${teacher.id}`); }}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/admin/management/teachers/${teacher.id}`); }}
                         style={{ background: 'none', border: 'none', color: '#378ADD', cursor: 'pointer' }}
                       >
                         <FaEye />

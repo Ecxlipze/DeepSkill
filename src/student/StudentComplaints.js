@@ -84,8 +84,8 @@ const TicketCard = styled.div`
   margin-bottom: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  background: ${props => props.active ? 'rgba(123, 31, 46, 0.15)' : 'transparent'};
-  border-left: 4px solid ${props => props.active ? '#7B1F2E' : 'transparent'};
+  background: ${props => props.$active ? 'rgba(123, 31, 46, 0.15)' : 'transparent'};
+  border-left: 4px solid ${props => props.$active ? '#7B1F2E' : 'transparent'};
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 
   &:hover {
@@ -462,7 +462,7 @@ const StudentComplaints = () => {
             {complaints.map(ticket => (
               <TicketCard 
                 key={ticket.id} 
-                active={activeId === ticket.id}
+                $active={activeId === ticket.id}
                 onClick={() => setActiveId(ticket.id)}
               >
                 <TicketTop>

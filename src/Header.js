@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "../lib/nextRouterDomCompat";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes, FaHome, FaInfoCircle, FaBook, FaUserTie, FaPlayCircle, FaUser, FaSignOutAlt, FaColumns, FaPhoneAlt, FaPenNib } from "react-icons/fa";
 import { FiChevronRight, FiChevronDown } from "react-icons/fi";
@@ -717,10 +717,10 @@ const Header = () => {
 
           <DesktopOnlyBtn>
             <RegisterButton
-              to="/register"
+              to="/inquiry"
               style={{ padding: "10px 24px", fontSize: "0.95rem" }}
             >
-              Get Enroll
+              Inquire Now
             </RegisterButton>
           </DesktopOnlyBtn>
           <MobileMenuBtn type="button" aria-label="Open navigation menu" onClick={() => setMobileMenuOpen(true)}>
@@ -769,12 +769,12 @@ const Header = () => {
                   <>
                     <MobileCta
                       as={Link}
-                      to="/register"
+                      to="/inquiry"
                       $primary
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <FaUserTie style={{ fontSize: "1rem" }} />
-                      Get Enroll
+                      Inquire Now
                     </MobileCta>
                     <MobileCta
                       as={Link}

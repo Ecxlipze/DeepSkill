@@ -1,4 +1,5 @@
 const EMAIL_ENDPOINT = process.env.NEXT_PUBLIC_EMAIL_ENDPOINT || '/api/admission-email.php';
+const FALLBACK_EMAIL_ENDPOINT = '/api/admission-email.php';
 
 export const EMAIL_EVENTS = {
   REGISTRATION_RECEIVED: 'registration_received',
@@ -8,6 +9,9 @@ export const EMAIL_EVENTS = {
   RE_ENROLLMENT_REQUESTED: 're_enrollment_requested',
   RE_ENROLLMENT_APPROVED: 're_enrollment_approved',
   RE_ENROLLMENT_REJECTED: 're_enrollment_rejected',
+  INQUIRY_RECEIVED: 'inquiry_received',
+  WELCOME: 'welcome',
+  LOGIN_INSTRUCTIONS: 'login_instructions',
   NOTIFICATION: 'notification'
 };
 
@@ -17,11 +21,20 @@ export async function sendAdmissionEmail(event, payload = {}) {
   }
 
   try {
-    const response = await fetch(EMAIL_ENDPOINT, {
+    const requestBody = JSON.stringify({ event, ...payload });
+    let response = await fetch(EMAIL_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event, ...payload })
+      body: requestBody
     });
+
+    if (response.status === 405 && EMAIL_ENDPOINT !== FALLBACK_EMAIL_ENDPOINT) {
+      response = await fetch(FALLBACK_EMAIL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody
+      });
+    }
 
     const result = await response.json().catch(() => ({}));
 

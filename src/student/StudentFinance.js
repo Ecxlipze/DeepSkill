@@ -95,7 +95,7 @@ const StudentFinance = () => {
           {feePlan.installments.map((inst, idx) => (
             <InstallmentCard 
               key={inst.id} 
-              status={inst.status}
+              $status={inst.status}
               isFuture={inst.status === 'pending' && new Date(inst.due_date) > new Date()}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -110,7 +110,7 @@ const StudentFinance = () => {
               </div>
               <div className="amount-info">
                 <strong>Rs. {inst.amount.toLocaleString()}</strong>
-                <StatusBadge status={inst.status}>{inst.status}</StatusBadge>
+                <StatusBadge $status={inst.status}>{inst.status}</StatusBadge>
               </div>
               {inst.status === 'paid' && (
                 <div className="payment-meta">
@@ -230,12 +230,12 @@ const InstallmentCard = styled(motion.div)`
     justify-content: center;
     font-size: 1.2rem;
     background: ${props => 
-      props.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 
-      props.status === 'overdue' ? 'rgba(239, 68, 68, 0.1)' : 
+      props.$status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 
+      props.$status === 'overdue' ? 'rgba(239, 68, 68, 0.1)' : 
       'rgba(245, 158, 11, 0.1)'};
     color: ${props => 
-      props.status === 'paid' ? '#10B981' : 
-      props.status === 'overdue' ? '#ef4444' : 
+      props.$status === 'paid' ? '#10B981' : 
+      props.$status === 'overdue' ? '#ef4444' : 
       '#F59E0B'};
   }
 
@@ -267,8 +267,8 @@ const StatusBadge = styled.span`
   font-weight: 700;
   text-transform: uppercase;
   color: ${props => 
-    props.status === 'paid' ? '#10B981' : 
-    props.status === 'overdue' ? '#ef4444' : 
+    props.$status === 'paid' ? '#10B981' : 
+    props.$status === 'overdue' ? '#ef4444' : 
     '#F59E0B'};
 `;
 

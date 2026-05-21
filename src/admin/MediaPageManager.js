@@ -241,13 +241,19 @@ const MediaPageManager = () => {
         <div key={type}>
           <SectionTitle>{type.replace('_', ' ').toUpperCase()}S</SectionTitle>
           <MediaGrid>
-            {groupByType(type).map(item => (
+            {groupByType(type).map(item => {
+              const mediaUrl = String(item.media_url || '').trim();
+              return (
               <Card key={item.id}>
                 <MediaOverlay>
-                  {item.media_url && item.media_url.match(/\.(mp4|webm|ogg)$/) ? (
-                    <video src={item.media_url} muted />
+                  {mediaUrl ? (
+                    mediaUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                      <video src={mediaUrl} muted />
+                    ) : (
+                      <img src={mediaUrl} alt="" />
+                    )
                   ) : (
-                    <img src={item.media_url || ''} alt="" />
+                    <div style={{ color: '#777', fontSize: '0.85rem' }}>No media</div>
                   )}
                 </MediaOverlay>
                 <Info>
@@ -259,7 +265,7 @@ const MediaPageManager = () => {
                   <DeleteBtn onClick={() => handleDelete(item.id)}>Delete</DeleteBtn>
                 </ButtonGroup>
               </Card>
-            ))}
+            )})}
           </MediaGrid>
         </div>
       ))}

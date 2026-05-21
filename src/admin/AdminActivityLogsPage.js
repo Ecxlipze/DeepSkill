@@ -102,9 +102,6 @@ const AdminActivityLogsPage = () => {
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
                   <option value="admin">Admin</option>
-                  <option value="hr_manager">HR Manager</option>
-                  <option value="accountant">Accountant</option>
-                  <option value="receptionist">Receptionist</option>
                   <option value="custom">Custom</option>
                   <option value="unknown">Unknown</option>
                 </select>

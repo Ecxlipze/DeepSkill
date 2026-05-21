@@ -318,8 +318,8 @@ const StatusBadge = styled.span`
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.8rem;
-  background: ${props => props.status === 'Submitted' ? 'rgba(76, 175, 80, 0.2)' : props.status === 'Pending' ? 'rgba(255, 152, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
-  color: ${props => props.status === 'Submitted' ? '#4caf50' : props.status === 'Pending' ? '#ff9800' : '#999'};
+  background: ${props => props.$status === 'Submitted' ? 'rgba(76, 175, 80, 0.2)' : props.$status === 'Pending' ? 'rgba(255, 152, 0, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
+  color: ${props => props.$status === 'Submitted' ? '#4caf50' : props.$status === 'Pending' ? '#ff9800' : '#999'};
 `;
 
 // --- Component ---
@@ -511,7 +511,7 @@ const StudentProgress = () => {
                         <td style={{ color: '#fff' }}>{t.title}</td>
                         <td>{t.category}</td>
                         <td>{t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '-'}</td>
-                        <td><StatusBadge status={t.status}>{t.status}</StatusBadge></td>
+                        <td><StatusBadge $status={t.status}>{t.status}</StatusBadge></td>
                       </tr>
                     ))}
                     {roadmapTasks.length === 0 && (

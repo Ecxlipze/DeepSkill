@@ -104,7 +104,7 @@ const StatusBadge = styled.span`
   font-weight: 700;
   text-transform: uppercase;
   background: ${props => {
-    switch (props.status?.toLowerCase()) {
+    switch (props.$status?.toLowerCase()) {
       case 'active': return 'rgba(46, 204, 113, 0.1)';
       case 'graduated': return 'rgba(52, 152, 219, 0.1)';
       case 'dropped': return 'rgba(231, 76, 60, 0.1)';
@@ -112,7 +112,7 @@ const StatusBadge = styled.span`
     }
   }};
   color: ${props => {
-    switch (props.status?.toLowerCase()) {
+    switch (props.$status?.toLowerCase()) {
       case 'active': return '#2ecc71';
       case 'graduated': return '#3498db';
       case 'dropped': return '#e74c3c';
@@ -130,9 +130,9 @@ const Pagination = styled.div`
 
 const PageBtn = styled.button`
   padding: 8px 12px;
-  background: ${props => props.active ? '#7B1F2E' : '#111'};
+  background: ${props => props.$active ? '#7B1F2E' : '#111'};
   color: #fff;
-  border: 1px solid ${props => props.active ? '#7B1F2E' : '#333'};
+  border: 1px solid ${props => props.$active ? '#7B1F2E' : '#333'};
   border-radius: 6px;
   cursor: pointer;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -557,7 +557,7 @@ const StudentManager = () => {
                 </tr>
               ) : (
                 paginatedStudents.map(student => (
-                  <tr key={student.id} onClick={() => navigate(`/admin/students/${student.id}`)}>
+                  <tr key={student.id} onClick={() => navigate(`/admin/management/students/${student.id}`)}>
                     <td>
                       <StudentInfo>
                         <div className="avatar">{getInitials(student.name)}</div>
@@ -589,12 +589,12 @@ const StudentManager = () => {
                     <td className="mobile-hide">{student.education}</td>
                     <td className="mobile-hide">{new Date(student.submitted_at).toLocaleDateString()}</td>
                     <td>
-                      <StatusBadge status={student.status}>
+                      <StatusBadge $status={student.status}>
                         {student.status}
                       </StatusBadge>
                     </td>
                     <td>
-                      <PageBtn onClick={(e) => { e.stopPropagation(); navigate(`/admin/students/${student.id}`); }}>
+                      <PageBtn onClick={(e) => { e.stopPropagation(); navigate(`/admin/management/students/${student.id}`); }}>
                         <FaEye />
                       </PageBtn>
                     </td>
@@ -616,7 +616,7 @@ const StudentManager = () => {
                 {[...Array(totalPages)].map((_, i) => (
                   <PageBtn
                     key={i}
-                    active={currentPage === i + 1}
+                    $active={currentPage === i + 1}
                     onClick={() => setCurrentPage(i + 1)}
                   >
                     {i + 1}

@@ -328,7 +328,7 @@ const CourseManager = () => {
                     <div className="stat"><div className="num">—</div><div className="lbl">Avg Attendance</div></div>
                   </MiniStats>
                   <CardActions>
-                    <ActionBtn $primary $grow onClick={()=>navigate(`/admin/courses/${course.id}`)}>View Batches <FaArrowRight /></ActionBtn>
+                    <ActionBtn $primary $grow onClick={()=>navigate(`/admin/management/courses/${course.id}`)}>View Batches <FaArrowRight /></ActionBtn>
                     <ActionBtn onClick={()=>openEdit(course)}><FaEdit /></ActionBtn>
                     <ActionBtn $danger onClick={()=>handleDeactivate(course)}><FaBan /></ActionBtn>
                   </CardActions>

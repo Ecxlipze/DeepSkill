@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id text NOT NULL,
-  role text NOT NULL CHECK (role IN ('student', 'teacher', 'admin', 'hr_manager', 'accountant', 'receptionist', 'blog', 'custom')),
+  role text NOT NULL CHECK (role IN ('student', 'teacher', 'admin', 'custom')),
   type text NOT NULL,
   title text NOT NULL,
   message text NOT NULL,

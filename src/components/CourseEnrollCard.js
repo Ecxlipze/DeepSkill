@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/nextRouterDomCompat';
 import { useAuth } from '../context/AuthContext';
 import { FaCheckCircle } from 'react-icons/fa';
 import { getEnrollmentPath } from '../utils/enrollmentNavigation';

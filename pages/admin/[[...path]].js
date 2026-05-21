@@ -1,11 +1,18 @@
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 import { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/router';
 import PrivatePortalNotice from '../../components/next/PrivatePortalNotice';
+import NextPortalGuard from '../../src/components/NextPortalGuard';
 import { TasksProvider } from '../../src/context/TasksContext';
 import { ComplaintsProvider } from '../../src/context/ComplaintsContext';
 import { GroupChatProvider } from '../../src/context/GroupChatContext';
 import { AnnouncementsProvider } from '../../src/context/AnnouncementsContext';
+import { DepartmentProvider } from '../../src/context/DepartmentContext';
+import {
+  getDepartmentRouteAccess,
+  normalizeAdminPath
+} from '../../src/utils/departments';
 
 const AdminLogin = dynamic(() => import('../../src/admin/Login'), { ssr: false });
 const AdminDashboard = dynamic(() => import('../../src/admin/Dashboard'), { ssr: false });
@@ -18,6 +25,7 @@ const TeacherProfile = dynamic(() => import('../../src/admin/TeacherProfile'), {
 const CourseManager = dynamic(() => import('../../src/admin/CourseManager'), { ssr: false });
 const CourseDetailPage = dynamic(() => import('../../src/admin/CourseDetailPage'), { ssr: false });
 const EnrollmentManager = dynamic(() => import('../../src/admin/EnrollmentManager'), { ssr: false });
+const CounsellorPanel = dynamic(() => import('../../src/admin/CounsellorPanel'), { ssr: false });
 const AdminAttendancePage = dynamic(() => import('../../src/admin/AdminAttendance'), { ssr: false });
 const CertificateManager = dynamic(() => import('../../src/admin/CertificateManager'), { ssr: false });
 const AdminHRManagement = dynamic(() => import('../../src/admin/AdminHRManagement'), { ssr: false });
@@ -32,14 +40,40 @@ const TestimonialManager = dynamic(() => import('../../src/admin/TestimonialMana
 const MediaLibrary = dynamic(() => import('../../src/admin/MediaLibrary'), { ssr: false });
 const ContentManager = dynamic(() => import('../../src/admin/ContentManager'), { ssr: false });
 const MediaPageManager = dynamic(() => import('../../src/admin/MediaPageManager'), { ssr: false });
+const AdminAttendanceSettings = dynamic(() => import('../../src/admin/AdminAttendanceSettings'), { ssr: false });
 const AdminReports = dynamic(() => import('../../src/admin/AdminPlaceholders').then((mod) => mod.AdminReports), { ssr: false });
+const DepartmentPlaceholder = dynamic(() => import('../../src/admin/DepartmentPlaceholder'), { ssr: false });
+
+const ADMIN_ROUTE_ACCESS = {
+  dashboard: { allowedRoles: ['admin', 'custom'], permissionKey: 'dashboard' },
+  admissions: { allowedRoles: ['admin', 'custom'], permissionKey: 'students' },
+  counsellor: { allowedRoles: ['admin', 'custom'], permissionKey: 'counsellor' },
+  students: { allowedRoles: ['admin', 'custom'], permissionKey: 'students' },
+  users: { allowedRoles: ['admin', 'custom'], permissionKey: 'users' },
+  teachers: { allowedRoles: ['admin', 'custom'], permissionKey: 'teachers' },
+  courses: { allowedRoles: ['admin', 'custom'], permissionKey: 'courses' },
+  batches: { allowedRoles: ['admin', 'custom'], permissionKey: 'courses' },
+  attendance: { allowedRoles: ['admin', 'custom'], permissionKey: 'attendance' },
+  certificates: { allowedRoles: ['admin', 'custom'], permissionKey: 'results' },
+  hr: { allowedRoles: ['admin', 'custom'], permissionKey: 'hr' },
+  announcements: { allowedRoles: ['admin', 'custom'], permissionKey: 'announcements' },
+  complaints: { allowedRoles: ['admin', 'custom'], permissionKey: 'complaints' },
+  finance: { allowedRoles: ['admin', 'custom'], permissionKey: 'finance' },
+  referral: { allowedRoles: ['admin', 'custom'], permissionKey: 'referral' },
+  reports: { allowedRoles: ['admin', 'custom'], permissionKey: 'reports' },
+  results: { allowedRoles: ['admin', 'custom'], permissionKey: 'results' },
+  blog: { allowedRoles: ['admin', 'custom'], permissionKey: 'blog' },
+  settings: { allowedRoles: ['admin', 'custom'], permissionKey: 'settings' }
+};
 
 function getAdminPage(path = []) {
   const [section, child] = path;
+  const subpath = path.slice(2).join('/');
 
   if (!section) return <AdminLogin />;
   if (section === 'dashboard') return <AdminDashboard />;
   if (section === 'admissions') return <EnrollmentManager />;
+  if (section === 'counsellor') return <CounsellorPanel initialView={child || 'overview'} />;
   if (section === 'students') return child ? <StudentProfile /> : <StudentManager />;
   if (section === 'users') return child === 'activity' ? <AdminActivityLogsPage /> : <AdminUserManagement />;
   if (section === 'teachers') return child ? <TeacherProfile /> : <TeacherManager />;
@@ -47,23 +81,74 @@ function getAdminPage(path = []) {
   if (section === 'batches') return <CourseManager />;
   if (section === 'attendance') return <AdminAttendancePage />;
   if (section === 'certificates') return <CertificateManager />;
-  if (section === 'hr') return <AdminHRManagement />;
+  if (section === 'hr') {
+    if (child === 'teachers') return <TeacherManager />;
+    if (child === 'settings') return <DepartmentPlaceholder title="HR Settings" icon="⚙️" />;
+    return <AdminHRManagement />;
+  }
   if (section === 'announcements') return <AdminAnnouncements />;
   if (section === 'complaints') return <AdminComplaints />;
-  if (section === 'finance') return child === 'transactions' ? <AdminFinanceTransactions /> : <AdminFinance />;
+  if (section === 'finance') {
+    if (child === 'transactions') return <AdminFinanceTransactions />;
+    if (child === 'referrals') return <AdminReferral />;
+    if (child === 'reports') return <DepartmentPlaceholder title="Revenue Report" icon="📈" />;
+    if (child === 'settings') return <DepartmentPlaceholder title="Fee Settings" icon="⚙️" />;
+    return <AdminFinance />;
+  }
   if (section === 'referral') return <AdminReferral />;
   if (section === 'reports') return <AdminReports />;
   if (section === 'results') return <AdminResults />;
   if (section === 'blog') return <BlogManager />;
+
+  if (section === 'academic') {
+    if (!child) return <DepartmentPlaceholder title="Academic Overview" icon="📚" />;
+    if (child === 'attendance') return <AdminAttendancePage />;
+    if (child === 'results') return <AdminResults />;
+    if (child === 'announcements') return <AdminAnnouncements />;
+    if (child === 'complaints') return <AdminComplaints />;
+    if (child === 'tasks') return <DepartmentPlaceholder title="Tasks & Assignments" icon="✅" />;
+    if (child === 'chats') return <DepartmentPlaceholder title="Group Chats" icon="💬" />;
+    if (child === 'reports') return <AdminReports />;
+  }
+
+  if (section === 'management') {
+    if (!child) return <DepartmentPlaceholder title="Management Overview" icon="🏢" />;
+    if (child === 'students') return subpath ? <StudentProfile /> : <StudentManager />;
+    if (child === 'teachers') return subpath ? <TeacherProfile /> : <TeacherManager />;
+    if (child === 'courses') return subpath ? <CourseDetailPage /> : <CourseManager />;
+    if (child === 'referral') return <AdminReferral />;
+    if (child === 'certificates') return <CertificateManager />;
+    if (child === 'blog') return <BlogManager />;
+    if (child === 'media') return <MediaLibrary />;
+    if (child === 'users') return subpath === 'activity' ? <AdminActivityLogsPage /> : <AdminUserManagement />;
+    if (child === 'reports') return <AdminReports />;
+    if (child === 'settings') return <ContentManager />;
+  }
 
   if (section === 'settings') {
     if (child === 'testimonials') return <TestimonialManager />;
     if (child === 'media') return <MediaLibrary />;
     if (child === 'content') return <ContentManager />;
     if (child === 'media-page') return <MediaPageManager />;
+    if (child === 'attendance') return <AdminAttendanceSettings />;
   }
 
   return <PrivatePortalNotice area="Admin" />;
+}
+
+function getAdminAccess(path = []) {
+  const [section, child] = path;
+  const pathname = `/admin/${path.join('/')}`.replace(/\/$/, '');
+  if (['academic', 'management'].includes(section)) {
+    return getDepartmentRouteAccess(pathname);
+  }
+  if (section === 'counsellor') {
+    return { allowedRoles: ['admin', 'custom'], permissionKey: 'counsellor' };
+  }
+  if (section === 'settings' && child === 'attendance') {
+    return { allowedRoles: ['admin', 'custom'], permissionKey: 'attendance' };
+  }
+  return ADMIN_ROUTE_ACCESS[section] || null;
 }
 
 function AdminProviders({ children }) {
@@ -72,8 +157,10 @@ function AdminProviders({ children }) {
       <ComplaintsProvider>
         <GroupChatProvider>
           <AnnouncementsProvider>
-            <Toaster position="top-right" />
-            {children}
+            <DepartmentProvider>
+              <Toaster position="top-right" />
+              {children}
+            </DepartmentProvider>
           </AnnouncementsProvider>
         </GroupChatProvider>
       </ComplaintsProvider>
@@ -83,7 +170,28 @@ function AdminProviders({ children }) {
 
 export default function AdminPortal() {
   const router = useRouter();
-  const path = Array.isArray(router.query.path) ? router.query.path : [];
+  const rawPath = Array.isArray(router.query.path) ? router.query.path : [];
+  const normalized = normalizeAdminPath(`/admin/${rawPath.join('/')}`);
+  const path = normalized === '/admin' ? [] : normalized.replace(/^\/admin\/?/, '').split('/').filter(Boolean);
+  const access = getAdminAccess(path);
 
-  return <AdminProviders>{getAdminPage(path)}</AdminProviders>;
+  if (!path[0]) {
+    return <AdminProviders>{getAdminPage(path)}</AdminProviders>;
+  }
+
+  return (
+    <AdminProviders>
+      <Head>
+        <title>Admin Portal | DeepSkills</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
+      <NextPortalGuard
+        allowedRoles={access?.allowedRoles || ['admin']}
+        permissionKey={access?.permissionKey}
+        loginPath="/admin"
+      >
+        {getAdminPage(path)}
+      </NextPortalGuard>
+    </AdminProviders>
+  );
 }

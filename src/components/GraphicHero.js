@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/nextRouterDomCompat';
 import { useAuth } from '../context/AuthContext';
 import graphicsCard from '../assets/graphics-card.svg';
 import CourseEnrollCard from './CourseEnrollCard';

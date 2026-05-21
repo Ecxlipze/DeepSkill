@@ -182,13 +182,13 @@ const FinanceManager = () => {
 
         <TabsContainer>
           <Tab
-            active={activeTab === 'students'}
+            $active={activeTab === 'students'}
             onClick={() => setActiveTab('students')}
           >
             <FaUserGraduate /> Student Fees
           </Tab>
           <Tab
-            active={activeTab === 'teachers'}
+            $active={activeTab === 'teachers'}
             onClick={() => setActiveTab('teachers')}
           >
             <FaChalkboardTeacher /> Teacher Salaries
@@ -248,7 +248,7 @@ const FinanceManager = () => {
                         </PlanBadge>
                       </td>
                       <td>
-                        <StatusBadge status={fee.status}>{fee.status}</StatusBadge>
+                        <StatusBadge $status={fee.status}>{fee.status}</StatusBadge>
                       </td>
                       <td>
                         <ActionButton onClick={() => { setSelectedStudent(fee); setIsModalOpen(true); }}>
@@ -278,7 +278,7 @@ const FinanceManager = () => {
                       <td>{t.specialization}</td>
                       <td>Rs. {t.monthlySalary.toLocaleString()}</td>
                       <td>
-                        <StatusBadge status={t.status}>{t.status}</StatusBadge>
+                        <StatusBadge $status={t.status}>{t.status}</StatusBadge>
                       </td>
                       <td>{t.lastPaid}</td>
                       <td>
@@ -357,7 +357,7 @@ const FinanceManager = () => {
                           <td>{p.due_date}</td>
                           <td>{p.paid_date || '—'}</td>
                           <td>{p.method || '—'}</td>
-                          <td><StatusBadge status={p.status}>{p.status}</StatusBadge></td>
+                          <td><StatusBadge $status={p.status}>{p.status}</StatusBadge></td>
                           <td>
                             {p.status !== 'paid' && (
                               <RecordBtn onClick={() => { setSelectedInstallment(p); setIsPaymentModalOpen(true); }}>
@@ -482,7 +482,7 @@ const TabsContainer = styled.div`
 const Tab = styled.button`
   background: none;
   border: none;
-  color: ${props => props.active ? '#fff' : '#6b7280'};
+  color: ${props => props.$active ? '#fff' : '#6b7280'};
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -500,7 +500,7 @@ const Tab = styled.button`
     width: 100%;
     height: 3px;
     background: #7B1F2E;
-    transform: scaleX(${props => props.active ? 1 : 0});
+    transform: scaleX(${props => props.$active ? 1 : 0});
     transition: transform 0.3s ease;
   }
 `;
@@ -603,7 +603,7 @@ const StatusBadge = styled.span`
   font-weight: 700;
   text-transform: uppercase;
   background: ${props => {
-    switch (props.status?.toLowerCase()) {
+    switch (props.$status?.toLowerCase()) {
       case 'paid': return 'rgba(16, 185, 129, 0.1)';
       case 'partial': return 'rgba(79, 142, 247, 0.1)';
       case 'overdue': return 'rgba(239, 68, 68, 0.1)';
@@ -611,7 +611,7 @@ const StatusBadge = styled.span`
     }
   }};
   color: ${props => {
-    switch (props.status?.toLowerCase()) {
+    switch (props.$status?.toLowerCase()) {
       case 'paid': return '#10B981';
       case 'partial': return '#4F8EF7';
       case 'overdue': return '#ef4444';

@@ -1,15 +1,17 @@
-import { useMemo, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import PublicLayout from '../../components/next/PublicLayout';
 import Seo from '../../components/next/Seo';
-import { BLOG_CATEGORIES, fetchPublishedPosts } from '../../lib/blog';
+import { BLOG_CATEGORIES, fetchPublishedPosts, normalizePost } from '../../lib/blog';
 import { breadcrumbSchema } from '../../lib/structuredData';
 
 const POSTS_PER_PAGE = 9;
-const MotionLink = motion.create(Link);
+const MotionLink = motion.create('a');
+
+function BlogCoverImage({ src, alt, priority = false }) {
+  return <img src={src} alt={alt} loading={priority ? 'eager' : 'lazy'} />;
+}
 
 const fadeUp = {
   hidden: { opacity: 1, y: 0 },
@@ -26,13 +28,40 @@ const gridReveal = {
 };
 
 export default function BlogIndex({ posts }) {
+  const [livePosts, setLivePosts] = useState(posts || []);
   const [category, setCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPosts = async () => {
+      try {
+        const { supabasePublic } = await import('../../src/supabasePublicClient');
+        const { data, error } = await supabasePublic
+          .from('blog_posts')
+          .select('*')
+          .eq('status', 'published')
+          .order('is_featured', { ascending: false })
+          .order('published_at', { ascending: false });
+
+        if (!mounted || error) return;
+        setLivePosts((data || []).map(normalizePost));
+      } catch (error) {
+        console.error('Blog client fetch failed:', error);
+      }
+    };
+
+    loadPosts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredPosts = useMemo(() => {
-    if (category === 'All') return posts;
-    return posts.filter((post) => post.category === category);
-  }, [category, posts]);
+    if (category === 'All') return livePosts;
+    return livePosts.filter((post) => post.category === category);
+  }, [category, livePosts]);
 
   const featured = filteredPosts.find((post) => post.isFeatured);
   const rest = filteredPosts.filter((post) => post.slug !== featured?.slug);
@@ -142,7 +171,7 @@ function FeaturedPost({ post }) {
     >
       <ImageFrame $featured>
         {post.coverImage ? (
-          <Image src={post.coverImage} alt={`${post.title} cover image`} fill sizes="(max-width: 900px) 100vw, 55vw" priority />
+          <BlogCoverImage src={post.coverImage} alt={`${post.title} cover image`} sizes="(max-width: 900px) 100vw, 55vw" priority />
         ) : (
           <FallbackImage>{post.category}</FallbackImage>
         )}
@@ -166,7 +195,7 @@ function BlogCard({ post }) {
     <Card href={`/blogs/${post.slug}`} variants={fadeUp} whileHover={{ y: -6 }} whileTap={{ scale: 0.99 }}>
       <ImageFrame>
         {post.coverImage ? (
-          <Image src={post.coverImage} alt={`${post.title} cover image`} fill sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" />
+          <BlogCoverImage src={post.coverImage} alt={`${post.title} cover image`} sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" />
         ) : (
           <FallbackImage>{post.category}</FallbackImage>
         )}
@@ -425,6 +454,10 @@ const ImageFrame = styled.div`
   overflow: hidden;
 
   img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     transition: transform 0.45s ease, filter 0.45s ease;
   }

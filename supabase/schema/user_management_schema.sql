@@ -59,41 +59,6 @@ CREATE INDEX IF NOT EXISTS idx_logs_type ON activity_logs(event_type);
 CREATE INDEX IF NOT EXISTS idx_logs_time ON activity_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_logs_role ON activity_logs(user_role);
 
-INSERT INTO custom_roles (name, description, icon, color, permissions, is_builtin)
-VALUES
-(
-  'HR Manager',
-  'Manages teacher hiring and HR processes',
-  '👔',
-  'purple',
-  '{"dashboard":"view","students":"view","teachers":"view","courses":"none","attendance":"view","tasks":"none","results":"none","finance":"none","complaints":"view","announcements":"view","referral":"none","reports":"view","hr":"full","users":"none","settings":"none"}'::jsonb,
-  TRUE
-),
-(
-  'Accountant',
-  'Manages financial records and fee tracking',
-  '💼',
-  'amber',
-  '{"dashboard":"view","students":"view","teachers":"view","courses":"none","attendance":"none","tasks":"none","results":"none","finance":"full","complaints":"none","announcements":"none","referral":"view","reports":"view","hr":"none","users":"none","settings":"none"}'::jsonb,
-  TRUE
-),
-(
-  'Receptionist',
-  'Handles student queries and announcements',
-  '📞',
-  'pink',
-  '{"dashboard":"view","students":"view","teachers":"view","courses":"view","attendance":"view","tasks":"none","results":"none","finance":"none","complaints":"view","announcements":"full","referral":"none","reports":"none","hr":"none","users":"none","settings":"none"}'::jsonb,
-  TRUE
-)
-ON CONFLICT (name) DO UPDATE
-SET
-  description = EXCLUDED.description,
-  icon = EXCLUDED.icon,
-  color = EXCLUDED.color,
-  permissions = EXCLUDED.permissions,
-  is_builtin = EXCLUDED.is_builtin,
-  updated_at = NOW();
-
 INSERT INTO users (full_name, cnic, phone, email, role, status, created_at, updated_at)
 SELECT
   a.name,
@@ -134,7 +99,7 @@ SELECT
   ac.name,
   ac.cnic,
   CASE
-    WHEN ac.role IN ('student', 'teacher', 'admin', 'hr_manager', 'accountant', 'receptionist', 'custom') THEN ac.role
+    WHEN ac.role IN ('student', 'teacher', 'admin', 'custom') THEN ac.role
     ELSE 'custom'
   END,
   'active',

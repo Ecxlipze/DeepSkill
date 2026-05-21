@@ -4,11 +4,13 @@ import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaDownload, FaCalendarAlt, FaChartLine,
-  FaExclamationCircle, FaCheckCircle, FaSearch, FaChevronRight
+  FaExclamationCircle, FaCheckCircle, FaSearch, FaEdit, FaLock, FaUnlock
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import AdminLayout from '../components/AdminLayout';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import { useAuth } from '../context/AuthContext';
+import { computeAndCacheResult } from '../utils/resultUtils';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -28,6 +30,21 @@ const ExportBtn = styled.button`
   font-weight: 700; font-size: 0.9rem; cursor: pointer;
   display: flex; align-items: center; gap: 8px; transition: all 0.2s;
   &:hover { background: rgba(55, 138, 221, 0.2); transform: translateY(-2px); }
+`;
+
+const ActionButton = styled.button`
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+
+  &:hover { border-color: #378ADD; color: #8ec5ff; }
 `;
 
 const StatsGrid = styled.div`
@@ -80,13 +97,13 @@ const TabBar = styled.div`
 
 const Tab = styled.button`
   padding: 18px 30px; background: none; border: none;
-  color: ${props => props.active ? '#378ADD' : '#888'};
+  color: ${props => props.$active ? '#378ADD' : '#888'};
   font-weight: 600; font-size: 0.9rem; cursor: pointer;
   position: relative; transition: all 0.2s;
 
   &:after {
     content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-    background: #378ADD; transform: scaleX(${props => props.active ? 1 : 0});
+    background: #378ADD; transform: scaleX(${props => props.$active ? 1 : 0});
     transition: transform 0.2s;
   }
 `;
@@ -111,6 +128,8 @@ const Badge = styled.div`
   &.good { background: rgba(46, 204, 113, 0.1); color: #2ecc71; }
   &.warning { background: rgba(241, 196, 15, 0.1); color: #f1c40f; }
   &.critical { background: rgba(231, 76, 60, 0.1); color: #e74c3c; }
+  &.info { background: rgba(55, 138, 221, 0.12); color: #378ADD; }
+  &.muted { background: rgba(156, 163, 175, 0.12); color: #aaa; }
 `;
 
 const HeatmapContainer = styled.div`
@@ -131,11 +150,93 @@ const DayCell = styled.div`
   .pct { font-size: 0.65rem; opacity: 0.8; }
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+`;
+
+const Modal = styled.div`
+  width: 100%;
+  max-width: 520px;
+  background: #111318;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 24px;
+  color: #fff;
+
+  h3 { margin: 0 0 8px; }
+  p { color: #888; margin: 0 0 20px; }
+  textarea, select {
+    width: 100%;
+    background: #08090c;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #fff;
+    padding: 12px;
+    margin-bottom: 14px;
+    outline: none;
+  }
+  textarea { min-height: 110px; resize: vertical; }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
+const statusClass = (status) => {
+  if (status === 'present') return 'good';
+  if (status === 'late') return 'warning';
+  return 'critical';
+};
+
+function escapeCsv(value) {
+  const raw = value === null || value === undefined ? '' : String(value);
+  if (/[",\n]/.test(raw)) return `"${raw.replace(/"/g, '""')}"`;
+  return raw;
+}
+
+function exportAttendanceCSV(data, filename) {
+  const headers = ['Date', 'Day', 'Student Name', 'CNIC', 'Batch', 'Course', 'Status', 'Marked By', 'Distance (m)', 'Marked At'];
+  const rows = data.map(row => [
+    row.date,
+    row.day_of_week,
+    row.student_name,
+    row.student_cnic,
+    row.batch_name,
+    row.course,
+    row.status,
+    row.marked_by,
+    row.distance_meters || '',
+    row.marked_at ? new Date(row.marked_at).toLocaleString() : ''
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const AdminAttendance = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('By Session');
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [students, setStudents] = useState([]);
+  const [overrideRecord, setOverrideRecord] = useState(null);
+  const [overrideStatus, setOverrideStatus] = useState('present');
+  const [overrideReason, setOverrideReason] = useState('');
+  const [savingOverride, setSavingOverride] = useState(false);
   const [filters, setFilters] = useState({
     batch: '',
     month: new Date().toISOString().slice(0, 7), // YYYY-MM
@@ -155,7 +256,7 @@ const AdminAttendance = () => {
       setRecords(data || []);
 
       // Get student names for the summary tab
-      const { data: sData } = await supabase.from('admissions').select('id, name, batch').eq('status', 'Active');
+      const { data: sData } = await supabase.from('admissions').select('id, name, cnic, batch').eq('status', 'Active');
       if (sData) setStudents(sData);
 
     } catch (err) {
@@ -169,48 +270,133 @@ const AdminAttendance = () => {
     fetchGlobalAttendance();
   }, [fetchGlobalAttendance]);
 
+  const filteredRecords = useMemo(() => {
+    const search = filters.search.trim().toLowerCase();
+    return records.filter((row) => {
+      const matchesBatch = !filters.batch || row.batch_name === filters.batch || row.batch_id === filters.batch;
+      const matchesSearch = !search
+        || String(row.student_name || '').toLowerCase().includes(search)
+        || String(row.student_cnic || '').toLowerCase().includes(search);
+      return matchesBatch && matchesSearch;
+    });
+  }, [records, filters.batch, filters.search]);
+
+  const batchOptions = useMemo(() => {
+    return [...new Set(records.map((row) => row.batch_name).filter(Boolean))].sort();
+  }, [records]);
+
   // Group by session
   const sessions = useMemo(() => {
     const map = {};
-    records.forEach(r => {
+    filteredRecords.forEach(r => {
       const key = `${r.date}_${r.batch_id}`;
       if (!map[key]) {
         map[key] = { 
           date: r.date, 
           day: r.day_of_week, 
+          batchId: r.batch_id,
           batch: r.batch_name, 
           course: r.course,
-          present: 0, absent: 0, late: 0, total: 0 
+          present: 0, absent: 0, late: 0, total: 0,
+          lockedCount: 0,
+          isLocked: true
         };
       }
       map[key].total += 1;
-      map[key][r.status] += 1;
+      if (r.is_locked) map[key].lockedCount += 1;
+      map[key].isLocked = map[key].lockedCount === map[key].total;
+      if (['present', 'absent', 'late'].includes(r.status)) {
+        map[key][r.status] += 1;
+      }
     });
     return Object.values(map).sort((a, b) => b.date.localeCompare(a.date));
-  }, [records]);
+  }, [filteredRecords]);
 
   // Group by student
   const studentStats = useMemo(() => {
     const map = {};
-    records.forEach(r => {
+    filteredRecords.forEach(r => {
       if (!map[r.student_id]) {
         const std = students.find(s => s.id === r.student_id);
         map[r.student_id] = { 
           id: r.student_id,
           name: std?.name || 'Unknown', 
-          cnic: std?.cnic || '—',
+          cnic: r.student_cnic || std?.cnic || '—',
           batch: std?.batch || '—',
-          present: 0, absent: 0, late: 0, total: 0 
+          present: 0, absent: 0, late: 0, total: 0,
+          lastDate: '',
+          lastStatus: ''
         };
       }
       map[r.student_id].total += 1;
-      map[r.student_id][r.status] += 1;
+      if (['present', 'absent', 'late'].includes(r.status)) {
+        map[r.student_id][r.status] += 1;
+      }
+      if (!map[r.student_id].lastDate || String(r.date).localeCompare(map[r.student_id].lastDate) > 0) {
+        map[r.student_id].lastDate = r.date;
+        map[r.student_id].lastStatus = r.status;
+      }
     });
     return Object.values(map).map(s => ({
       ...s,
       pct: Math.round(((s.present + s.late) / s.total) * 100)
     })).sort((a, b) => a.pct - b.pct);
-  }, [records, students]);
+  }, [filteredRecords, students]);
+
+  const openOverride = (record) => {
+    setOverrideRecord(record);
+    setOverrideStatus(record.status || 'present');
+    setOverrideReason(record.override_reason || '');
+  };
+
+  const saveOverride = async () => {
+    if (!overrideRecord || !overrideReason.trim()) {
+      toast.error('Override reason is required');
+      return;
+    }
+
+    setSavingOverride(true);
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .update({
+          status: overrideStatus,
+          marked_by: 'admin',
+          is_locked: false,
+          override_reason: overrideReason.trim(),
+          overridden_by: user?.id || user?.cnic || user?.name || 'admin',
+          overridden_at: new Date().toISOString(),
+          marked_at: new Date().toISOString()
+        })
+        .eq('id', overrideRecord.id);
+
+      if (error) throw error;
+      await computeAndCacheResult(overrideRecord.student_id, 'midterm');
+      await computeAndCacheResult(overrideRecord.student_id, 'finalterm');
+      toast.success('Attendance override saved');
+      setOverrideRecord(null);
+      fetchGlobalAttendance();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save override');
+    } finally {
+      setSavingOverride(false);
+    }
+  };
+
+  const toggleSessionLock = async (date, batchId, locked) => {
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .update({ is_locked: locked })
+        .eq('date', date)
+        .eq('batch_id', batchId);
+      if (error) throw error;
+      toast.success(locked ? 'Session locked' : 'Session unlocked');
+      fetchGlobalAttendance();
+    } catch (err) {
+      toast.error(err.message || 'Failed to update lock');
+    }
+  };
 
   const atRiskCount = studentStats.filter(s => s.pct < 75).length;
   const overallAvg = studentStats.length > 0 
@@ -225,7 +411,7 @@ const AdminAttendance = () => {
             <h1>Attendance Insights</h1>
             <p>Monitor attendance health across all batches</p>
           </div>
-          <ExportBtn><FaDownload /> Export CSV</ExportBtn>
+          <ExportBtn onClick={() => exportAttendanceCSV(filteredRecords, `attendance-${filters.batch || 'all'}-${filters.month}`)}><FaDownload /> Export CSV</ExportBtn>
         </Header>
 
         <StatsGrid>
@@ -264,6 +450,13 @@ const AdminAttendance = () => {
               <input type="month" value={filters.month} onChange={e => setFilters({...filters, month: e.target.value})} />
             </FormGroup>
             <FormGroup>
+              <label>Filter Batch</label>
+              <select value={filters.batch} onChange={e => setFilters({...filters, batch: e.target.value})}>
+                <option value="">All batches</option>
+                {batchOptions.map((batch) => <option key={batch} value={batch}>{batch}</option>)}
+              </select>
+            </FormGroup>
+            <FormGroup>
               <label>Search Student</label>
               <div style={{ position: 'relative' }}>
                 <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#444' }} />
@@ -275,8 +468,8 @@ const AdminAttendance = () => {
 
         <TabContainer>
           <TabBar>
-            <Tab active={activeTab === 'By Session'} onClick={() => setActiveTab('By Session')}>By Session</Tab>
-            <Tab active={activeTab === 'By Student'} onClick={() => setActiveTab('By Student')}>By Student</Tab>
+            <Tab $active={activeTab === 'By Session'} onClick={() => setActiveTab('By Session')}>By Session</Tab>
+            <Tab $active={activeTab === 'By Student'} onClick={() => setActiveTab('By Student')}>By Student</Tab>
           </TabBar>
 
           <TabBody>
@@ -300,7 +493,7 @@ const AdminAttendance = () => {
                         <th>Absent</th>
                         <th>Late</th>
                         <th>Attendance %</th>
-                        <th></th>
+                        <th>Lock</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -318,7 +511,7 @@ const AdminAttendance = () => {
                           </tr>
                         ))
                       ) : sessions.map((s, idx) => (
-                        <tr key={idx}>
+                        <tr key={`${s.date}-${s.batchId || idx}`}>
                           <td>{s.date}</td>
                           <td style={{color:'#888'}}>{s.day}</td>
                           <td><strong>{s.batch}</strong><br/><small style={{color:'#666'}}>{s.course}</small></td>
@@ -331,7 +524,10 @@ const AdminAttendance = () => {
                             </Badge>
                           </td>
                           <td style={{textAlign:'right'}}>
-                            <button style={{background:'none', border:'none', color:'#378ADD', cursor:'pointer'}}><FaChevronRight/></button>
+                            <ActionButton onClick={() => toggleSessionLock(s.date, s.batchId, !s.isLocked)}>
+                              {s.isLocked ? <FaLock /> : <FaUnlock />}
+                              {s.isLocked ? 'Locked' : 'Unlocked'}
+                            </ActionButton>
                           </td>
                         </tr>
                       ))}
@@ -352,6 +548,7 @@ const AdminAttendance = () => {
                         <th>Total</th>
                         <th>Attendance %</th>
                         <th>Status</th>
+                        <th>Last Mark</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -368,7 +565,7 @@ const AdminAttendance = () => {
                             <td><Skeleton height="24px" width="80px" radius="12px" /></td>
                           </tr>
                         ))
-                      ) : studentStats.filter(s => s.name.toLowerCase().includes(filters.search.toLowerCase())).map((s, idx) => (
+                      ) : studentStats.map((s, idx) => (
                         <tr key={idx}>
                           <td><strong>{s.name}</strong><br/><small style={{color:'#666'}}>{s.cnic}</small></td>
                           <td>{s.batch}</td>
@@ -382,6 +579,7 @@ const AdminAttendance = () => {
                               {s.pct >= 80 ? 'Good' : s.pct >= 60 ? 'Warning' : 'Critical'}
                             </Badge>
                           </td>
+                          <td>{s.lastStatus ? <Badge className={statusClass(s.lastStatus)}>{s.lastStatus}</Badge> : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -414,7 +612,72 @@ const AdminAttendance = () => {
             })}
           </HeatmapGrid>
         </HeatmapContainer>
+
+        <TabContainer style={{ marginTop: 30 }}>
+          <TabBody>
+            <h3 style={{ marginTop: 0 }}>Attendance Records</h3>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Student</th>
+                  <th>Batch</th>
+                  <th>Status</th>
+                  <th>Marked By</th>
+                  <th>Distance</th>
+                  <th>Lock</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRecords.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.date}<br /><small style={{ color: '#666' }}>{row.day_of_week}</small></td>
+                    <td><strong>{row.student_name}</strong><br /><small style={{ color: '#666' }}>{row.student_cnic || '—'}</small></td>
+                    <td>{row.batch_name}<br /><small style={{ color: '#666' }}>{row.course || '—'}</small></td>
+                    <td><Badge className={statusClass(row.status)}>{row.status}</Badge></td>
+                    <td>
+                      <Badge className={row.marked_by === 'admin' ? 'info' : 'muted'}>
+                        {row.marked_by === 'admin' ? 'Admin Override' : 'Auto'}
+                      </Badge>
+                      {row.override_reason && <div style={{ color: '#777', marginTop: 6, maxWidth: 220 }}>{row.override_reason}</div>}
+                    </td>
+                    <td>{row.distance_meters ? `${row.distance_meters}m` : '—'}</td>
+                    <td><Badge className={row.is_locked ? 'muted' : 'warning'}>{row.is_locked ? 'Locked' : 'Unlocked'}</Badge></td>
+                    <td><ActionButton onClick={() => openOverride(row)}><FaEdit /> Override</ActionButton></td>
+                  </tr>
+                ))}
+                {!loading && filteredRecords.length === 0 && (
+                  <tr><td colSpan="8" style={{ textAlign: 'center', padding: 40, color: '#555' }}>No attendance records match these filters.</td></tr>
+                )}
+              </tbody>
+            </Table>
+          </TabBody>
+        </TabContainer>
       </Container>
+
+      {overrideRecord && (
+        <ModalOverlay>
+          <Modal>
+            <h3>Admin Attendance Override</h3>
+            <p>{overrideRecord.student_name} - {overrideRecord.date}</p>
+            <select value={overrideStatus} onChange={(e) => setOverrideStatus(e.target.value)}>
+              <option value="present">Present</option>
+              <option value="late">Late</option>
+              <option value="absent">Absent</option>
+            </select>
+            <textarea
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Reason for correction"
+            />
+            <ModalActions>
+              <ActionButton onClick={() => setOverrideRecord(null)} disabled={savingOverride}>Cancel</ActionButton>
+              <ActionButton onClick={saveOverride} disabled={savingOverride}>{savingOverride ? 'Saving...' : 'Save Override'}</ActionButton>
+            </ModalActions>
+          </Modal>
+        </ModalOverlay>
+      )}
     </AdminLayout>
   );
 };

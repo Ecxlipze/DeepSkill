@@ -40,14 +40,14 @@ const TabBar = styled.div`
 const Tab = styled.button`
   padding: 18px 30px;
   background: none; border: none;
-  color: ${props => props.active ? '#378ADD' : '#888'};
+  color: ${props => props.$active ? '#378ADD' : '#888'};
   font-weight: 600; font-size: 0.9rem;
   cursor: pointer; position: relative;
   transition: all 0.2s;
 
   &:after {
     content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-    background: #378ADD; transform: scaleX(${props => props.active ? 1 : 0});
+    background: #378ADD; transform: scaleX(${props => props.$active ? 1 : 0});
     transition: transform 0.2s;
   }
   &:hover { color: #fff; }
@@ -287,6 +287,7 @@ const TeacherAttendance = () => {
       const records = students.map(s => ({
         student_id: s.id,
         student_name: s.name,
+        student_cnic: s.cnic,
         teacher_id: teacherRecord.id,
         batch_id: selectedBatch.id,
         batch_name: selectedBatch.batch_name,
@@ -294,10 +295,12 @@ const TeacherAttendance = () => {
         date: selectedDate,
         day_of_week: new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' }),
         status: markingData[s.id],
+        marked_by: 'teacher',
+        is_locked: false,
         marked_at: new Date().toISOString()
       }));
 
-      const { error } = await supabase.from('attendance').upsert(records, { onConflict: 'student_id, date' });
+      const { error } = await supabase.from('attendance').upsert(records, { onConflict: 'student_id,batch_id,date' });
       if (error) throw error;
 
       toast.success(`Attendance saved for ${selectedBatch.batch_name} — ${selectedDate}`);
@@ -349,7 +352,7 @@ const TeacherAttendance = () => {
             type: 'attendance_warning',
             title: 'Student Attendance Below 75%',
             message: `${student.name}'s attendance is ${attendancePct}% in ${selectedBatch.batch_name}.`,
-            link: '/admin/attendance',
+            link: '/admin/academic/attendance',
             sendEmail: true,
             emailData: {
               name: student.name,
@@ -393,8 +396,8 @@ const TeacherAttendance = () => {
 
         <TabContainer>
           <TabBar>
-            <Tab active={activeTab === 'Mark Sheet'} onClick={() => setActiveTab('Mark Sheet')}>Mark Sheet</Tab>
-            <Tab active={activeTab === 'History'} onClick={() => setActiveTab('History')}>History</Tab>
+            <Tab $active={activeTab === 'Mark Sheet'} onClick={() => setActiveTab('Mark Sheet')}>Mark Sheet</Tab>
+            <Tab $active={activeTab === 'History'} onClick={() => setActiveTab('History')}>History</Tab>
           </TabBar>
 
           <TabBody>

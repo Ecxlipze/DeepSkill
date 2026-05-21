@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../lib/nextRouterDomCompat";
 import { FaCheckCircle } from "react-icons/fa";
 
 const Section = styled.section`
@@ -265,7 +265,7 @@ const JoinSection = () => {
         >
           If you're serious about your future,<br />
           <motion.span 
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/inquiry')}
             whileHover={{ scale: 1.01, textShadow: "0 0 10px rgba(123, 31, 46, 0.1)" }}
           >
             Deepskills

@@ -61,6 +61,9 @@ $allowedEvents = [
     're_enrollment_requested',
     're_enrollment_approved',
     're_enrollment_rejected',
+    'inquiry_received',
+    'welcome',
+    'login_instructions',
     'notification'
 ];
 
@@ -130,6 +133,29 @@ switch ($event) {
         $intro = "Please contact admin";
         $body = "Your re-enrollment request for <strong>{$course}</strong> was not approved at this time.<p><strong>Reason:</strong> {$reason}</p>";
         $cta = "Please contact DeepSkills admin for next steps.";
+        break;
+
+    case 'inquiry_received':
+        $subject = "DeepSkills: Inquiry received";
+        $intro = "We received your inquiry";
+        $body = "Thank you for your interest in <strong>{$course}</strong>. Our counsellor will contact you within 24 hours to guide you through course, batch, and fee details.";
+        $cta = "You do not need to log in yet. Dashboard access is enabled after counsellor enrollment.";
+        break;
+
+    case 'welcome':
+        $subject = "Welcome to DeepSkills";
+        $intro = "Your enrollment is confirmed";
+        $batchText = $batch ? "<p><strong>Batch:</strong> {$batch}</p>" : "";
+        $timingText = $timing ? "<p><strong>Timing:</strong> {$timing}</p>" : "";
+        $body = "Welcome to <strong>{$course}</strong>. Your enrollment has been confirmed.{$batchText}{$timingText}<p><strong>CNIC:</strong> {$cnic}</p>";
+        $cta = "Login at https://deepskills.pk/login. You will receive an email OTP during login.";
+        break;
+
+    case 'login_instructions':
+        $subject = "DeepSkills: Login instructions";
+        $intro = "Your dashboard login";
+        $body = "Use your CNIC to sign in to your DeepSkills dashboard.<p><strong>CNIC:</strong> {$cnic}</p><p>You will receive a one-time password on this email during login.</p>";
+        $cta = "Login at https://deepskills.pk/login";
         break;
 
     case 'notification':

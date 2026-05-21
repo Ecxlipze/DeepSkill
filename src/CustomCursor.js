@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
@@ -51,12 +50,12 @@ const CursorDot = styled(motion.div)`
 const CustomCursor = () => {
   const [isHovering, setIsHovering] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  const [pathname, setPathname] = useState('');
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const location = useLocation();
 
   const getAccentColor = () => {
-    const path = location.pathname;
+    const path = pathname;
     if (path.includes('graphic')) return '#9335E8'; // Graphic Design Purple
     if (path.includes('laravel')) return '#03E4FD'; // Laravel Cyan
     if (path.includes('react')) return '#98C04C';   // React Green
@@ -88,6 +87,14 @@ const CustomCursor = () => {
   const dotY = useSpring(mouseY, dotSpringConfig);
 
   useEffect(() => {
+    const updatePathname = () => {
+      setPathname(window.location.pathname || '');
+    };
+
+    updatePathname();
+    window.addEventListener('popstate', updatePathname);
+    window.addEventListener('hashchange', updatePathname);
+
     // Runtime CSS injection for extremely aggressive cursor hiding on Mac/Safari
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
@@ -146,6 +153,8 @@ const CustomCursor = () => {
     window.addEventListener('mouseover', handleHover, { passive: true });
 
     return () => {
+      window.removeEventListener('popstate', updatePathname);
+      window.removeEventListener('hashchange', updatePathname);
       window.removeEventListener('mousemove', moveMouse);
       window.removeEventListener('mouseover', handleHover);
       if (styleEl && document.head.contains(styleEl)) {

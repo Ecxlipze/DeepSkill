@@ -373,8 +373,8 @@ const TestimonialSection = ({ courseName = "All" }) => {
 
     const fetchTestimonials = async () => {
       try {
-        const { supabase } = await import("./supabaseClient");
-        let query = supabase.from('testimonials').select('*').order('created_at', { ascending: false });
+        const { supabasePublic } = await import("./supabasePublicClient");
+        let query = supabasePublic.from('testimonials').select('*').order('created_at', { ascending: false });
         
         if (courseName !== "All") {
           query = query.eq('course_name', courseName);

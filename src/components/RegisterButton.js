@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/nextRouterDomCompat';
 import { trackEvent } from '../../lib/analytics';
 
 const StyledButton = styled(motion.button)`
@@ -86,7 +86,7 @@ const StyledButton = styled(motion.button)`
   }
 `;
 
-const RegisterButton = ({ children = "REGISTER NOW", to = "/register", onClick, type = "button", variant = "primary", ...props }) => {
+const RegisterButton = ({ children = "INQUIRE NOW", to = "/inquiry", onClick, type = "button", variant = "primary", ...props }) => {
   const navigate = useNavigate();
 
   const handleAction = (e) => {
@@ -97,7 +97,7 @@ const RegisterButton = ({ children = "REGISTER NOW", to = "/register", onClick, 
       trackEvent('select_content', {
         content_type: 'cta',
         item_id: to,
-        link_text: typeof children === 'string' ? children : 'Register CTA'
+        link_text: typeof children === 'string' ? children : 'Inquiry CTA'
       });
       navigate(to);
     }

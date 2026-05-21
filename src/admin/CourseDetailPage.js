@@ -168,7 +168,7 @@ const CourseDetailPage = () => {
   return (
     <AdminLayout>
       <Container>
-        <BackLink onClick={()=>navigate('/admin/courses')}><FaArrowLeft /> Back to Courses</BackLink>
+        <BackLink onClick={()=>navigate('/admin/management/courses')}><FaArrowLeft /> Back to Courses</BackLink>
 
         <InfoBar>
           <div className="left">
@@ -185,7 +185,7 @@ const CourseDetailPage = () => {
           </div>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <StatusPill $on={course.status==='active'}>{course.status==='active'?'Active':'Inactive'}</StatusPill>
-            <EditCourseBtn onClick={()=>navigate('/admin/courses')}><FaEdit /> Edit</EditCourseBtn>
+            <EditCourseBtn onClick={()=>navigate('/admin/management/courses')}><FaEdit /> Edit</EditCourseBtn>
           </div>
         </InfoBar>
 
@@ -254,7 +254,7 @@ const CourseDetailPage = () => {
               <SearchBox><FaSearch /><input placeholder="Search by name or CNIC..." value={panelSearch} onChange={e=>setPanelSearch(e.target.value)} /></SearchBox>
               {panelStudents.length===0?<EmptyMsg>No students in this batch.</EmptyMsg>:
                 panelStudents.map(s=>(
-                  <SRow key={s.id}><div className="av">{s.name?.[0]||'?'}</div><div className="info"><div className="name">{s.name}</div><div className="cnic">{s.cnic}</div></div><SmBtn onClick={()=>navigate(`/admin/students/${s.id}`)}>View</SmBtn></SRow>
+                  <SRow key={s.id}><div className="av">{s.name?.[0]||'?'}</div><div className="info"><div className="name">{s.name}</div><div className="cnic">{s.cnic}</div></div><SmBtn onClick={()=>navigate(`/admin/management/students/${s.id}`)}>View</SmBtn></SRow>
                 ))
               }
             </PB>

@@ -140,13 +140,13 @@ const MuteOverlay = styled.div`
 const IconButton = styled.button`
   background: none;
   border: none;
-  color: ${props => props.active ? '#ff4e4e' : 'rgba(255,255,255,0.4)'};
+  color: ${props => props.$active ? '#ff4e4e' : 'rgba(255,255,255,0.4)'};
   cursor: pointer;
   padding: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  &:hover { color: ${props => props.active ? '#ff6b6b' : '#fff'}; }
+  &:hover { color: ${props => props.$active ? '#ff6b6b' : '#fff'}; }
 `;
 
 // Right Chat Area
@@ -621,6 +621,9 @@ const GroupChat = () => {
     );
   };
 
+  const normalizeCnic = (value) => (value || '').toString().trim();
+  const isCurrentUser = (member) => normalizeCnic(member?.cnic) === normalizeCnic(user?.cnic);
+
   if (showLobby && user?.role === 'teacher') {
     return (
       <ChatContainer style={{ gridTemplateColumns: '1fr' }}>
@@ -685,7 +688,7 @@ const GroupChat = () => {
             <MemberItem key={member.cnic}>
               <Avatar isTeacher={true}>
                 {member.name.substring(0, 2).toUpperCase()}
-                <OnlineDot online={true} />
+                <OnlineDot online={isCurrentUser(member)} title={isCurrentUser(member) ? 'Online' : 'Offline'} />
               </Avatar>
               <MemberInfo>
                 <div className="name">{member.name} <span className="badge">Teacher</span></div>
@@ -700,7 +703,7 @@ const GroupChat = () => {
               <MemberItem key={member.cnic}>
                 <Avatar isTeacher={false}>
                   {member.name.substring(0, 2).toUpperCase()}
-                  <OnlineDot online={true} />
+                  <OnlineDot online={isCurrentUser(member)} title={isCurrentUser(member) ? 'Online' : 'Offline'} />
                 </Avatar>
                 <MemberInfo>
                   <div className="name">
@@ -712,7 +715,7 @@ const GroupChat = () => {
                 {user?.role === 'teacher' && (
                   <MuteOverlay>
                     <IconButton
-                      active={muted}
+                      $active={muted}
                       onClick={() => muted ? unmuteStudent(member.cnic, member.name) : muteStudent(member.cnic, member.name)}
                       title={muted ? "Unmute" : "Mute"}
                     >
@@ -799,7 +802,7 @@ const GroupChat = () => {
                   isTeacher={isTeacher}
                   type={item.type}
                 >
-                  {item.type === 'image' ? (
+                  {item.type === 'image' && item.file_url ? (
                     <ImageThumbnail src={item.file_url} onClick={() => window.open(item.file_url)} />
                   ) : item.type === 'file' ? (
                     <FileCard>

@@ -894,8 +894,8 @@ const ContactPage = () => {
           <p className="description">
             Reach out today and take the first step toward a smarter, skill-driven career.
           </p>
-          <RegisterButton>
-            Register Now
+          <RegisterButton to="/inquiry">
+            Inquire Now
           </RegisterButton>
         </JourneyContent>
       </JourneySection>

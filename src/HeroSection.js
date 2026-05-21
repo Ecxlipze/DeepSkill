@@ -216,8 +216,8 @@ const HeroSection = () => {
 
   React.useEffect(() => {
     const fetchHero = async () => {
-      const { supabase } = await import("./supabaseClient");
-      const { data } = await supabase.from('settings').select('*').eq('key', 'hero_content').single();
+      const { supabasePublic } = await import("./supabasePublicClient");
+      const { data } = await supabasePublic.from('settings').select('*').eq('key', 'hero_content').single();
       if (data) {
         setContent(data.value);
       }
@@ -233,9 +233,10 @@ const HeroSection = () => {
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
-  // Use window size or default to 1920x1080
-  const initialX = typeof window !== 'undefined' ? window.innerWidth / 2 : 960;
-  const initialY = typeof window !== 'undefined' ? window.innerHeight / 2 : 540;
+  // Keep the first server and client render identical; real viewport values are
+  // applied after hydration so Framer Motion does not create SSR mismatches.
+  const initialX = 1000;
+  const initialY = 600;
 
   const mouseX = useMotionValue(initialX);
   const mouseY = useMotionValue(initialY);
@@ -259,6 +260,9 @@ const HeroSection = () => {
       mouseY.set(initialY);
       return;
     }
+
+    mouseX.set(window.innerWidth / 2);
+    mouseY.set(window.innerHeight / 2);
 
     const handleMouseMove = (e) => {
       mouseX.set(e.clientX);
@@ -374,12 +378,12 @@ const HeroSection = () => {
           </RegisterButton>
 
           <RegisterButton
-            to="/register"
+            to="/inquiry"
             variant="secondary"
             style={{ minWidth: isMobile ? "100%" : "220px" }}
           >
             <img src={btnIcon} alt="" style={{ width: "20px", height: "20px" }} />
-            Book a Demo
+            Inquire Now
           </RegisterButton>
         </ButtonGroup>
       </ContentWrapper>

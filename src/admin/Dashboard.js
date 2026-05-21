@@ -114,7 +114,7 @@ const AdminDashboard = () => {
           >
             <div className="card-header">
               <h3>Recent Students</h3>
-              <Link to="/admin/students" className="view-all">View all <FaChevronRight size={10} /></Link>
+              <Link to="/admin/management/students" className="view-all">View all <FaChevronRight size={10} /></Link>
             </div>
             <TableContainer>
               <table>
@@ -149,7 +149,7 @@ const AdminDashboard = () => {
                           <td>{student.course}</td>
                           <td>{student.batch || 'Pending'}</td>
                           <td>
-                            <StatusBadge active={student.status === 'Active'}>
+                            <StatusBadge $active={student.status === 'Active'}>
                               {student.status}
                             </StatusBadge>
                           </td>
@@ -328,8 +328,8 @@ const StatusBadge = styled.span`
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: ${props => props.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)'};
-  color: ${props => props.active ? '#10B981' : '#9ca3af'};
+  background: ${props => props.$active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)'};
+  color: ${props => props.$active ? '#10B981' : '#9ca3af'};
 `;
 
 export default AdminDashboard;

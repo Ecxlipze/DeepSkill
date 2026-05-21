@@ -319,11 +319,14 @@ const StudentDashboard = () => {
         if (admission.batch) {
           const { data: bData } = await supabase
             .from('batches')
-            .select('time_shift, completed_at, status')
+            .select('time_shift, timing_label, completed_at, status')
             .eq('batch_name', admission.batch)
             .eq('course', admission.course)
-            .single();
-          batchInfo = bData;
+            .order('created_at', { ascending: false });
+          const batchRows = bData || [];
+          batchInfo = batchRows.find((batch) =>
+            admission.batch_timing && [batch.time_shift, batch.timing_label].includes(admission.batch_timing)
+          ) || batchRows[0] || null;
         }
 
         const { data: attendance } = await supabase

@@ -33,5 +33,5 @@ export function getEnrollmentPath(user, courseSlug = '') {
   }
 
   const query = courseSlug ? `?course=${encodeURIComponent(courseSlug)}` : '';
-  return `/register${query}`;
+  return `/inquiry${query}`;
 }

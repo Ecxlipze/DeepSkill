@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "../lib/nextRouterDomCompat";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import footerBg from "./assets/footer-bg.png";
 import footerLogo from "./assets/footer-logo.svg";

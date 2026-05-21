@@ -570,7 +570,7 @@ const TraineePage = () => {
 
         <FinalCTASection>
           <RegisterButton>
-            REGISTER NOW
+            INQUIRE NOW
           </RegisterButton>
         </FinalCTASection>
       </PageContainer>

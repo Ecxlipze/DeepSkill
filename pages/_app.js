@@ -27,6 +27,11 @@ export default function App({ Component, pageProps }) {
     };
   }, [router.events]);
 
+  useEffect(() => {
+    document.body.classList.toggle('ds-native-cursor', isDashboardRoute);
+    return () => document.body.classList.remove('ds-native-cursor');
+  }, [isDashboardRoute]);
+
   return (
     <>
       {GA_MEASUREMENT_ID ? (

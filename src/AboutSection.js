@@ -183,8 +183,8 @@ const AboutSection = () => {
     const fetchContent = async () => {
       let data = null;
       try {
-        const { supabase } = await import("./supabaseClient");
-        const { data: fetchedData } = await supabase.from('settings').select('*');
+        const { supabasePublic } = await import("./supabasePublicClient");
+        const { data: fetchedData } = await supabasePublic.from('settings').select('*');
         data = fetchedData;
       } catch (err) {
         console.error("Error fetching stats", err);

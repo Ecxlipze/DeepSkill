@@ -350,16 +350,16 @@ const CertList = styled.div`
 `;
 
 const CertTab = styled.button`
-  background: ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.05)'};
-  color: ${props => props.active ? '#fff' : 'rgba(255,255,255,0.7)'};
-  border: 1px solid ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
+  background: ${props => props.$active ? '#7B1F2E' : 'rgba(255,255,255,0.05)'};
+  color: ${props => props.$active ? '#fff' : 'rgba(255,255,255,0.7)'};
+  border: 1px solid ${props => props.$active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    background: ${props => props.active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
+    background: ${props => props.$active ? '#7B1F2E' : 'rgba(255,255,255,0.1)'};
   }
 `;
 
@@ -549,7 +549,7 @@ const StudentCertificate = () => {
                 {certificates.map(cert => (
                   <CertTab 
                     key={cert.id} 
-                    active={activeCert?.id === cert.id}
+                    $active={activeCert?.id === cert.id}
                     onClick={() => setActiveCert(cert)}
                   >
                     {cert.course_name}

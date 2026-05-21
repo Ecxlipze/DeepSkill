@@ -24,12 +24,12 @@ const PageContainer = styled.div`
 `;
 
 const LaravelPage = () => {
-  const [pdfUrl, setPdfUrl] = React.useState('/assets/course-pdfs/laravel-mastery.pdf');
+  const [pdfUrl, setPdfUrl] = React.useState('');
 
   React.useEffect(() => {
     const fetchPdf = async () => {
-      const { supabase } = await import('./supabaseClient');
-      const { data } = await supabase
+      const { supabasePublic } = await import('./supabasePublicClient');
+      const { data } = await supabasePublic
         .from('courses')
         .select('pdf_url')
         .ilike('category', '%laravel%')

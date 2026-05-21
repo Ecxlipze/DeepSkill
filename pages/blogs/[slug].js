@@ -1,16 +1,19 @@
-import { useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import PublicLayout from '../../components/next/PublicLayout';
 import Seo from '../../components/next/Seo';
 import { courses } from '../../data/siteContent';
-import { fetchAllPublishedSlugs, fetchPostBySlug, fetchRelatedPosts } from '../../lib/blog';
+import { fetchAllPublishedSlugs, fetchPostBySlug, fetchRelatedPosts, normalizePost } from '../../lib/blog';
 import { blogPostingSchema, breadcrumbSchema } from '../../lib/structuredData';
 import { trackEvent } from '../../lib/analytics';
 
-const MotionLink = motion.create(Link);
+const MotionLink = motion.create('a');
+
+function BlogCoverImage({ src, alt, priority = false }) {
+  return <img src={src} alt={alt} loading={priority ? 'eager' : 'lazy'} />;
+}
 
 const fadeUp = {
   hidden: { opacity: 1, y: 0 },
@@ -27,36 +30,103 @@ const stagger = {
 };
 
 export default function BlogPost({ post, relatedPosts, relatedCourses }) {
+  const router = useRouter();
+  const [livePost, setLivePost] = useState(post || null);
+  const [liveRelatedPosts, setLiveRelatedPosts] = useState(relatedPosts || []);
+  const [notFound, setNotFound] = useState(false);
+
   useEffect(() => {
+    if (livePost || !router.isReady) return;
+    const slug = router.query.slug || window.location.pathname.split('/').filter(Boolean).pop();
+    if (!slug) return;
+
+    let mounted = true;
+    const loadPost = async () => {
+      try {
+        const { supabasePublic } = await import('../../src/supabasePublicClient');
+        const { data, error } = await supabasePublic
+          .from('blog_posts')
+          .select('*')
+          .eq('slug', slug)
+          .eq('status', 'published')
+          .maybeSingle();
+
+        if (!mounted) return;
+        if (error || !data) {
+          setNotFound(true);
+          return;
+        }
+
+        const normalizedPost = normalizePost(data);
+        setLivePost(normalizedPost);
+
+        if (normalizedPost.category) {
+          const { data: related } = await supabasePublic
+            .from('blog_posts')
+            .select('*')
+            .eq('status', 'published')
+            .eq('category', normalizedPost.category)
+            .neq('slug', normalizedPost.slug)
+            .order('published_at', { ascending: false })
+            .limit(3);
+
+          if (mounted) setLiveRelatedPosts((related || []).map(normalizePost));
+        }
+      } catch (error) {
+        console.error('Blog detail client fetch failed:', error);
+        if (mounted) setNotFound(true);
+      }
+    };
+
+    loadPost();
+    return () => {
+      mounted = false;
+    };
+  }, [livePost, router.isReady, router.query.slug]);
+
+  useEffect(() => {
+    if (!livePost) return;
     fetch('/api/blog-view', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: post.slug })
+      body: JSON.stringify({ slug: livePost.slug })
     }).catch(() => {});
     trackEvent('blog_view', {
-      blog_slug: post.slug,
-      blog_category: post.category
+      blog_slug: livePost.slug,
+      blog_category: livePost.category
     });
-  }, [post.category, post.slug]);
+  }, [livePost]);
 
-  const toc = buildTableOfContents(post.contentHtml);
+  if (!livePost) {
+    return (
+      <PublicLayout>
+        <ArticleShell>
+          <EmptyState>{notFound ? 'Blog post not found.' : 'Loading blog post...'}</EmptyState>
+          <BackLink href="/blogs" whileHover={{ x: -4 }} whileTap={{ scale: 0.98 }}>Back to Blogs</BackLink>
+        </ArticleShell>
+      </PublicLayout>
+    );
+  }
+
+  const toc = buildTableOfContents(livePost.contentHtml);
+  const visibleRelatedCourses = courses.filter((course) => livePost.relatedCourseIds?.includes(course.id) || livePost.relatedCourseIds?.includes(course.slug));
 
   return (
     <PublicLayout>
       <Seo
-        title={post.metaTitle || `${post.title} | DeepSkills Blog`}
-        description={post.metaDescription || post.excerpt}
-        path={`/blogs/${post.slug}`}
-        image={post.coverImage}
+        title={livePost.metaTitle || `${livePost.title} | DeepSkills Blog`}
+        description={livePost.metaDescription || livePost.excerpt}
+        path={`/blogs/${livePost.slug}`}
+        image={livePost.coverImage}
         type="article"
-        publishedTime={post.publishedAt}
-        modifiedTime={post.updatedAt || post.publishedAt}
+        publishedTime={livePost.publishedAt}
+        modifiedTime={livePost.updatedAt || livePost.publishedAt}
         jsonLd={[
-          blogPostingSchema(post),
+          blogPostingSchema(livePost),
           breadcrumbSchema([
             { name: 'Home', path: '/' },
             { name: 'Blogs', path: '/blogs' },
-            { name: post.title, path: `/blogs/${post.slug}` }
+            { name: livePost.title, path: `/blogs/${livePost.slug}` }
           ])
         ]}
       />
@@ -66,23 +136,23 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
         >
-          <span className="category">{post.category}</span>
-          <h1>{post.title}</h1>
+          <span className="category">{livePost.category}</span>
+          <h1>{livePost.title}</h1>
           <div className="meta">
-            <span className="avatar">{post.authorName?.[0] || 'D'}</span>
-            <span>{post.authorName || 'DeepSkills Team'}</span>
-            <span>{formatDate(post.publishedAt)}</span>
-            <span>{post.readingTime || 1} min read</span>
+            <span className="avatar">{livePost.authorName?.[0] || 'D'}</span>
+            <span>{livePost.authorName || 'DeepSkills Team'}</span>
+            <span>{formatDate(livePost.publishedAt)}</span>
+            <span>{livePost.readingTime || 1} min read</span>
           </div>
           <HeroImage
             initial={false}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.65, delay: 0.12, ease: 'easeOut' }}
           >
-            {post.coverImage ? (
-              <Image src={post.coverImage} alt={`${post.title} cover image`} fill sizes="100vw" priority />
+            {livePost.coverImage ? (
+              <BlogCoverImage src={livePost.coverImage} alt={`${livePost.title} cover image`} sizes="100vw" priority />
             ) : (
-              <div>{post.category}</div>
+              <div>{livePost.category}</div>
             )}
           </HeroImage>
         </ArticleHeader>
@@ -93,7 +163,7 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.12 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            dangerouslySetInnerHTML={{ __html: withHeadingIds(post.contentHtml) }}
+            dangerouslySetInnerHTML={{ __html: withHeadingIds(livePost.contentHtml) }}
           />
           <Sidebar variants={stagger} initial={false} animate="show">
             {toc.length > 0 && (
@@ -109,10 +179,10 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
             <Panel variants={fadeUp} whileHover={{ y: -3 }}>
               <h2>Share</h2>
               <ShareRow>
-                <a href={`https://wa.me/?text=${encodeURIComponent(post.title)}`} target="_blank" rel="noreferrer">
+                <a href={`https://wa.me/?text=${encodeURIComponent(livePost.title)}`} target="_blank" rel="noreferrer">
                   WhatsApp
                 </a>
-                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}`} target="_blank" rel="noreferrer">
+                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(livePost.title)}`} target="_blank" rel="noreferrer">
                   X
                 </a>
                 <button type="button" onClick={() => navigator.clipboard?.writeText(window.location.href)}>
@@ -120,10 +190,10 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
                 </button>
               </ShareRow>
             </Panel>
-            {relatedCourses.length > 0 && (
+            {visibleRelatedCourses.length > 0 && (
               <Panel variants={fadeUp} whileHover={{ y: -3 }}>
                 <h2>Related Courses</h2>
-                {relatedCourses.map((course) => (
+                {visibleRelatedCourses.map((course) => (
                   <CourseLink
                     key={course.slug}
                     href={`/courses/${course.slug}`}
@@ -145,9 +215,9 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.55, ease: 'easeOut' }}
         >
-          {post.tags?.length > 0 && (
+          {livePost.tags?.length > 0 && (
             <Tags>
-              {post.tags.map((tag) => (
+              {livePost.tags.map((tag) => (
                 <TagLink key={tag} href={`/blogs?tag=${encodeURIComponent(tag)}`} whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
                   #{tag}
                 </TagLink>
@@ -155,11 +225,11 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
             </Tags>
           )}
 
-          {relatedPosts.length > 0 && (
+          {liveRelatedPosts.length > 0 && (
             <>
               <h2>Related Posts</h2>
               <RelatedGrid variants={stagger} initial={false} whileInView="show" viewport={{ once: true, amount: 0.2 }}>
-                {relatedPosts.map((item) => (
+                {liveRelatedPosts.map((item) => (
                   <RelatedCard key={item.slug} href={`/blogs/${item.slug}`} variants={fadeUp} whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }}>
                     <span>{item.category}</span>
                     <strong>{item.title}</strong>
@@ -178,20 +248,35 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
 }
 
 export async function getStaticPaths() {
-  const posts = await fetchAllPublishedSlugs();
+  const slugs = await fetchAllPublishedSlugs();
 
   return {
-    paths: posts.map((post) => ({ params: { slug: post.slug } })),
-    fallback: 'blocking'
+    paths: slugs.map((post) => ({ params: { slug: post.slug } })),
+    fallback: true
   };
 }
 
 export async function getStaticProps({ params }) {
+  if (!params?.slug) {
+    return {
+      props: {
+        post: null,
+        relatedPosts: [],
+        relatedCourses: []
+      },
+      revalidate: 60
+    };
+  }
+
   const post = await fetchPostBySlug(params.slug);
 
   if (!post) {
     return {
-      notFound: true,
+      props: {
+        post: null,
+        relatedPosts: [],
+        relatedCourses: []
+      },
       revalidate: 60
     };
   }
@@ -303,6 +388,10 @@ const HeroImage = styled(motion.div)`
   border: 1px solid rgba(123, 31, 46, 0.35);
 
   img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
   }
 
@@ -542,4 +631,14 @@ const BackLink = styled(MotionLink)`
   margin-top: 34px;
   color: #d94a5e;
   font-weight: 900;
+`;
+
+const EmptyState = styled.div`
+  min-height: 44vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a8afbd;
+  font-weight: 800;
+  text-align: center;
 `;

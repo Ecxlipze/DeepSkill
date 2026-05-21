@@ -488,12 +488,14 @@ const EnrollmentManager = () => {
   const handleOpenBatchModal = (app) => {
     setSelectedApp(app);
     setIsBatchModalOpen(true);
-    // Auto-select batch if already assigned or find first matching course batch
+    // Keep an existing assignment selected, but require a deliberate choice for new approvals.
     const appCourse = app.course || app.selectedCourse;
-    const matchingBatches = batches.filter(b => b.course === appCourse);
-    if (matchingBatches.length > 0) {
-      setSelectedBatch(matchingBatches[0].id);
-    }
+    const currentBatch = batches.find((batch) =>
+      batch.course === appCourse
+      && batch.batch_name === app.batch
+      && (!app.batch_timing || [batch.time_shift, batch.timing_label].includes(app.batch_timing))
+    );
+    setSelectedBatch(currentBatch?.id || '');
   };
 
   const handleGrantAccess = async () => {

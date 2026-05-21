@@ -169,7 +169,7 @@ export const fetchUsers = async ({
   if (tab === 'students') query = query.eq('role', 'student');
   if (tab === 'teachers') query = query.eq('role', 'teacher');
   if (tab === 'admins') query = query.eq('role', 'admin');
-  if (tab === 'custom') query = query.in('role', ['hr_manager', 'accountant', 'receptionist', 'blog', 'custom']);
+  if (tab === 'custom') query = query.eq('role', 'custom');
   if (role !== 'all') query = query.eq('role', role);
   if (status !== 'all') query = query.eq('status', status);
 
@@ -202,12 +202,8 @@ export const fetchUserStats = async () => {
     students: users.filter((user) => user.role === 'student').length,
     teachers: users.filter((user) => user.role === 'teacher').length,
     admins: users.filter((user) => user.role === 'admin').length,
-    hrManagers: users.filter((user) => user.role === 'hr_manager').length,
-    accountants: users.filter((user) => user.role === 'accountant').length,
-    receptionists: users.filter((user) => user.role === 'receptionist').length,
-    blogUsers: users.filter((user) => user.role === 'blog').length,
     custom: users.filter((user) => user.role === 'custom').length,
-    adminPanelUsers: users.filter((user) => ['admin', 'hr_manager', 'accountant', 'receptionist', 'blog', 'custom'].includes(user.role)).length
+    adminPanelUsers: users.filter((user) => ['admin', 'custom'].includes(user.role)).length
   };
 };
 

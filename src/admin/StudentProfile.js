@@ -176,7 +176,7 @@ const Tab = styled.button`
   padding: 18px 25px;
   background: none;
   border: none;
-  color: ${props => props.active ? '#7B1F2E' : '#888'};
+  color: ${props => props.$active ? '#7B1F2E' : '#888'};
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -192,7 +192,7 @@ const Tab = styled.button`
     width: 100%;
     height: 3px;
     background: #7B1F2E;
-    transform: scaleX(${props => props.active ? 1 : 0});
+    transform: scaleX(${props => props.$active ? 1 : 0});
     transition: transform 0.2s;
   }
 
@@ -409,7 +409,7 @@ const StudentProfile = () => {
     } catch (err) {
       console.error(err);
       toast.error("Error loading student profile");
-      navigate('/admin/students');
+      navigate('/admin/management/students');
     } finally {
       setLoading(false);
     }
@@ -509,14 +509,19 @@ const StudentProfile = () => {
     if (!selectedBatch) return;
     setProcessing(true);
     try {
-      const newBatchData = availableBatches.find(b => b.batch_name === selectedBatch);
+      const newBatchData = availableBatches.find(b => b.id === selectedBatch);
+      if (!newBatchData) {
+        throw new Error('Selected batch was not found');
+      }
+      const nextBatchName = newBatchData.batch_name;
+      const nextBatchTiming = newBatchData.time_shift || newBatchData.timing_label || student.batch_timing;
       
       // 1. Update Admissions
       const { error: admError } = await supabase
         .from('admissions')
         .update({ 
-          batch: selectedBatch,
-          batch_timing: newBatchData?.batch_timing || student.batch_timing
+          batch: nextBatchName,
+          batch_timing: nextBatchTiming
         })
         .eq('id', id);
       
@@ -526,14 +531,17 @@ const StudentProfile = () => {
       if (student.status === 'Active') {
         await supabase
           .from('allowed_cnics')
-          .update({ batch: selectedBatch })
+          .update({
+            batch: nextBatchName,
+            assigned_course: student.course
+          })
           .eq('cnic', student.cnic);
       }
 
       setStudent(prev => ({ 
         ...prev, 
-        batch: selectedBatch,
-        batch_timing: newBatchData?.batch_timing || prev.batch_timing
+        batch: nextBatchName,
+        batch_timing: nextBatchTiming
       }));
       
       toast.success("Batch updated successfully");
@@ -609,7 +617,7 @@ const StudentProfile = () => {
 
           toast.success("Student deleted successfully.");
           setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-          navigate('/admin/students');
+          navigate('/admin/management/students');
         } catch (err) {
           toast.error("Failed to delete student: " + err.message);
           setProcessing(false);
@@ -681,7 +689,7 @@ const StudentProfile = () => {
   return (
     <AdminLayout>
       <Container>
-        <BackLink to="/admin/students"><FaArrowLeft /> Back to Students</BackLink>
+        <BackLink to="/admin/management/students"><FaArrowLeft /> Back to Students</BackLink>
         
         <Layout>
           {/* SIDEBAR CARD */}
@@ -719,7 +727,15 @@ const StudentProfile = () => {
               }}>
                 <FaEdit /> Edit Profile
               </Button>
-              <Button className="edit" onClick={() => setIsEditBatchOpen(true)}>
+              <Button className="edit" onClick={() => {
+                const currentBatch = availableBatches.find((batch) =>
+                  batch.batch_name === student.batch
+                  && batch.course === student.course
+                  && (!student.batch_timing || [batch.time_shift, batch.timing_label].includes(student.batch_timing))
+                ) || availableBatches.find((batch) => batch.batch_name === student.batch && batch.course === student.course);
+                setSelectedBatch(currentBatch?.id || '');
+                setIsEditBatchOpen(true);
+              }}>
                 <FaEdit /> Edit Batch
               </Button>
               <Button className="status" $active={student.status === 'Active'} onClick={toggleStatus} disabled={processing}>
@@ -739,7 +755,7 @@ const StudentProfile = () => {
             <TabContainer>
               <TabBar>
                 {['Overview', 'Tasks', 'Attendance', 'Complaints', 'Finance'].map(tab => (
-                  <Tab key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>{tab}</Tab>
+                  <Tab key={tab} $active={activeTab === tab} onClick={() => setActiveTab(tab)}>{tab}</Tab>
                 ))}
               </TabBar>
 
@@ -991,9 +1007,11 @@ const StudentProfile = () => {
                 <label>Batch</label>
                 <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)}>
                   {availableBatches.length > 0 ? (
-                    availableBatches.map(b => (
-                      <option key={b.id} value={b.batch_name}>
-                        {b.batch_name} ({b.batch_timing})
+                    availableBatches
+                      .filter(b => !student?.course || b.course === student.course)
+                      .map(b => (
+                      <option key={b.id} value={b.id}>
+                        {b.batch_name} ({b.time_shift || b.timing_label || 'Timing not set'})
                       </option>
                     ))
                   ) : (

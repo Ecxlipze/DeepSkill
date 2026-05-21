@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/nextRouterDomCompat';
 import { useAuth } from '../context/AuthContext';
 import wpressBg from '../assets/wpress-bg.png';
 import phpCard from '../assets/php-card.svg';

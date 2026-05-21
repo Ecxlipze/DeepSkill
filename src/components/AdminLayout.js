@@ -7,22 +7,31 @@ import {
   FaMoneyBillWave, FaLink, FaChartBar, FaCog, FaChevronDown, 
   FaChevronRight, FaBars, FaTimes, FaClipboardList,
   FaExclamationCircle, FaBullhorn, FaUserPlus,
-  FaGraduationCap, FaPen
+  FaGraduationCap, FaPen, FaHeadset
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useComplaints } from '../context/ComplaintsContext';
-import { buildAdminSidebar } from '../utils/permissions';
+import { useDepartment } from '../context/DepartmentContext';
+import {
+  DEPARTMENTS,
+  getDepartmentByPath,
+  getDepartmentNav,
+  getDepartmentTitle,
+  normalizeAdminPath
+} from '../utils/departments';
 import NotificationBell from './NotificationBell';
 import logoImg from '../logo.svg';
 
 const AdminLayout = ({ children }) => {
   const { user } = useAuth();
+  const { visibleDepartments, activeDepartment, setActiveDepartment } = useDepartment();
   const { complaints } = useComplaints();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState({
     courses: location.pathname.includes('/courses'),
+    attendance: location.pathname.includes('/attendance'),
     finance: location.pathname.includes('/finance'),
     settings: location.pathname.includes('/settings')
   });
@@ -33,48 +42,22 @@ const AdminLayout = ({ children }) => {
     setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
   };
 
-  const iconMap = {
-    home: <FaHome />,
-    admissions: <FaUserPlus />,
-    students: <FaUserGraduate />,
-    teachers: <FaChalkboardTeacher />,
-    hr: <FaClipboardList />,
-    users: <FaUserGraduate />,
-    courses: <FaBook />,
-    attendance: <FaClipboardList />,
-    results: <FaGraduationCap />,
-    announcements: <FaBullhorn />,
-    blog: <FaPen />,
-    complaints: <FaExclamationCircle />,
-    finance: <FaMoneyBillWave />,
-    referral: <FaLink />,
-    reports: <FaChartBar />,
-    settings: <FaCog />
+  const badges = {
+    openComplaints: hasOpenComplaints,
+    newInquiries: false,
+    pendingHR: false,
+    pendingPayouts: false
   };
+  const normalizedPath = normalizeAdminPath(location.pathname);
+  const currentDepartment = getDepartmentByPath(normalizedPath);
+  const activeDepartmentMeta = DEPARTMENTS.find((department) => department.id === (currentDepartment?.id || activeDepartment)) || DEPARTMENTS[0];
+  const navItems = getDepartmentNav(user, activeDepartmentMeta.id, badges);
+  const routeMeta = getDepartmentTitle(normalizedPath);
 
-  const navItems = buildAdminSidebar(user, user?.permissions, hasOpenComplaints).map((item) => {
-    if (item.type === 'label') return item;
-    if (item.type === 'dropdown') {
-      const menuKey = item.label.toLowerCase().includes('user') ? 'users' : item.label.toLowerCase().includes('finance') ? 'finance' : 'settings';
-      return {
-        ...item,
-        icon: iconMap[item.iconKey],
-        isOpen: openMenus[menuKey] || location.pathname.startsWith(item.items?.[0]?.path || ''),
-        onToggle: () => toggleMenu(menuKey)
-      };
-    }
-    return { ...item, icon: iconMap[item.iconKey] };
-  });
-
-  const getBreadcrumbs = () => {
-    const paths = location.pathname.split('/').filter(p => p);
-    return paths.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' / ');
-  };
-
-  const getPageTitle = () => {
-    const paths = location.pathname.split('/').filter(p => p);
-    if (paths.length === 0) return 'Admin';
-    return paths[paths.length - 1].charAt(0).toUpperCase() + paths[paths.length - 1].slice(1);
+  const handleDepartmentSwitch = (department) => {
+    setActiveDepartment(department.id);
+    navigate(department.path);
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -92,7 +75,7 @@ const AdminLayout = ({ children }) => {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <Sidebar isOpen={isMobileMenuOpen}>
+      <Sidebar $isOpen={isMobileMenuOpen}>
         <SidebarHeader>
           <LogoBox>
             <img src={logoImg} alt="DeepSkill Admin" />
@@ -102,10 +85,15 @@ const AdminLayout = ({ children }) => {
           </CloseButton>
         </SidebarHeader>
 
+        <DepartmentHeader $color={activeDepartmentMeta.color}>
+          <small>Department</small>
+          <strong><span>{activeDepartmentMeta.icon}</span> {activeDepartmentMeta.label}</strong>
+        </DepartmentHeader>
+
         <NavList>
           {navItems.map((item, idx) => {
-            if (item.type === 'label') {
-              return <NavLabel key={`label-${idx}`}>{item.label}</NavLabel>;
+            if (item.section) {
+              return <NavLabel key={`label-${idx}`}>{item.section}</NavLabel>;
             }
 
             if (item.type === 'dropdown') {
@@ -115,7 +103,7 @@ const AdminLayout = ({ children }) => {
                   <NavItem 
                     as="div" 
                     onClick={item.onToggle} 
-                    active={isChildActive}
+                    $active={isChildActive}
                     style={{ cursor: 'pointer' }}
                   >
                     <span className="icon">{item.icon}</span>
@@ -135,7 +123,7 @@ const AdminLayout = ({ children }) => {
                           <DropdownItem 
                             key={`child-${cIdx}`} 
                             to={child.path}
-                            active={location.pathname === child.path}
+                            $active={location.pathname === child.path}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             {child.label}
@@ -148,11 +136,14 @@ const AdminLayout = ({ children }) => {
               );
             }
 
+            const isActive = normalizedPath === item.path || normalizedPath.startsWith(`${item.path}/`);
             return (
               <NavItem 
                 key={`nav-${idx}`} 
                 to={item.path} 
-                active={location.pathname === item.path}
+                $active={isActive}
+                $accent={activeDepartmentMeta.color}
+                $activeBg={activeDepartmentMeta.activeBg}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="icon">{item.icon}</span>
@@ -182,8 +173,8 @@ const AdminLayout = ({ children }) => {
               <FaBars />
             </MenuToggle>
             <div className="breadcrumb-area">
-              <Breadcrumbs>{getBreadcrumbs()}</Breadcrumbs>
-              <PageTitle>{getPageTitle()}</PageTitle>
+              <Breadcrumbs>{routeMeta.breadcrumbs}</Breadcrumbs>
+              <PageTitle>{routeMeta.title}</PageTitle>
             </div>
           </div>
           <div className="right">
@@ -193,6 +184,24 @@ const AdminLayout = ({ children }) => {
             </AvatarCircle>
           </div>
         </Topbar>
+        <DepartmentTabs>
+          {visibleDepartments.map((department) => {
+            const isActive = activeDepartmentMeta.id === department.id;
+            return (
+              <DeptTab
+                key={department.id}
+                type="button"
+                $active={isActive}
+                $color={department.color}
+                onClick={() => handleDepartmentSwitch(department)}
+              >
+                <span className="dot" />
+                <span>{department.icon}</span>
+                {department.shortLabel || department.label}
+              </DeptTab>
+            );
+          })}
+        </DepartmentTabs>
         <ContentArea>
           {children}
         </ContentArea>
@@ -230,7 +239,7 @@ const Sidebar = styled.div`
   @media (max-width: 768px) {
     position: fixed;
     height: 100%;
-    transform: translateX(${props => props.isOpen ? '0' : '-100%'});
+    transform: translateX(${props => props.$isOpen ? '0' : '-100%'});
   }
 `;
 
@@ -249,6 +258,31 @@ const LogoBox = styled.div`
     height: 35px;
     width: auto;
     display: block;
+  }
+`;
+
+const DepartmentHeader = styled.div`
+  margin: 0 16px 12px;
+  padding: 14px 16px;
+  border: 1px solid ${({ $color }) => `${$color}40`};
+  border-radius: 14px;
+  background: ${({ $color }) => `${$color}14`};
+
+  small {
+    display: block;
+    color: #6b7280;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+
+  strong {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f9fafb;
+    font-size: 0.95rem;
   }
 `;
 
@@ -283,8 +317,8 @@ const NavItem = styled(Link)`
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  color: ${props => props.active ? '#fff' : '#9ca3af'};
-  background: ${props => props.active ? '#1f2127' : 'transparent'};
+  color: ${props => props.$active ? '#fff' : '#9ca3af'};
+  background: ${props => props.$active ? (props.$activeBg || '#1f2127') : 'transparent'};
   text-decoration: none;
   transition: all 0.2s;
   position: relative;
@@ -296,7 +330,7 @@ const NavItem = styled(Link)`
     background: rgba(255, 255, 255, 0.03);
   }
 
-  ${props => props.active && `
+  ${props => props.$active && `
     &::after {
       content: '';
       position: absolute;
@@ -305,7 +339,7 @@ const NavItem = styled(Link)`
       transform: translateY(-50%);
       height: 20px;
       width: 3px;
-      background: #4F8EF7;
+      background: ${props.$accent || '#4F8EF7'};
       border-radius: 0 4px 4px 0;
     }
   `}
@@ -331,7 +365,7 @@ const DropdownContent = styled(motion.div)`
 const DropdownItem = styled(Link)`
   display: block;
   padding: 10px 20px 10px 52px;
-  color: ${props => props.active ? '#4F8EF7' : '#9ca3af'};
+  color: ${props => props.$active ? '#4F8EF7' : '#9ca3af'};
   text-decoration: none;
   font-size: 0.85rem;
   transition: all 0.2s;
@@ -392,6 +426,56 @@ const Topbar = styled.div`
   z-index: 900;
 
   @media (max-width: 768px) { padding: 0 20px; }
+`;
+
+const DepartmentTabs = styled.div`
+  min-height: 50px;
+  background: #0a0a0a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 30px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 20px;
+  }
+`;
+
+const DeptTab = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid ${({ $active, $color }) => $active ? `${$color}66` : 'rgba(255,255,255,0.07)'};
+  background: ${({ $active, $color }) => $active ? `${$color}18` : 'transparent'};
+  color: ${({ $active }) => $active ? '#f9fafb' : '#9ca3af'};
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: ${({ $color }) => $color};
+    box-shadow: 0 0 12px ${({ $color }) => $color};
+  }
+
+  &:hover {
+    color: #fff;
+    border-color: ${({ $color }) => `${$color}66`};
+  }
 `;
 
 const MenuToggle = styled.button`

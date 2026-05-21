@@ -144,8 +144,8 @@ const RegisterSection = () => {
       </MainContainer>
       
       <ButtonContainer>
-        <RegisterButton to="/register">
-          REGISTER NOW
+        <RegisterButton to="/inquiry">
+          INQUIRE NOW
         </RegisterButton>
       </ButtonContainer>
     </Section>

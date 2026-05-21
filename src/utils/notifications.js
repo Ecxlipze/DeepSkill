@@ -133,7 +133,7 @@ export async function getAdminRecipients() {
   const { data: authUsers } = await supabase
     .from('users')
     .select('id, full_name, email, role, status')
-    .in('role', ['admin', 'hr_manager', 'accountant', 'receptionist'])
+    .in('role', ['admin', 'custom'])
     .eq('status', 'active');
 
   (authUsers || []).forEach((user) => {

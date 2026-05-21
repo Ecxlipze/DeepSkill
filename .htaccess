@@ -1,0 +1,20 @@
+DirectoryIndex index.html index.php
+ErrorDocument 404 /404.html
+RewriteEngine On
+
+# Portal routes must always use the latest generated shell. Keep these before
+# the existing-file checks so stale nested folders cannot shadow new builds.
+RewriteRule ^admin(?:/(?!index\.html).*)?$ /admin/index.html [L]
+RewriteRule ^student(?:/(?!index\.html).*)?$ /student/index.html [L]
+RewriteRule ^teacher(?:/(?!index\.html).*)?$ /teacher/index.html [L]
+RewriteRule ^register/?$ /inquiry/ [R=301,L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^courses/(full-stack-react|laravel-mastery|wordpress-mastery|graphic-design)/?$ /courses/$1/index.html [L]
+RewriteRule ^blogs/?$ /blogs/index.html [L]
+RewriteRule ^blogs/.+$ /blogs/post/index.html [L]
+
+RewriteRule ^(about|contact|courses|founder-message|inquiry|login|media|trainers|verify-certificate)/?$ /$1/index.html [L]

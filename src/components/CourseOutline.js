@@ -187,6 +187,7 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
   const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
   const [previewStatus, setPreviewStatus] = React.useState('idle'); // 'idle', 'loading', 'ready', 'failed'
   const [previewUrl, setPreviewUrl] = React.useState('');
+  const hasPdfUrl = Boolean(pdfUrl);
 
   React.useEffect(() => {
     return () => {
@@ -206,42 +207,46 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
   };
 
   const handleDownload = async () => {
-    if (pdfUrl) {
-      setDownloadStatus('downloading');
-      try {
-        // Use a clean loading state if needed, but for now we'll fetch and download
-        const response = await fetch(pdfUrl);
-        const blob = await response.blob();
-
-        // Create a local object URL for the blob
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-
-        link.setAttribute('download', getFileName());
-
-        document.body.appendChild(link);
-        link.click();
-
-        // Cleanup
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        setDownloadStatus('completed');
-        // Reset back to idle after a few seconds
-        setTimeout(() => setDownloadStatus('idle'), 3000);
-      } catch (error) {
-        console.error("Direct download failed, falling back to new tab:", error);
-        setDownloadStatus('idle');
-        window.open(pdfUrl, '_blank');
-      }
-    } else {
+    if (!hasPdfUrl) {
       alert("Course outline PDF will be available soon!");
+      return;
+    }
+
+    setDownloadStatus('downloading');
+    try {
+      const response = await fetch(pdfUrl);
+      if (!response.ok) {
+        throw new Error(`PDF download request failed with ${response.status}`);
+      }
+
+      const blob = await response.blob();
+
+      // Create a local object URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      link.setAttribute('download', getFileName());
+
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setDownloadStatus('completed');
+      // Reset back to idle after a few seconds
+      setTimeout(() => setDownloadStatus('idle'), 3000);
+    } catch (error) {
+      console.warn("PDF download failed:", error);
+      setDownloadStatus('idle');
+      setPreviewStatus('failed');
     }
   };
 
   const handlePreview = async () => {
-    if (!pdfUrl) {
+    if (!hasPdfUrl) {
       alert("Course outline PDF will be available soon!");
       return;
     }
@@ -259,7 +264,9 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
       const response = await fetch(pdfUrl);
 
       if (!response.ok) {
-        throw new Error(`PDF preview request failed with ${response.status}`);
+        console.warn(`PDF preview request failed with ${response.status}`);
+        setPreviewStatus('failed');
+        return;
       }
 
       const blob = await response.blob();
@@ -339,9 +346,13 @@ const CourseOutline = ({ accentColor, accentRGB, pdfUrl }) => {
                   {downloadStatus === 'idle' && "Download"}
                 </ActionButton>
                 <ActionLink
-                  href={pdfUrl}
+                  href={hasPdfUrl ? pdfUrl : undefined}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-disabled={!hasPdfUrl}
+                  onClick={(event) => {
+                    if (!hasPdfUrl) event.preventDefault();
+                  }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >

@@ -612,18 +612,23 @@ const RegisterPage = () => {
           referred_by: formData.referredBy
         };
         await register(applicationData);
-        await notifyAdmins({
-          type: 'admission',
-          title: 'New Student Registered',
-          message: `${applicationData.name} applied for ${applicationData.course}`,
-          link: '/admin/admissions',
-          sendEmail: true,
-          emailData: {
-            name: applicationData.name,
-            course: applicationData.course,
-            cnic: applicationData.cnic
-          }
-        });
+        try {
+          await notifyAdmins({
+            type: 'admission',
+            title: 'New Student Registered',
+            message: `${applicationData.name} applied for ${applicationData.course}`,
+            link: '/admin/admissions',
+            sendEmail: true,
+            emailData: {
+              name: applicationData.name,
+              course: applicationData.course,
+              cnic: applicationData.cnic
+            }
+          });
+        } catch (notificationError) {
+          console.warn("Admin notification failed:", notificationError);
+        }
+
         const emailResult = await sendAdmissionEmail(EMAIL_EVENTS.REGISTRATION_RECEIVED, applicationData);
         if (!emailResult.ok) {
           console.warn("Registration email failed:", emailResult.message);

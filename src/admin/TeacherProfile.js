@@ -186,14 +186,14 @@ const TabBar = styled.div`
 const Tab = styled.button`
   padding: 18px 25px;
   background: none; border: none;
-  color: ${props => props.active ? '#378ADD' : '#888'};
+  color: ${props => props.$active ? '#378ADD' : '#888'};
   font-weight: 600; font-size: 0.9rem;
   cursor: pointer; position: relative;
   transition: all 0.2s; white-space: nowrap;
 
   &:after {
     content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-    background: #378ADD; transform: scaleX(${props => props.active ? 1 : 0});
+    background: #378ADD; transform: scaleX(${props => props.$active ? 1 : 0});
     transition: transform 0.2s;
   }
   &:hover { color: #fff; }
@@ -322,7 +322,7 @@ const TeacherProfile = () => {
       // In real app, compute these from tasks/complaints tables
     } catch (err) {
       toast.error("Error loading teacher profile");
-      navigate('/admin/teachers');
+      navigate('/admin/management/teachers');
     } finally {
       setLoading(false);
     }
@@ -434,7 +434,7 @@ const TeacherProfile = () => {
   return (
     <AdminLayout>
       <Container>
-        <BackLink to="/admin/teachers"><FaArrowLeft /> Back to Teachers</BackLink>
+        <BackLink to="/admin/management/teachers"><FaArrowLeft /> Back to Teachers</BackLink>
         <Layout>
           {/* SIDEBAR */}
           <SidebarCard>
@@ -482,7 +482,7 @@ const TeacherProfile = () => {
             <TabContainer>
               <TabBar>
                 {['Performance', 'Tasks', 'Complaints', 'Batches', 'Finance'].map(t => (
-                  <Tab key={t} active={activeTab === t} onClick={() => setActiveTab(t)}>{t}</Tab>
+                  <Tab key={t} $active={activeTab === t} onClick={() => setActiveTab(t)}>{t}</Tab>
                 ))}
               </TabBar>
 

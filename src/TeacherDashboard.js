@@ -5,6 +5,7 @@ import DashboardLayout from './components/DashboardLayout';
 import { useAuth } from './context/AuthContext';
 import { supabase } from './supabaseClient';
 import { getAssignedTeacherBatches, getTeacherByCnic } from './utils/teacherUtils';
+import { formatAttendanceDate } from './utils/autoAttendance';
 
 // ----- Styled Components ----- //
 
@@ -217,6 +218,44 @@ const SectionTitle = styled.h3`
   padding-bottom: 12px;
 `;
 
+const AttendanceTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+
+  th, td {
+    text-align: left;
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  th {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+  }
+`;
+
+const StatusBadge = styled.span`
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  background: ${props => {
+    if (props.$status === 'present') return 'rgba(46, 204, 113, 0.14)';
+    if (props.$status === 'late') return 'rgba(241, 196, 15, 0.14)';
+    if (props.$status === 'absent') return 'rgba(231, 76, 60, 0.14)';
+    return 'rgba(156, 163, 175, 0.12)';
+  }};
+  color: ${props => {
+    if (props.$status === 'present') return '#2ecc71';
+    if (props.$status === 'late') return '#f1c40f';
+    if (props.$status === 'absent') return '#e74c3c';
+    return '#aaa';
+  }};
+`;
+
 // Progress Rings
 const RingsContainer = styled.div`
   display: flex;
@@ -293,6 +332,7 @@ const ProgressRing = ({ radius, stroke, progress, color }) => {
 const TeacherDashboard = () => {
   const { user } = useAuth();
   const [selectedBatchId, setSelectedBatchId] = useState('');
+  const [todayAttendance, setTodayAttendance] = useState([]);
   const [stats, setStats] = useState({
     assignedBatches: [],
     totalStudents: 0,
@@ -328,6 +368,25 @@ const TeacherDashboard = () => {
           
           if (!cError) studentCount = count;
 
+          const { data: roster } = await supabase
+            .from('admissions')
+            .select('id, name, cnic, batch')
+            .in('batch', batchNames)
+            .eq('status', 'Active')
+            .order('name', { ascending: true });
+
+          const { data: todayRows } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('batch_id', activeBatch.id)
+            .eq('date', formatAttendanceDate());
+
+          const rowMap = new Map((todayRows || []).map((row) => [row.student_id, row]));
+          setTodayAttendance((roster || []).map((student) => ({
+            ...student,
+            attendance: rowMap.get(student.id) || null
+          })));
+
           const { data: attendanceData } = await supabase
             .from('attendance')
             .select('date, status, batch_name')
@@ -362,6 +421,9 @@ const TeacherDashboard = () => {
           const submissions = taskData?.flatMap(task => task.task_submissions || []) || [];
           const gradedCount = submissions.filter(sub => sub.status === 'Graded' || sub.marks_obtained !== null).length;
           assignmentsGraded = submissions.length > 0 ? Math.round((gradedCount / submissions.length) * 100) : 0;
+        }
+        if (batchNames.length === 0) {
+          setTodayAttendance([]);
         }
 
         setStats({
@@ -526,6 +588,47 @@ const TeacherDashboard = () => {
                 <RingValue>{stats.overallAttendance}%</RingValue>
               </RingRow>
             </RingsContainer>
+          </Card>
+
+          <Card
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.55 }}
+          >
+            <SectionTitle>Today&apos;s Attendance</SectionTitle>
+            <AttendanceTable>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Status</th>
+                  <th>Marked By</th>
+                  <th>Distance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todayAttendance.map((student) => {
+                  const row = student.attendance;
+                  return (
+                    <tr key={student.id}>
+                      <td>
+                        <strong>{student.name}</strong><br />
+                        <small style={{ color: 'rgba(255,255,255,0.42)' }}>{student.cnic}</small>
+                      </td>
+                      <td><StatusBadge $status={row?.status}>{row?.status || 'not marked'}</StatusBadge></td>
+                      <td>{row?.marked_by || 'auto pending'}</td>
+                      <td>{row?.distance_meters ? `${row.distance_meters}m` : '-'}</td>
+                    </tr>
+                  );
+                })}
+                {todayAttendance.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ color: 'rgba(255,255,255,0.45)', textAlign: 'center', padding: 28 }}>
+                      No active students found for the selected batch.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </AttendanceTable>
           </Card>
 
         </BottomGrid>

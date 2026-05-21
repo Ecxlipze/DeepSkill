@@ -53,9 +53,9 @@ const FilterBar = styled.div`
 
 const FilterBtn = styled.button`
   padding: 6px 12px;
-  background: ${props => props.active ? '#7B1F2E' : '#1a1a1a'};
+  background: ${props => props.$active ? '#7B1F2E' : '#1a1a1a'};
   color: #fff;
-  border: 1px solid ${props => props.active ? '#7B1F2E' : '#333'};
+  border: 1px solid ${props => props.$active ? '#7B1F2E' : '#333'};
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -88,8 +88,8 @@ const TicketCard = styled.div`
   margin-bottom: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  background: ${props => props.active ? 'rgba(123, 31, 46, 0.15)' : 'transparent'};
-  border-left: 4px solid ${props => props.active ? '#7B1F2E' : 'transparent'};
+  background: ${props => props.$active ? 'rgba(123, 31, 46, 0.15)' : 'transparent'};
+  border-left: 4px solid ${props => props.$active ? '#7B1F2E' : 'transparent'};
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   position: relative;
 
@@ -287,9 +287,9 @@ const ControlBtn = styled.button`
   }
 
   &.urgent {
-    background: ${props => props.active ? '#7B1F2E' : '#1a1a1a'};
-    color: ${props => props.active ? '#fff' : '#888'};
-    border-color: ${props => props.active ? '#7B1F2E' : '#333'};
+    background: ${props => props.$active ? '#7B1F2E' : '#1a1a1a'};
+    color: ${props => props.$active ? '#fff' : '#888'};
+    border-color: ${props => props.$active ? '#7B1F2E' : '#333'};
     &:hover { border-color: #7B1F2E; }
   }
 `;
@@ -398,7 +398,7 @@ const TeacherComplaints = () => {
             </div>
             <FilterBar>
               {['Active', 'Open', 'Pending Reply', 'Closed', 'Urgent'].map(f => (
-                <FilterBtn key={f} active={filter === f} onClick={() => setFilter(f)}>
+                <FilterBtn key={f} $active={filter === f} onClick={() => setFilter(f)}>
                   {f}
                 </FilterBtn>
               ))}
@@ -409,7 +409,7 @@ const TeacherComplaints = () => {
             {filteredComplaints.map(ticket => (
               <TicketCard 
                 key={ticket.id} 
-                active={activeId === ticket.id}
+                $active={activeId === ticket.id}
                 onClick={() => setActiveId(ticket.id)}
               >
                 <TicketTop>
@@ -447,7 +447,7 @@ const TeacherComplaints = () => {
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <ControlBtn 
                     className="urgent" 
-                    active={activeTicket.priority === 'Urgent'}
+                    $active={activeTicket.priority === 'Urgent'}
                     onClick={() => toggleUrgent(activeTicket.id, activeTicket.priority)}
                   >
                     <FaExclamationCircle /> {activeTicket.priority === 'Urgent' ? 'Flagged Urgent' : 'Flag Urgent'}

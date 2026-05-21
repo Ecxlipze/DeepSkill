@@ -9,6 +9,29 @@ const getSupabase = async () => {
 const getActivityLogger = async () => import('../utils/activityLogger');
 const getPermissions = async () => import('../utils/permissions');
 
+const postJson = async (url, payload) => {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result.status === 'error') {
+    throw new Error(result.message || 'Request failed.');
+  }
+  return result;
+};
+
+const clearStoredSupabaseAuth = () => {
+  if (typeof window === 'undefined') return;
+
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+      localStorage.removeItem(key);
+    }
+  });
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +61,20 @@ export const AuthProvider = ({ children }) => {
       const { ADMIN_FULL_PERMISSIONS } = await getPermissions();
 
       // 1. Check Supabase session first (for Admin)
-      const { data: { session } } = await supabase.auth.getSession();
+      let session = null;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        session = data.session;
+      } catch (error) {
+        if (error?.message?.toLowerCase().includes('refresh token')) {
+          await supabase.auth.signOut({ scope: 'local' });
+          clearStoredSupabaseAuth();
+          localStorage.removeItem('deepskill_user');
+        } else {
+          throw error;
+        }
+      }
       
       if (session) {
         const adminUser = {
@@ -109,8 +145,21 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = async (cnic) => {
+  const requestLoginOtp = async (cnic) => postJson('/api/auth/send-otp.php', { cnic });
+
+  const verifyLoginOtp = async (cnic, otp) => postJson('/api/auth/verify-otp.php', { cnic, otp });
+
+  const login = async (cnic, options = {}) => {
     try {
+      if (!options.verificationToken) {
+        throw new Error('Email OTP verification is required before login.');
+      }
+
+      await postJson('/api/auth/validate-token.php', {
+        cnic,
+        verificationToken: options.verificationToken
+      });
+
       const supabase = await getSupabase();
       const { logActivity, updateLastLogin } = await getActivityLogger();
       const { resolvePermissions } = await getPermissions();
@@ -211,6 +260,10 @@ export const AuthProvider = ({ children }) => {
           ...roleData,
           id: admission.id || roleData.id,
           name: roleData.name,
+          assigned_course: admission.course || roleData.assigned_course,
+          course: admission.course || roleData.assigned_course,
+          batch: admission.batch || roleData.batch,
+          batch_timing: admission.batch_timing || roleData.batch_timing,
           status: admission.status,
           authType: 'cnic',
           permissions: {}
@@ -248,12 +301,7 @@ export const AuthProvider = ({ children }) => {
           throw new Error(`Your account is ${directoryUser.status}. Please contact the administrator.`);
         }
 
-        let resolvedRole = directoryUser.custom_roles;
-        if (!resolvedRole && ['hr_manager', 'accountant', 'receptionist', 'blog'].includes(directoryUser.role)) {
-          const displayName = directoryUser.role.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-          const { data: fallbackRole } = await supabase.from('custom_roles').select('*').ilike('name', displayName).maybeSingle();
-          resolvedRole = fallbackRole || null;
-        }
+        const resolvedRole = directoryUser.custom_roles;
 
         const userData = {
           id: directoryUser.id,
@@ -301,7 +349,16 @@ export const AuthProvider = ({ children }) => {
       return data;
     } catch (error) {
       console.error('Registration error:', error);
-      throw error;
+      const response = await fetch('/api/register.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(applicationData)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.status === 'error') {
+        throw new Error(result.message || error.message || 'Registration failed.');
+      }
+      return result.data || result.user || result;
     }
   };
 
@@ -335,7 +392,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      user, login, logout, updateProfile, loading, register
+      user, login, requestLoginOtp, verifyLoginOtp, logout, updateProfile, loading, register
     }}>
       {children}
     </AuthContext.Provider>

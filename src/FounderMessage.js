@@ -374,7 +374,7 @@ const FounderMessage = () => {
         >
           <div style={{ position: 'relative' }}>
             <RegisterButton>
-              REGISTER NOW
+              INQUIRE NOW
             </RegisterButton>
           </div>
         </RegisterCTA>

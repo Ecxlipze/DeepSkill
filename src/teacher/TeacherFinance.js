@@ -69,7 +69,7 @@ const TeacherFinance = () => {
             <span>Monthly Salary</span>
             <h2>Rs. {financeData?.monthlyAmount.toLocaleString()}</h2>
           </SummaryCard>
-          <SummaryCard status={financeData?.status}>
+          <SummaryCard $status={financeData?.status}>
             <span>Status (This Month)</span>
             <div className="status-val">
               {financeData?.status === 'Paid' ? <FaCheckCircle /> : <FaClock />}
@@ -108,7 +108,7 @@ const TeacherFinance = () => {
                     <td style={{ textTransform: 'capitalize' }}>{p.method?.replace('_', ' ')}</td>
                     <td style={{ color: '#6b7280', fontSize: '0.85rem' }}>{p.reference_number || '—'}</td>
                     <td>
-                      <StatusBadge status={p.status}>{p.status}</StatusBadge>
+                      <StatusBadge $status={p.status}>{p.status}</StatusBadge>
                     </td>
                   </tr>
                 ))}
@@ -165,7 +165,7 @@ const SummaryCard = styled.div`
     align-items: center;
     gap: 10px;
     margin-top: 15px;
-    color: ${props => props.status === 'Paid' ? '#10B981' : '#F59E0B'};
+    color: ${props => props.$status === 'Paid' ? '#10B981' : '#F59E0B'};
     h2 { margin: 0; color: inherit; }
   }
 `;
@@ -202,8 +202,8 @@ const StatusBadge = styled.span`
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  background: ${props => props.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'};
-  color: ${props => props.status === 'paid' ? '#10B981' : '#F59E0B'};
+  background: ${props => props.$status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'};
+  color: ${props => props.$status === 'paid' ? '#10B981' : '#F59E0B'};
 `;
 
 const InfoBox = styled.div`

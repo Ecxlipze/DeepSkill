@@ -319,12 +319,12 @@ const AnnouncementCard = ({ announcement, isRead, onMarkRead }) => {
 
       {attachments.length > 0 && (
         <AttachmentsRow>
-          {imageAttachments.map((att, i) => (
+          {imageAttachments.filter((att) => att.file_url).map((att, i) => (
             <a key={i} href={att.file_url} target="_blank" rel="noopener noreferrer">
               <ImageThumb src={att.file_url} alt={att.file_name} />
             </a>
           ))}
-          {fileAttachments.map((att, i) => (
+          {fileAttachments.filter((att) => att.file_url).map((att, i) => (
             <FileChip key={i} href={att.file_url} target="_blank" rel="noopener noreferrer">
               <span className="icon"><FaPaperclip /></span>
               {getFileIcon(att.file_type)} {att.file_name}

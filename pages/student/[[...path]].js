@@ -1,8 +1,9 @@
 import dynamic from 'next/dynamic';
+import Head from 'next/head';
 import { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/router';
 import PrivatePortalNotice from '../../components/next/PrivatePortalNotice';
-import ProtectedRoute from '../../src/components/ProtectedRoute';
+import NextPortalGuard from '../../src/components/NextPortalGuard';
 import { TasksProvider } from '../../src/context/TasksContext';
 import { ComplaintsProvider } from '../../src/context/ComplaintsContext';
 import { GroupChatProvider } from '../../src/context/GroupChatContext';
@@ -61,9 +62,13 @@ export default function StudentPortal() {
 
   return (
     <StudentProviders>
-      <ProtectedRoute allowedRoles={['student']}>
+      <Head>
+        <title>Student Portal | DeepSkills</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
+      <NextPortalGuard allowedRoles={['student']}>
         {getStudentPage(path)}
-      </ProtectedRoute>
+      </NextPortalGuard>
     </StudentProviders>
   );
 }

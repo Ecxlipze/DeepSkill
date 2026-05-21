@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "../lib/nextRouterDomCompat";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress } from "react-icons/fa";
 import courseBg from "./assets/course-bg.png";
 import RegisterButton from "./components/RegisterButton";
@@ -228,8 +228,8 @@ const CoursesSection = () => {
 
   useEffect(() => {
     const fetchCourses = async () => {
-      const { supabase } = await import("./supabaseClient");
-      const { data, error } = await supabase.from('courses').select('*').order('created_at', { ascending: true });
+      const { supabasePublic } = await import("./supabasePublicClient");
+      const { data, error } = await supabasePublic.from('courses').select('*').order('created_at', { ascending: true });
       if (error) {
         console.error(error);
         setCourses(dummyCourses);

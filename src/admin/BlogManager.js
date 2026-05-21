@@ -26,11 +26,12 @@ const MAX_TAG_LENGTH = 24;
 const MAX_CONTENT_WORDS = 2500;
 const MAX_CONTENT_HTML_LENGTH = 30000;
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+const SVG_BLOCKED_PATTERN = /<script|<foreignObject|\son\w+\s*=|javascript:|data:text\/html/i;
 
 const getActorId = (user) => user?.id || user?.cnic || user?.email || '';
 const isAdminUser = (user) => user?.role === 'admin';
-const canUseBlogPanel = (user) => isAdminUser(user) || user?.role === 'blog' || canAccess(user?.permissions || {}, 'blog', 'view');
+const canUseBlogPanel = (user) => isAdminUser(user) || canAccess(user?.permissions || {}, 'blog', 'view');
 const sanitizePlainText = (value = '', max = 200) =>
   value
     .toString()
@@ -228,7 +229,7 @@ function BlogList() {
           <h1>Blog Posts</h1>
           <p>{isAdmin ? 'Create, manage, and publish blog content for the DeepSkills website' : 'Create and edit your draft blog posts for admin review'}</p>
         </div>
-        <PrimaryButton onClick={() => router.push('/admin/blog/new')}>
+        <PrimaryButton onClick={() => router.push('/admin/management/blog/new')}>
           <FaEdit /> New Post
         </PrimaryButton>
       </PageHeader>
@@ -322,7 +323,7 @@ function BlogList() {
                 {isAdmin && <td>{(post.view_count || 0).toLocaleString()}</td>}
                 <td>
                   <ActionRow>
-                    <button title="Edit" onClick={() => router.push(`/admin/blog/edit/${post.id}`)}><FaEdit /></button>
+                    <button title="Edit" onClick={() => router.push(`/admin/management/blog/edit/${post.id}`)}><FaEdit /></button>
                     {isAdmin && <a title="Preview" href={`/blogs/${post.slug}?preview=true`} target="_blank" rel="noreferrer"><FaEye /></a>}
                     {isAdmin && <button title="Duplicate" onClick={() => duplicatePost(post)}><FaCopy /></button>}
                     {isAdmin && <button title="Toggle published" onClick={() => togglePublished(post)}><FaUpload /></button>}
@@ -423,7 +424,7 @@ function BlogEditor({ postId }) {
     }
     if (!isAdmin && (data.author_id !== actorId || data.status !== 'draft')) {
       toast.error('You can only edit your own draft blogs.');
-      router.push('/admin/blog');
+      router.push('/admin/management/blog');
       return;
     }
 
@@ -490,14 +491,24 @@ function BlogEditor({ postId }) {
     setNewCategory('');
   };
 
+  const validateSvgFile = async (file) => {
+    const svgText = await file.text();
+    if (!/<svg[\s>]/i.test(svgText) || SVG_BLOCKED_PATTERN.test(svgText)) {
+      throw new Error('SVG contains unsafe markup and cannot be uploaded.');
+    }
+  };
+
   const uploadFile = async (file, folder = 'covers') => {
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      throw new Error('Only JPG, PNG, WebP, and GIF images are allowed.');
+      throw new Error('Only JPG, PNG, WebP, GIF, and SVG images are allowed.');
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       throw new Error('Image uploads are limited to 2 MB.');
     }
-    const ext = file.name.split('.').pop();
+    if (file.type === 'image/svg+xml') {
+      await validateSvgFile(file);
+    }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
     const path = `${folder}/${Date.now()}-${slugify(file.name.replace(/\.[^.]+$/, ''))}.${ext}`;
     const { error } = await supabase.storage.from('blog-covers').upload(path, file, { upsert: true });
     if (error) throw error;
@@ -599,7 +610,7 @@ function BlogEditor({ postId }) {
 
     toast.success(status === 'published' ? 'Post published' : 'Draft saved for admin review');
     setSaving(false);
-    router.push('/admin/blog');
+    router.push('/admin/management/blog');
   };
 
   const wordCount = countWords(form.contentHtml);
@@ -612,7 +623,7 @@ function BlogEditor({ postId }) {
   return (
     <Container>
       <EditorHeader>
-        <button type="button" onClick={() => router.push('/admin/blog')}>Back to posts</button>
+        <button type="button" onClick={() => router.push('/admin/management/blog')}>Back to posts</button>
         <div>
           <button type="button" onClick={() => savePost('draft')} disabled={saving}>Save Draft</button>
           {isAdmin && <PrimaryButton type="button" onClick={() => savePost('published')} disabled={saving}>Publish Now</PrimaryButton>}
@@ -770,9 +781,9 @@ function BlogEditor({ postId }) {
 
 function getMode(asPath = '') {
   const path = asPath.split('?')[0];
-  const editMatch = path.match(/^\/admin\/blog\/edit\/([^/]+)/);
+  const editMatch = path.match(/^\/admin\/(?:management\/)?blog\/edit\/([^/]+)/);
   if (editMatch) return { type: 'edit', id: editMatch[1] };
-  if (path === '/admin/blog/new') return { type: 'new' };
+  if (path === '/admin/blog/new' || path === '/admin/management/blog/new') return { type: 'new' };
   return { type: 'list' };
 }
 

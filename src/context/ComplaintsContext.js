@@ -119,7 +119,7 @@ export const ComplaintsProvider = ({ children }) => {
           type: 'complaint_new',
           title: 'New Complaint Raised',
           message: `${user.name} raised: "${newComplaint.subject}"`,
-          link: '/admin/complaints'
+          link: '/admin/academic/complaints'
         });
       } else {
         const teachers = await getTeachersForBatch(newComplaint.batch);
@@ -167,7 +167,7 @@ export const ComplaintsProvider = ({ children }) => {
               type: 'complaint',
               title: 'New Reply on Complaint',
               message: `${user.name} replied to: "${complaint.subject}"`,
-              link: '/admin/complaints'
+              link: '/admin/academic/complaints'
             });
           } else {
             const teachers = await getTeachersForBatch(complaint.batch);

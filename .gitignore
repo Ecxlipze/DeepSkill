@@ -11,9 +11,11 @@
 # production
 /build
 /.next
+/next-build
 /deepskills-cpanel
 /deepskills-deploy
 /deepskills-deploy 2
+/deepskills-vps-source
 
 # misc
 .DS_Store
