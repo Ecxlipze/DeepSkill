@@ -74,7 +74,7 @@ function getAdminPage(path = []) {
   if (section === 'dashboard') return <AdminDashboard />;
   if (section === 'admissions') return <EnrollmentManager />;
   if (section === 'counsellor') return <CounsellorPanel initialView={child || 'overview'} />;
-  if (section === 'students') return child ? <StudentProfile /> : <StudentManager />;
+  if (section === 'students') return child ? <StudentProfile studentId={child} /> : <StudentManager />;
   if (section === 'users') return child === 'activity' ? <AdminActivityLogsPage /> : <AdminUserManagement />;
   if (section === 'teachers') return child ? <TeacherProfile /> : <TeacherManager />;
   if (section === 'courses') return child ? <CourseDetailPage courseId={child} /> : <CourseManager />;
@@ -113,7 +113,7 @@ function getAdminPage(path = []) {
 
   if (section === 'management') {
     if (!child) return <DepartmentPlaceholder title="Management Overview" icon="🏢" />;
-    if (child === 'students') return subpath ? <StudentProfile /> : <StudentManager />;
+    if (child === 'students') return subpath ? <StudentProfile studentId={subpath} /> : <StudentManager />;
     if (child === 'teachers') return subpath ? <TeacherProfile /> : <TeacherManager />;
     if (child === 'courses') return subpath ? <CourseDetailPage courseId={subpath} /> : <CourseManager />;
     if (child === 'referral') return <AdminReferral />;

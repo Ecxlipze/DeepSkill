@@ -336,8 +336,16 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, processing }
   </AnimatePresence>
 );
 
-const StudentProfile = () => {
-  const { id } = useParams();
+const getStudentIdFromPath = () => {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  const studentIndex = parts.indexOf('students');
+  return studentIndex >= 0 ? parts.slice(studentIndex + 1).join('/') : '';
+};
+
+const StudentProfile = ({ studentId }) => {
+  const params = useParams();
+  const id = studentId || params.id || getStudentIdFromPath();
   const navigate = useNavigate();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -408,8 +416,8 @@ const StudentProfile = () => {
 
     } catch (err) {
       console.error(err);
+      setStudent(null);
       toast.error("Error loading student profile");
-      navigate('/admin/management/students');
     } finally {
       setLoading(false);
     }
@@ -684,7 +692,18 @@ const StudentProfile = () => {
     );
   }
 
-  const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  if (!student) {
+    return (
+      <AdminLayout>
+        <Container style={{ textAlign: 'center', paddingTop: '100px' }}>
+          <BackLink to="/admin/management/students"><FaArrowLeft /> Back to Students</BackLink>
+          <div style={{ color: '#888' }}>Student not found.</div>
+        </Container>
+      </AdminLayout>
+    );
+  }
+
+  const initials = (student.name || 'Student').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <AdminLayout>
