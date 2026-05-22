@@ -299,6 +299,56 @@ export async function markAttendance(student, batch, status, meta = {}) {
   return data;
 }
 
+export async function getTodayAttendanceLoginStatus(user) {
+  const settings = await fetchAttendanceSettings();
+  if (!settings.isActive) return { status: 'disabled', settings };
+
+  const today = formatAttendanceDate();
+  const dayOfWeek = formatAttendanceDay();
+  if ((settings.weekendDays || []).includes(dayOfWeek)) {
+    return { status: 'no_class', reason: 'Weekend', settings };
+  }
+
+  const student = await fetchStudentAdmission(user);
+  if (!student) return { status: 'student_not_found', settings };
+  if (student.status && !['Active', 'Graduated'].includes(student.status)) {
+    return { status: 'inactive_student', settings, student };
+  }
+
+  const batch = await fetchBatchForStudent(student);
+  if (!batch?.id) return { status: 'batch_not_found', student, settings };
+
+  const { data: existing, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('student_id', student.id)
+    .eq('batch_id', batch.id)
+    .eq('date', today)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (existing) return { status: 'already_marked', existing, student, batch, settings };
+
+  const startTime = batch.start_time || batch.startTime || batch.time_shift || batch.batch_timing || batch.timing_label;
+  const attendanceStatus = getAttendanceStatus(startTime, settings);
+
+  if (attendanceStatus === 'missing_time') {
+    await notifyAdmins({
+      type: 'attendance',
+      title: 'Auto-attendance needs batch timing',
+      message: `${batch.batch_name || student.batch} has no start time configured. Add a start time or a timing label like "Morning (9:00 AM - 12:00 PM)".`,
+      link: '/admin/management/courses'
+    });
+    return { status: 'missing_time', student, batch, settings };
+  }
+
+  if (attendanceStatus === 'too_early') {
+    return { status: 'too_early', student, batch, settings };
+  }
+
+  return { status: 'needs_check', student, batch, settings };
+}
+
 export async function triggerAutoAttendance(user, options = {}) {
   const settings = await fetchAttendanceSettings();
   if (!settings.isActive) return { status: 'disabled', settings };
@@ -326,12 +376,7 @@ export async function triggerAutoAttendance(user, options = {}) {
     .eq('date', today)
     .maybeSingle();
 
-  const canRecheckAutoAbsent = existing
-    && existing.status === 'absent'
-    && existing.marked_by === 'auto'
-    && ['outside_location', 'location_denied'].includes(existing.absence_reason);
-
-  if (existing && !canRecheckAutoAbsent) return { status: 'already_marked', existing, student, batch, settings };
+  if (existing) return { status: 'already_marked', existing, student, batch, settings };
 
   if (options.selfReportedAbsent) {
     const record = await markAttendance(student, batch, 'absent', { reason: 'self_reported_absent' });
@@ -412,7 +457,6 @@ export async function triggerAutoAttendance(user, options = {}) {
     distance: distanceMeters,
     accuracy: radiusCheck.accuracy,
     effectiveRadius: radiusCheck.effectiveRadius,
-    wasRechecked: Boolean(canRecheckAutoAbsent),
     record,
     student,
     batch,

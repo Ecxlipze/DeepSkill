@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaIdCard, FaArrowRight, FaMapMarkerAlt, FaCheckCircle, FaClock, FaTimesCircle, FaInfoCircle, FaEnvelope } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 import { getFirstAccessibleAdminPath } from './utils/permissions';
-import { triggerAutoAttendance } from './utils/autoAttendance';
+import { getTodayAttendanceLoginStatus, triggerAutoAttendance } from './utils/autoAttendance';
 
 const PageContainer = styled(motion.div)`
   min-height: 100vh;
@@ -313,9 +313,19 @@ const LoginPage = () => {
       
       const from = location.state?.from?.pathname;
       if (user.role === 'student') {
-        setAttendanceUser(user);
-        setAttendanceState('permission');
-        setAttendanceResult(null);
+        const attendanceStatus = await getTodayAttendanceLoginStatus(user);
+        if (attendanceStatus.status === 'needs_check') {
+          setAttendanceUser(user);
+          setAttendanceState('permission');
+          setAttendanceResult(null);
+        } else if (attendanceStatus.status === 'already_marked' || attendanceStatus.status === 'disabled' || attendanceStatus.status === 'no_class') {
+          navigate('/student/dashboard', { replace: true });
+        } else {
+          setAttendanceUser(user);
+          setAttendanceState('result');
+          setAttendanceResult(attendanceStatus);
+          setTimeout(finishStudentLogin, 3000);
+        }
       } else if (from && from !== '/' && from !== '/login') {
         navigate(from, { replace: true });
       } else {
