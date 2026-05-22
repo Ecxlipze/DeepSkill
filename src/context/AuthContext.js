@@ -160,9 +160,28 @@ export const AuthProvider = ({ children }) => {
         verificationToken: options.verificationToken
       });
 
-      const supabase = await getSupabase();
-      const { logActivity, updateLastLogin } = await getActivityLogger();
-      const { resolvePermissions } = await getPermissions();
+      const [
+        supabase,
+        { logActivity, updateLastLogin },
+        { resolvePermissions }
+      ] = await Promise.all([
+        getSupabase(),
+        getActivityLogger(),
+        getPermissions()
+      ]);
+
+      const recordLoginAudit = (userData) => {
+        Promise.allSettled([
+          updateLastLogin(cnic),
+          logActivity({
+            userId: userData.id || null,
+            userName: userData.name,
+            userRole: userData.role,
+            eventType: 'login',
+            description: 'Logged in'
+          })
+        ]);
+      };
 
       // 1. Check allowed_cnics first to determine role and existence.
       // Registered students are intentionally not added here until admin approval.
@@ -181,13 +200,13 @@ export const AuthProvider = ({ children }) => {
           .limit(1)
           .maybeSingle();
 
-        await logActivity({
+        Promise.resolve(logActivity({
           userId: null,
           userName: cnic,
           userRole: 'unknown',
           eventType: 'warning',
           description: `Failed login attempt with CNIC: ${cnic}`
-        });
+        }));
 
         if (latestAdmission?.status) {
           const status = latestAdmission.status.toLowerCase();
@@ -227,14 +246,7 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
         localStorage.setItem('deepskill_user', JSON.stringify(userData));
-        await updateLastLogin(cnic);
-        await logActivity({
-          userId: userData.id || null,
-          userName: userData.name,
-          userRole: userData.role,
-          eventType: 'login',
-          description: 'Logged in'
-        });
+        recordLoginAudit(userData);
         return userData;
 
       } else if (roleData.role === 'student') {
@@ -270,14 +282,7 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
         localStorage.setItem('deepskill_user', JSON.stringify(userData));
-        await updateLastLogin(cnic);
-        await logActivity({
-          userId: userData.id || null,
-          userName: userData.name,
-          userRole: userData.role,
-          eventType: 'login',
-          description: 'Logged in'
-        });
+        recordLoginAudit(userData);
         return userData;
       } else {
         const { data: directoryUser, error: userError } = await supabase
@@ -287,13 +292,13 @@ export const AuthProvider = ({ children }) => {
           .maybeSingle();
 
         if (userError || !directoryUser) {
-          await logActivity({
+          Promise.resolve(logActivity({
             userId: null,
             userName: cnic,
             userRole: roleData.role,
             eventType: 'warning',
             description: `Failed login attempt with CNIC: ${cnic}`
-          });
+          }));
           throw new Error('User directory record not found.');
         }
 
@@ -318,14 +323,7 @@ export const AuthProvider = ({ children }) => {
 
         setUser(userData);
         localStorage.setItem('deepskill_user', JSON.stringify(userData));
-        await updateLastLogin(cnic);
-        await logActivity({
-          userId: userData.id,
-          userName: userData.name,
-          userRole: userData.role,
-          eventType: 'login',
-          description: 'Logged in'
-        });
+        recordLoginAudit(userData);
         return userData;
       }
     } catch (error) {
