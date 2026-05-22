@@ -41,7 +41,7 @@ const MediaLibrary = dynamic(() => import('../../src/admin/MediaLibrary'), { ssr
 const ContentManager = dynamic(() => import('../../src/admin/ContentManager'), { ssr: false });
 const MediaPageManager = dynamic(() => import('../../src/admin/MediaPageManager'), { ssr: false });
 const AdminAttendanceSettings = dynamic(() => import('../../src/admin/AdminAttendanceSettings'), { ssr: false });
-const AdminReports = dynamic(() => import('../../src/admin/AdminPlaceholders').then((mod) => mod.AdminReports), { ssr: false });
+const ReportsSystem = dynamic(() => import('../../src/admin/ReportsSystem'), { ssr: false });
 const DepartmentPlaceholder = dynamic(() => import('../../src/admin/DepartmentPlaceholder'), { ssr: false });
 
 const ADMIN_ROUTE_ACCESS = {
@@ -73,7 +73,10 @@ function getAdminPage(path = []) {
   if (!section) return <AdminLogin />;
   if (section === 'dashboard') return <AdminDashboard />;
   if (section === 'admissions') return <EnrollmentManager />;
-  if (section === 'counsellor') return <CounsellorPanel initialView={child || 'overview'} />;
+  if (section === 'counsellor') {
+    if (child === 'performance') return <ReportsSystem mode="counsellor" />;
+    return <CounsellorPanel initialView={child || 'overview'} />;
+  }
   if (section === 'students') return child ? <StudentProfile studentId={child} /> : <StudentManager />;
   if (section === 'users') return child === 'activity' ? <AdminActivityLogsPage /> : <AdminUserManagement />;
   if (section === 'teachers') return child ? <TeacherProfile /> : <TeacherManager />;
@@ -91,12 +94,12 @@ function getAdminPage(path = []) {
   if (section === 'finance') {
     if (child === 'transactions') return <AdminFinanceTransactions />;
     if (child === 'referrals') return <AdminReferral />;
-    if (child === 'reports') return <DepartmentPlaceholder title="Revenue Report" icon="📈" />;
+    if (child === 'reports') return <ReportsSystem mode="finance" />;
     if (child === 'settings') return <DepartmentPlaceholder title="Fee Settings" icon="⚙️" />;
     return <AdminFinance />;
   }
   if (section === 'referral') return <AdminReferral />;
-  if (section === 'reports') return <AdminReports />;
+  if (section === 'reports') return <ReportsSystem mode="master" />;
   if (section === 'results') return <AdminResults />;
   if (section === 'blog') return <BlogManager />;
 
@@ -108,7 +111,7 @@ function getAdminPage(path = []) {
     if (child === 'complaints') return <AdminComplaints />;
     if (child === 'tasks') return <DepartmentPlaceholder title="Tasks & Assignments" icon="✅" />;
     if (child === 'chats') return <DepartmentPlaceholder title="Group Chats" icon="💬" />;
-    if (child === 'reports') return <AdminReports />;
+    if (child === 'reports') return <ReportsSystem mode="academic" />;
   }
 
   if (section === 'management') {
@@ -121,7 +124,7 @@ function getAdminPage(path = []) {
     if (child === 'blog') return <BlogManager />;
     if (child === 'media') return <MediaLibrary />;
     if (child === 'users') return subpath === 'activity' ? <AdminActivityLogsPage /> : <AdminUserManagement />;
-    if (child === 'reports') return <AdminReports />;
+    if (child === 'reports') return <ReportsSystem mode="master" />;
     if (child === 'settings') return <ContentManager />;
   }
 

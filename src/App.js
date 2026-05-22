@@ -51,9 +51,7 @@ import StudentGroupChat from './student/StudentGroupChat';
 import TeacherGroupChat from './teacher/TeacherGroupChat';
 import AdminFinance from './admin/FinanceManager';
 import AdminFinanceTransactions from './admin/TransactionHistory';
-import {
-  AdminReports
-} from './admin/AdminPlaceholders';
+import ReportsSystem from './admin/ReportsSystem';
 import AdminAnnouncements from './admin/AdminAnnouncements';
 import TeacherAnnouncements from './teacher/TeacherAnnouncements';
 import StudentAnnouncements from './student/StudentAnnouncements';
@@ -405,6 +403,7 @@ function AppContent() {
           <Route path="/admin/courses/:courseId" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="courses"><PageTransition><CourseDetailPage /></PageTransition></PermissionGuard>} />
           <Route path="/admin/batches" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="courses"><PageTransition><CourseManager /></PageTransition></PermissionGuard>} />
           <Route path="/admin/counsellor" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="counsellor"><PageTransition><CounsellorPanel /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/counsellor/performance" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="counsellor"><PageTransition><ReportsSystem mode="counsellor" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/counsellor/:view" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="counsellor"><PageTransition><CounsellorPanel /></PageTransition></PermissionGuard>} />
           <Route path="/admin/attendance" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="attendance"><PageTransition><AdminAttendancePage /></PageTransition></PermissionGuard>} />
           <Route path="/admin/certificates" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="results"><PageTransition><CertificateManager /></PageTransition></PermissionGuard>} />
@@ -435,7 +434,7 @@ function AppContent() {
           <Route path="/admin/finance/transactions" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="finance"><PageTransition><AdminFinanceTransactions /></PageTransition></PermissionGuard>} />
           <Route path="/admin/finance/salaries" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="finance"><PageTransition><AdminFinance /></PageTransition></PermissionGuard>} />
           <Route path="/admin/finance/referrals" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="finance"><PageTransition><AdminReferral /></PageTransition></PermissionGuard>} />
-          <Route path="/admin/finance/reports" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="finance"><PageTransition><DepartmentPlaceholder title="Revenue Report" icon="📈" /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/finance/reports" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="finance"><PageTransition><ReportsSystem mode="finance" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/finance/settings" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="finance"><PageTransition><DepartmentPlaceholder title="Fee Settings" icon="⚙️" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/hr/applications" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="hr"><PageTransition><AdminHRManagement /></PageTransition></PermissionGuard>} />
           <Route path="/admin/hr/jds" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="hr"><PageTransition><AdminHRManagement /></PageTransition></PermissionGuard>} />
@@ -446,7 +445,7 @@ function AppContent() {
           <Route path="/admin/referral" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="referral"><PageTransition><AdminReferral /></PageTransition></PermissionGuard>} />
 
           {/* Admin System & Settings */}
-          <Route path="/admin/reports" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="reports"><PageTransition><AdminReports /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/reports" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><ReportsSystem mode="master" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/settings/testimonials" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><TestimonialManager /></PageTransition></PermissionGuard>} />
           <Route path="/admin/settings/media" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><MediaLibrary /></PageTransition></PermissionGuard>} />
           <Route path="/admin/settings/content" element={<PermissionGuard allowedRoles={['admin','custom']} permissionKey="settings"><PageTransition><ContentManager /></PageTransition></PermissionGuard>} />
@@ -462,7 +461,7 @@ function AppContent() {
           <Route path="/admin/academic/announcements" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><AdminAnnouncements /></PageTransition></PermissionGuard>} />
           <Route path="/admin/academic/complaints" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><AdminComplaints /></PageTransition></PermissionGuard>} />
           <Route path="/admin/academic/chats" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><DepartmentPlaceholder title="Group Chats" icon="💬" /></PageTransition></PermissionGuard>} />
-          <Route path="/admin/academic/reports" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><AdminReports /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/academic/reports" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><ReportsSystem mode="academic" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/management" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><DepartmentPlaceholder title="Management Overview" icon="🏢" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/management/students" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><StudentManager /></PageTransition></PermissionGuard>} />
           <Route path="/admin/management/students/:id" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><StudentProfile /></PageTransition></PermissionGuard>} />
@@ -476,7 +475,7 @@ function AppContent() {
           <Route path="/admin/management/media" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><MediaLibrary /></PageTransition></PermissionGuard>} />
           <Route path="/admin/management/users" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><AdminUserManagement /></PageTransition></PermissionGuard>} />
           <Route path="/admin/management/users/activity" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><AdminActivityLogsPage /></PageTransition></PermissionGuard>} />
-          <Route path="/admin/management/reports" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><AdminReports /></PageTransition></PermissionGuard>} />
+          <Route path="/admin/management/reports" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><ReportsSystem mode="master" /></PageTransition></PermissionGuard>} />
           <Route path="/admin/management/settings" element={<PermissionGuard allowedRoles={['admin']}><PageTransition><ContentManager /></PageTransition></PermissionGuard>} />
 
           <Route path="/verify-certificate" element={<PageTransition><VerifyCertificatePage /></PageTransition>} />
