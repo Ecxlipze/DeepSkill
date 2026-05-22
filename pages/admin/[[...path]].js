@@ -77,7 +77,7 @@ function getAdminPage(path = []) {
   if (section === 'students') return child ? <StudentProfile /> : <StudentManager />;
   if (section === 'users') return child === 'activity' ? <AdminActivityLogsPage /> : <AdminUserManagement />;
   if (section === 'teachers') return child ? <TeacherProfile /> : <TeacherManager />;
-  if (section === 'courses') return child ? <CourseDetailPage /> : <CourseManager />;
+  if (section === 'courses') return child ? <CourseDetailPage courseId={child} /> : <CourseManager />;
   if (section === 'batches') return <CourseManager />;
   if (section === 'attendance') return <AdminAttendancePage />;
   if (section === 'certificates') return <CertificateManager />;
@@ -115,7 +115,7 @@ function getAdminPage(path = []) {
     if (!child) return <DepartmentPlaceholder title="Management Overview" icon="🏢" />;
     if (child === 'students') return subpath ? <StudentProfile /> : <StudentManager />;
     if (child === 'teachers') return subpath ? <TeacherProfile /> : <TeacherManager />;
-    if (child === 'courses') return subpath ? <CourseDetailPage /> : <CourseManager />;
+    if (child === 'courses') return subpath ? <CourseDetailPage courseId={subpath} /> : <CourseManager />;
     if (child === 'referral') return <AdminReferral />;
     if (child === 'certificates') return <CertificateManager />;
     if (child === 'blog') return <BlogManager />;

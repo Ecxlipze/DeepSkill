@@ -85,8 +85,16 @@ const SRow = styled.div`display:flex;align-items:center;gap:12px;padding:12px 0;
 const EmptyMsg = styled.div`text-align:center;padding:40px;color:#555;font-size:0.9rem;`;
 
 // ===================== COMPONENT =====================
-const CourseDetailPage = () => {
-  const { courseId } = useParams();
+const getCourseIdFromPath = () => {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  const courseIndex = parts.indexOf('courses');
+  return courseIndex >= 0 ? parts.slice(courseIndex + 1).join('/') : '';
+};
+
+const CourseDetailPage = ({ courseId: courseIdProp }) => {
+  const params = useParams();
+  const courseId = courseIdProp || params.courseId || getCourseIdFromPath();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [batches, setBatches] = useState([]);
