@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
+import { requestRevalidate } from '../utils/revalidatePublic';
 
 const Container = styled.div`
   padding: 10px 0;
@@ -99,7 +100,10 @@ const ContentManager = () => {
     setLoading(true);
     const { error } = await supabase.from('settings').upsert({ key, value });
     if (error) alert(error.message);
-    else alert(`${key.replace('_', ' ')} saved!`);
+    else {
+      requestRevalidate(['/']);
+      alert(`${key.replace('_', ' ')} saved!`);
+    }
     setLoading(false);
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import styled from "styled-components";
 import { Link, useLocation, useNavigate } from "../lib/nextRouterDomCompat";
 import { motion, AnimatePresence } from "framer-motion";
@@ -623,7 +624,9 @@ const Header = () => {
         transition={{ duration: 0.6 }}
       >
         <LogoWrapper to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <img src={logoImg} alt="Deep Skills Logo" />
+          {/* SVG logo: the optimizer rejects SVG, so serve it as-is but load it
+              eagerly with high priority (it is above the fold on every page). */}
+          <Image src={logoImg} alt="Deep Skills Logo" width={160} height={45} priority unoptimized />
         </LogoWrapper>
 
         <NavPill
@@ -750,7 +753,7 @@ const Header = () => {
             >
               <MobileMenuHeader>
                 <MobileLogo>
-                  <img src={logoImg} alt="Deep Skills" />
+                  <Image src={logoImg} alt="Deep Skills" width={160} height={45} unoptimized />
                 </MobileLogo>
                 <CloseBtn type="button" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)}>
                   <FaTimes aria-hidden="true" />

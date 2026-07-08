@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import GlowCard from './GlowCard';
+import SmartCoverImage from '../../components/next/SmartCoverImage';
 
 const CardContainer = styled(motion.div)`
   display: flex;
@@ -115,7 +116,7 @@ const MediaCard = ({ image, title, ...props }) => {
     >
       <GlowCard borderRadius="12px">
         <ImageWrapper>
-          <img src={image} alt={title} />
+          <SmartCoverImage src={image} alt={title} sizes="(max-width: 768px) 100vw, 400px" />
         </ImageWrapper>
       </GlowCard>
       <TitleBox>

@@ -9,6 +9,7 @@ import GraphicPage from '../../src/GraphicPage';
 import { courses, getCourseBySlug } from '../../data/siteContent';
 import { fetchPublishedPosts } from '../../lib/blog';
 import { breadcrumbSchema, courseSchema } from '../../lib/structuredData';
+import { maybeRevalidate, staticFallback } from '../../lib/rendering';
 
 const courseComponents = {
   'full-stack-react': FullStackPage,
@@ -60,7 +61,7 @@ export default function CourseDetail({ course, relatedBlogs }) {
 export async function getStaticPaths() {
   return {
     paths: courses.map((course) => ({ params: { slug: course.slug } })),
-    fallback: 'blocking'
+    fallback: staticFallback('blocking')
   };
 }
 
@@ -81,7 +82,7 @@ export async function getStaticProps({ params }) {
       course,
       relatedBlogs
     },
-    revalidate: 3600
+    ...maybeRevalidate(3600)
   };
 }
 

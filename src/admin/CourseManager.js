@@ -13,6 +13,7 @@ import {
 import AdminLayout from '../components/AdminLayout';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { requestRevalidate } from '../utils/revalidatePublic';
 
 // --- Color Map ---
 const ACCENT_COLORS = {
@@ -265,6 +266,7 @@ const CourseManager = () => {
         const {error}=await supabase.from('courses').insert([payload]);
         if(error)throw error; toast.success('Course created');
       }
+      requestRevalidate(['/', '/courses']);
       setIsModalOpen(false); fetchData();
     }catch(e){toast.error('Failed: '+e.message);}
     finally{setSaving(false);}
@@ -275,7 +277,8 @@ const CourseManager = () => {
     if(!window.confirm(`${next==='inactive'?'Deactivate':'Reactivate'} "${c.title}"?`))return;
     try{
       const {error}=await supabase.from('courses').update({status:next}).eq('id',c.id);
-      if(error)throw error; toast.success(`Course ${next==='inactive'?'deactivated':'reactivated'}`); fetchData();
+      if(error)throw error; toast.success(`Course ${next==='inactive'?'deactivated':'reactivated'}`);
+      requestRevalidate(['/', '/courses']); fetchData();
     }catch(e){toast.error('Failed: '+e.message);}
   };
 

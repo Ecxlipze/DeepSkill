@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
+import { requestRevalidate } from '../utils/revalidatePublic';
 
 const Container = styled.div`
   padding: 100px 40px 40px;
@@ -134,6 +135,7 @@ const InstructorManager = () => {
       else {
         setFormData({ name: '', role: '', image_url: '', bio: '' });
         setEditingId(null);
+        requestRevalidate(['/trainers']);
         fetchInstructors();
       }
     } else {
@@ -141,6 +143,7 @@ const InstructorManager = () => {
       if (error) alert(error.message);
       else {
         setFormData({ name: '', role: '', image_url: '', bio: '' });
+        requestRevalidate(['/trainers']);
         fetchInstructors();
       }
     }
@@ -161,7 +164,10 @@ const InstructorManager = () => {
     if (!window.confirm('Delete this instructor?')) return;
     const { error } = await supabase.from('instructors').delete().eq('id', id);
     if (error) alert(error.message);
-    else fetchInstructors();
+    else {
+      requestRevalidate(['/trainers']);
+      fetchInstructors();
+    }
   };
 
   return (

@@ -2,8 +2,10 @@ import PublicLayout from '../../components/next/PublicLayout';
 import Seo from '../../components/next/Seo';
 import CoursesPage from '../../src/CoursesPage';
 import { breadcrumbSchema } from '../../lib/structuredData';
+import { getSupabaseServerClient } from '../../lib/supabaseServer';
+import { maybeRevalidate } from '../../lib/rendering';
 
-export default function Courses() {
+export default function Courses({ initialCourses }) {
   return (
     <PublicLayout>
       <Seo
@@ -15,11 +17,27 @@ export default function Courses() {
           { name: 'Courses', path: '/courses' }
         ])}
       />
-      <CoursesPage />
+      <CoursesPage initialCourses={initialCourses} />
     </PublicLayout>
   );
 }
 
 export async function getStaticProps() {
-  return { props: {} };
+  let initialCourses = null;
+  const supabase = getSupabaseServerClient();
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (!error) {
+      initialCourses = data ?? null;
+    }
+  }
+
+  return {
+    props: { initialCourses },
+    ...maybeRevalidate(300)
+  };
 }

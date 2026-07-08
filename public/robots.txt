@@ -14,3 +14,4 @@ Host: https://deepskills.pk
 
 # Sitemaps
 Sitemap: https://deepskills.pk/sitemap.xml
+Sitemap: https://deepskills.pk/server-sitemap.xml

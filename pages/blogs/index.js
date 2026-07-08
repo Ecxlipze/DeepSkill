@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import PublicLayout from '../../components/next/PublicLayout';
 import Seo from '../../components/next/Seo';
-import { BLOG_CATEGORIES, fetchPublishedPosts, normalizePost } from '../../lib/blog';
+import { BLOG_CATEGORIES, fetchPublishedPosts } from '../../lib/blog';
 import { breadcrumbSchema } from '../../lib/structuredData';
+import { maybeRevalidate } from '../../lib/rendering';
+import SmartCoverImage from '../../components/next/SmartCoverImage';
 
 const POSTS_PER_PAGE = 9;
 const MotionLink = motion.create('a');
-
-function BlogCoverImage({ src, alt, priority = false }) {
-  return <img src={src} alt={alt} loading={priority ? 'eager' : 'lazy'} />;
-}
+const BlogCoverImage = SmartCoverImage;
 
 const fadeUp = {
   hidden: { opacity: 1, y: 0 },
@@ -28,35 +27,11 @@ const gridReveal = {
 };
 
 export default function BlogIndex({ posts }) {
-  const [livePosts, setLivePosts] = useState(posts || []);
+  // Posts come from getStaticProps (ISR/on-demand revalidation keeps them fresh);
+  // the old client-side refetch duplicated the same query on every visit.
+  const livePosts = posts || [];
   const [category, setCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const loadPosts = async () => {
-      try {
-        const { supabasePublic } = await import('../../src/supabasePublicClient');
-        const { data, error } = await supabasePublic
-          .from('blog_posts')
-          .select('*')
-          .eq('status', 'published')
-          .order('is_featured', { ascending: false })
-          .order('published_at', { ascending: false });
-
-        if (!mounted || error) return;
-        setLivePosts((data || []).map(normalizePost));
-      } catch (error) {
-        console.error('Blog client fetch failed:', error);
-      }
-    };
-
-    loadPosts();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const filteredPosts = useMemo(() => {
     if (category === 'All') return livePosts;
@@ -232,7 +207,7 @@ export async function getStaticProps() {
     props: {
       posts
     },
-    revalidate: 60
+    ...maybeRevalidate(60)
   };
 }
 

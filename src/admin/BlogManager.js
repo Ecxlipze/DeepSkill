@@ -13,6 +13,7 @@ import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { BLOG_CATEGORIES, calculateReadingTime, countWords, makeExcerpt, slugify } from '../../lib/blog';
+import { requestRevalidate } from '../utils/revalidatePublic';
 import { canAccess } from '../utils/permissions';
 
 const EMPTY_CONTENT = '<p></p>';
@@ -211,13 +212,8 @@ function BlogList() {
       toast.error(body.error || 'Unable to update post');
       return;
     }
-    if (nextStatus === 'published') {
-      await fetch('/api/revalidate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: post.slug })
-      });
-    }
+    // Regenerate on unpublish too, so the stale page turns into a 404.
+    await requestRevalidate(['/blogs', `/blogs/${post.slug}`]);
     toast.success(nextStatus === 'published' ? 'Post published' : 'Post moved to draft');
     fetchPosts();
   };
@@ -601,11 +597,7 @@ function BlogEditor({ postId }) {
     }
 
     if (status === 'published') {
-      await fetch('/api/revalidate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: body.post.slug })
-      });
+      await requestRevalidate(['/blogs', `/blogs/${body.post.slug}`]);
     }
 
     toast.success(status === 'published' ? 'Post published' : 'Draft saved for admin review');

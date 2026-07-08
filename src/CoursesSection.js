@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { useNavigate } from "../lib/nextRouterDomCompat";
+import { Link } from "../lib/nextRouterDomCompat";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress } from "react-icons/fa";
 import courseBg from "./assets/course-bg.png";
 import RegisterButton from "./components/RegisterButton";
@@ -11,6 +11,7 @@ import graphicsCardThumb from "./assets/graphics-card.png";
 import wpCardThumb from "./assets/wp-card.png";
 import laravelCardThumb from "./assets/php-card.svg";
 import { getCourseDetailPath, getCourseSlugFromCategory } from "./utils/enrollmentNavigation";
+import SmartCoverImage from "../components/next/SmartCoverImage";
 
 const dummyCourses = [
   { id: 'dummy-1', title: 'Graphic Design Mastery', description: 'Learn Adobe Photoshop, Illustrator, and Premiere Pro from scratch. Build a stunning portfolio.', category: 'Graphic Design', image_url: null },
@@ -130,9 +131,14 @@ const Separator = styled(motion.hr)`
   transition: width 0.4s ease, opacity 0.4s ease;
 `;
 
-const CourseCard = styled(motion.div)`
+// Real anchors (instead of onClick navigation) so crawlers can follow
+// homepage course cards to their detail pages.
+const CourseCardLink = motion.create(Link);
+
+const CourseCard = styled(CourseCardLink)`
   background: transparent;
   color: white;
+  text-decoration: none;
   width: 100%;
   max-width: 350px;
   padding: 25px;
@@ -169,14 +175,14 @@ const Title = styled.h3`
 `;
 
 const CourseImage = styled.div`
+  position: relative;
+  overflow: hidden;
   width: 100%;
   height: 150px;
   background-color: #333;
-  background-image: ${props => props.$image ? `url(${props.$image})` : 'linear-gradient(135deg, rgba(123, 31, 46, 0.95), rgba(20, 20, 20, 0.95))'};
+  background-image: linear-gradient(135deg, rgba(123, 31, 46, 0.95), rgba(20, 20, 20, 0.95));
   border-radius: 15px;
   margin-bottom: 20px;
-  background-size: cover;
-  background-position: center;
   transition: transform 0.4s ease;
 
   ${CourseCard}:hover & {
@@ -221,25 +227,14 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
-const CoursesSection = () => {
-  const navigate = useNavigate();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function mergeCoursesWithDummies(data) {
+  return data && data.length > 0 ? [...data, ...dummyCourses] : dummyCourses;
+}
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      const { supabasePublic } = await import("./supabasePublicClient");
-      const { data, error } = await supabasePublic.from('courses').select('*').order('created_at', { ascending: true });
-      if (error) {
-        console.error(error);
-        setCourses(dummyCourses);
-      } else {
-        setCourses([...(data || []), ...dummyCourses]);
-      }
-      setLoading(false);
-    };
-    fetchCourses();
-  }, []);
+const CoursesSection = ({ initialCourses = null }) => {
+  // Courses arrive via getStaticProps (pages/index.js) so the cards are present
+  // in the prerendered HTML; CMS edits reach the page through revalidation.
+  const courses = mergeCoursesWithDummies(initialCourses);
 
   const getIcon = (category) => {
     const cat = category?.toLowerCase();
@@ -263,8 +258,6 @@ const CoursesSection = () => {
     if (cat?.includes('wordpress')) return wpCardThumb;
     return null;
   };
-
-  if (loading) return <div style={{ color: '#fff', padding: '100px', textAlign: 'center' }}>Loading Courses...</div>;
 
   return (
     <Section>
@@ -290,11 +283,17 @@ const CoursesSection = () => {
               key={course.id || index}
               variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
-              onClick={() => navigate(course.path || getPath(course.category))}
+              to={course.path || getPath(course.category)}
             >
               <IconContainer>{getIcon(course.category)}</IconContainer>
               <Title>{course.title}</Title>
-              <CourseImage $image={getCourseImage(course.category)} />
+              <CourseImage>
+                <SmartCoverImage
+                  src={getCourseImage(course.category)}
+                  alt={`${course.title} course`}
+                  sizes="(max-width: 900px) 100vw, 350px"
+                />
+              </CourseImage>
               <Description>{course.description}</Description>
               <Separator />
             </CourseCard>
@@ -307,11 +306,17 @@ const CoursesSection = () => {
               key={course.id || index}
               variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
-              onClick={() => navigate(course.path || getPath(course.category))}
+              to={course.path || getPath(course.category)}
             >
               <IconContainer>{getIcon(course.category)}</IconContainer>
               <Title>{course.title}</Title>
-              <CourseImage $image={getCourseImage(course.category)} />
+              <CourseImage>
+                <SmartCoverImage
+                  src={getCourseImage(course.category)}
+                  alt={`${course.title} course`}
+                  sizes="(max-width: 900px) 100vw, 350px"
+                />
+              </CourseImage>
               <Description>{course.description}</Description>
               <Separator />
             </CourseCard>

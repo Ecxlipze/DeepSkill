@@ -361,40 +361,21 @@ const FunctionalVideoCard = ({ studentName, videoUrl, thumbnail, course, onPlayC
   );
 };
 
-const TestimonialSection = ({ courseName = "All" }) => {
+const TestimonialSection = ({ initialTestimonials = null }) => {
   const [isClient, setIsClient] = useState(false);
   const [modalVideo, setModalVideo] = useState(null);
-  const [testimonials, setTestimonials] = useState(dummyTestimonials);
+  // Testimonials arrive via getStaticProps (pages/index.js) so they are present
+  // in the prerendered HTML; CMS edits reach the page through revalidation.
+  const testimonials =
+    initialTestimonials && initialTestimonials.length > 0
+      ? [...initialTestimonials, ...dummyTestimonials]
+      : dummyTestimonials;
   const [activeSlide, setActiveSlide] = useState(0);
   const [slidesPerView, setSlidesPerView] = useState(2);
 
   useEffect(() => {
     setIsClient(true);
-
-    const fetchTestimonials = async () => {
-      try {
-        const { supabasePublic } = await import("./supabasePublicClient");
-        let query = supabasePublic.from('testimonials').select('*').order('created_at', { ascending: false });
-        
-        if (courseName !== "All") {
-          query = query.eq('course_name', courseName);
-        }
-
-        const { data, error } = await query;
-        if (error) {
-          console.error(error);
-          return;
-        }
-
-        const liveTestimonials = data || [];
-        setTestimonials(liveTestimonials.length ? [...liveTestimonials, ...dummyTestimonials] : dummyTestimonials);
-      } catch (error) {
-        console.error(error);
-        setTestimonials(dummyTestimonials);
-      }
-    };
-    fetchTestimonials();
-  }, [courseName]);
+  }, []);
 
   useEffect(() => {
     if (!isClient) return undefined;

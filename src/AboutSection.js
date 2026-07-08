@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { FaGraduationCap, FaWrench, FaChalkboardTeacher, FaBriefcase } from "react-icons/fa";
@@ -164,42 +164,26 @@ const FooterPara = styled.p`
   margin: 0;
 `;
 
-const AboutSection = () => {
-  const [content, setContent] = useState({
-    intro: "The future belongs to those who can create, build, and adapt.",
-    main: "Deepskills is a modern learning institute focused on hands-on digital education. We help students and young adults gain the technical and creative skills needed to succeed in today’s fast-changing job market, whether as professionals, freelancers, or entrepreneurs. We believe that skills, not just degrees, shape strong careers.",
-    footer: "Learn Skills, earn at an early age, and grasp your future",
-    title: "About Deepskills",
-    subtitle: "Where Skills Become Careers"
-  });
-  const [offers, setOffers] = useState([
-    { title: "Career-Focused Learning", icon: "FaGraduationCap" },
-    { title: "Practical, Hands-On Training", icon: "FaWrench" },
-    { title: "Beginner to Professional Tracks", icon: "FaChalkboardTeacher" },
-    { title: "Skills That Lead to Real Opportunities", icon: "FaBriefcase" }
-  ]);
+const DEFAULT_ABOUT_CONTENT = {
+  intro: "The future belongs to those who can create, build, and adapt.",
+  main: "Deepskills is a modern learning institute focused on hands-on digital education. We help students and young adults gain the technical and creative skills needed to succeed in today’s fast-changing job market, whether as professionals, freelancers, or entrepreneurs. We believe that skills, not just degrees, shape strong careers.",
+  footer: "Learn Skills, earn at an early age, and grasp your future",
+  title: "About Deepskills",
+  subtitle: "Where Skills Become Careers"
+};
 
-  useEffect(() => {
-    const fetchContent = async () => {
-      let data = null;
-      try {
-        const { supabasePublic } = await import("./supabasePublicClient");
-        const { data: fetchedData } = await supabasePublic.from('settings').select('*');
-        data = fetchedData;
-      } catch (err) {
-        console.error("Error fetching stats", err);
-      } finally {
-        if (data) {
-          const aboutContent = data.find(s => s.key === 'about_content')?.value;
-          if (aboutContent) setContent(aboutContent);
-          
-          const offersContent = data.find(s => s.key === 'offers')?.value;
-          if (offersContent) setOffers(offersContent);
-        }
-      }
-    };
-    fetchContent();
-  }, []);
+const DEFAULT_OFFERS = [
+  { title: "Career-Focused Learning", icon: "FaGraduationCap" },
+  { title: "Practical, Hands-On Training", icon: "FaWrench" },
+  { title: "Beginner to Professional Tracks", icon: "FaChalkboardTeacher" },
+  { title: "Skills That Lead to Real Opportunities", icon: "FaBriefcase" }
+];
+
+const AboutSection = ({ initialContent = null, initialOffers = null }) => {
+  // Content arrives via getStaticProps (pages/index.js) so it is present in the
+  // prerendered HTML; CMS edits reach the page through ISR/on-demand revalidation.
+  const content = initialContent || DEFAULT_ABOUT_CONTENT;
+  const offers = initialOffers && initialOffers.length > 0 ? initialOffers : DEFAULT_OFFERS;
 
   const getIcon = (iconName) => {
     switch (iconName) {

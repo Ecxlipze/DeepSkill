@@ -7,13 +7,12 @@ import Seo from '../../components/next/Seo';
 import { courses } from '../../data/siteContent';
 import { fetchAllPublishedSlugs, fetchPostBySlug, fetchRelatedPosts, normalizePost } from '../../lib/blog';
 import { blogPostingSchema, breadcrumbSchema } from '../../lib/structuredData';
+import { maybeRevalidate, staticFallback } from '../../lib/rendering';
+import SmartCoverImage from '../../components/next/SmartCoverImage';
 import { trackEvent } from '../../lib/analytics';
 
 const MotionLink = motion.create('a');
-
-function BlogCoverImage({ src, alt, priority = false }) {
-  return <img src={src} alt={alt} loading={priority ? 'eager' : 'lazy'} />;
-}
+const BlogCoverImage = SmartCoverImage;
 
 const fadeUp = {
   hidden: { opacity: 1, y: 0 },
@@ -35,6 +34,10 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
   const [liveRelatedPosts, setLiveRelatedPosts] = useState(relatedPosts || []);
   const [notFound, setNotFound] = useState(false);
 
+  // On the Node deploy this never runs (fallback:'blocking' always provides the
+  // post). It is the runtime engine for the static-export deploy, where
+  // /blogs/<new-slug> is rewritten by .htaccess to the /blogs/post shell and the
+  // post must be fetched client-side until the next rebuild picks it up.
   useEffect(() => {
     if (livePost || !router.isReady) return;
     const slug = router.query.slug || window.location.pathname.split('/').filter(Boolean).pop();
@@ -100,6 +103,7 @@ export default function BlogPost({ post, relatedPosts, relatedCourses }) {
   if (!livePost) {
     return (
       <PublicLayout>
+        <Seo title="Blog" path="/blogs" noindex />
         <ArticleShell>
           <EmptyState>{notFound ? 'Blog post not found.' : 'Loading blog post...'}</EmptyState>
           <BackLink href="/blogs" whileHover={{ x: -4 }} whileTap={{ scale: 0.98 }}>Back to Blogs</BackLink>
@@ -252,32 +256,19 @@ export async function getStaticPaths() {
 
   return {
     paths: slugs.map((post) => ({ params: { slug: post.slug } })),
-    fallback: true
+    // 'blocking' server-renders brand-new slugs on first request so crawlers
+    // never see a loading shell; export builds must use false.
+    fallback: staticFallback('blocking')
   };
 }
 
 export async function getStaticProps({ params }) {
-  if (!params?.slug) {
-    return {
-      props: {
-        post: null,
-        relatedPosts: [],
-        relatedCourses: []
-      },
-      revalidate: 60
-    };
-  }
-
-  const post = await fetchPostBySlug(params.slug);
+  const post = params?.slug ? await fetchPostBySlug(params.slug) : null;
 
   if (!post) {
     return {
-      props: {
-        post: null,
-        relatedPosts: [],
-        relatedCourses: []
-      },
-      revalidate: 60
+      notFound: true,
+      ...maybeRevalidate(60)
     };
   }
 
@@ -290,7 +281,7 @@ export async function getStaticProps({ params }) {
       relatedPosts,
       relatedCourses
     },
-    revalidate: 60
+    ...maybeRevalidate(60)
   };
 }
 

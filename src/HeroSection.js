@@ -205,26 +205,17 @@ const CodeParticles = () => {
   );
 };
 
-const HeroSection = () => {
-  const [content, setContent] = React.useState({
-    heading: "Build Skills That Secure Your Future",
-    tagline: "Industry-relevant digital skills designed to turn learners into professionals.",
-    description: "At Deepskills, we equip young adults with practical, job-ready skills in design and web development, the skills that power today's digital economy. Design, develop and succeed!"
-  });
-  const [loading, setLoading] = React.useState(true);
-  const [isMobile, setIsMobile] = React.useState(false);
+const DEFAULT_HERO_CONTENT = {
+  heading: "Build Skills That Secure Your Future",
+  tagline: "Industry-relevant digital skills designed to turn learners into professionals.",
+  description: "At Deepskills, we equip young adults with practical, job-ready skills in design and web development, the skills that power today's digital economy. Design, develop and succeed!"
+};
 
-  React.useEffect(() => {
-    const fetchHero = async () => {
-      const { supabasePublic } = await import("./supabasePublicClient");
-      const { data } = await supabasePublic.from('settings').select('*').eq('key', 'hero_content').single();
-      if (data) {
-        setContent(data.value);
-      }
-      setLoading(false);
-    };
-    fetchHero();
-  }, []);
+const HeroSection = ({ initialContent = null }) => {
+  // Content arrives via getStaticProps (pages/index.js) so it is present in the
+  // prerendered HTML; CMS edits reach the page through ISR/on-demand revalidation.
+  const content = initialContent || DEFAULT_HERO_CONTENT;
+  const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
     const updateViewport = () => setIsMobile(window.innerWidth <= 768);
@@ -272,8 +263,6 @@ const HeroSection = () => {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [mouseX, mouseY, initialX, initialY]);
-
-  if (loading && !content.heading) return null;
 
   const renderHeading = (text) => {
     return text.split('\n').map((line, i) => (

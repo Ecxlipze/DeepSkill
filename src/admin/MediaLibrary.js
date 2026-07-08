@@ -138,7 +138,7 @@ const MediaLibrary = () => {
   };
 
   const handleCopy = (fileName) => {
-    const url = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/media/${fileName}`;
+    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${fileName}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -180,7 +180,7 @@ const MediaLibrary = () => {
             ) : file.name.match(/\.pdf$/i) ? (
               <VideoPreview><FaFilePdf style={{ fontSize: '2rem', color: '#ff4d4d' }} /> <div style={{ marginTop: '10px' }}>{file.name}</div></VideoPreview>
             ) : (
-              <MediaPreview src={`${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/media/${file.name}`} />
+              <MediaPreview src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${file.name}`} />
             )}
             <ActionBtns>
               <DarkBtn onClick={() => handleCopy(file.name)}><FaLink /> Copy URL</DarkBtn>

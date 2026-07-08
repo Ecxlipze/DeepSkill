@@ -8,23 +8,23 @@ import JoinSection from './JoinSection';
 import RegisterSection from './RegisterSection';
 import ScrollReveal from './ScrollReveal';
 
-const HomePage = () => {
+const HomePage = ({ content = {} }) => {
   return (
     <>
       <div id="hero">
-        <HeroSection />
+        <HeroSection initialContent={content.hero} />
       </div>
-      
+
       <ScrollReveal>
         <div id="about">
-          <AboutSection />
+          <AboutSection initialContent={content.about} initialOffers={content.offers} />
         </div>
       </ScrollReveal>
-      
-      
+
+
       <ScrollReveal>
         <div id="courses">
-          <CoursesSection />
+          <CoursesSection initialCourses={content.courses} />
         </div>
       </ScrollReveal>
       <ScrollReveal>
@@ -35,7 +35,7 @@ const HomePage = () => {
 
 
       <div id="testimonials">
-        <TestimonialSection />
+        <TestimonialSection initialTestimonials={content.testimonials} />
       </div>
       
       <ScrollReveal>

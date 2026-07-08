@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useNavigate } from "../lib/nextRouterDomCompat";
+import { Link } from "../lib/nextRouterDomCompat";
 import { FaLaptop, FaCode, FaPaintBrush, FaWordpress, FaSearchDollar, FaPenNib } from "react-icons/fa";
 import { getCourseDetailPath, getCourseSlugFromCategory } from './utils/enrollmentNavigation';
+import SmartCoverImage from '../components/next/SmartCoverImage';
 
 const PageContainer = styled.div`
   background-color: #000;
@@ -93,10 +94,15 @@ const Separator = styled(motion.hr)`
   transition: width 0.4s ease, opacity 0.4s ease;
 `;
 
-const CourseCard = styled(motion.div)`
+// Real anchors (instead of onClick navigation) so crawlers can follow
+// course cards to their detail pages.
+const CourseCardLink = motion.create(Link);
+
+const CourseCard = styled(CourseCardLink)`
   background: rgba(25, 25, 25, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
+  text-decoration: none;
   padding: 30px 25px;
   border-radius: 15px;
   text-align: center;
@@ -138,13 +144,13 @@ const CourseTitle = styled.h3`
 `;
 
 const CourseImage = styled.div`
+  position: relative;
+  overflow: hidden;
   width: 100%;
   height: 160px;
   background-color: #333;
   border-radius: 10px;
   margin-bottom: 15px;
-  background-size: cover;
-  background-position: center;
 `;
 
 const Description = styled.p`
@@ -200,32 +206,21 @@ const cardVariants = {
 
 const defaultImage = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
 
-const CoursesPage = () => {
-  const navigate = useNavigate();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function mergeCoursesWithDummies(data) {
+  if (!data || data.length === 0) return dummyCourses;
+  const dbTitles = data.map(c => c.title.toLowerCase());
+  // Merge in dummy backups for missing courses like UX and SEO
+  const missingDummies = dummyCourses.filter(dc => !dbTitles.some(dbt => dbt.includes(dc.category.toLowerCase()) || dc.title.toLowerCase().includes(dbt)));
+  return [...data, ...missingDummies];
+}
+
+const CoursesPage = ({ initialCourses = null }) => {
+  // Courses arrive via getStaticProps (pages/courses/index.js) so the listing is
+  // present in the prerendered HTML; CMS edits reach the page through revalidation.
+  const courses = mergeCoursesWithDummies(initialCourses);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const fetchCourses = async () => {
-      const { supabase } = await import("./supabaseClient");
-      const { data, error } = await supabase.from('courses').select('*').order('created_at', { ascending: true });
-      if (error) {
-        console.error("Error fetching courses", error);
-        setCourses(dummyCourses);
-      } else {
-        if (data && data.length > 0) {
-          const dbTitles = data.map(c => c.title.toLowerCase());
-          // Merge in dummy backups for missing courses like UX and SEO
-          const missingDummies = dummyCourses.filter(dc => !dbTitles.some(dbt => dbt.includes(dc.category.toLowerCase()) || dc.title.toLowerCase().includes(dbt)));
-          setCourses([...data, ...missingDummies]);
-        } else {
-          setCourses(dummyCourses);
-        }
-      }
-      setLoading(false);
-    };
-    fetchCourses();
   }, []);
 
   const getIcon = (category) => {
@@ -258,30 +253,32 @@ const CoursesPage = () => {
         </Subtitle>
       </Header>
 
-      {loading ? (
-        <div style={{ color: '#fff', textAlign: 'center', padding: '50px' }}>Loading Courses...</div>
-      ) : (
-        <GridContainer
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {courses.map((course, index) => (
-            <CourseCard
-              key={course.id || index}
-              variants={cardVariants}
-              onClick={() => navigate(course.path || getPath(course.category))}
-            >
-              <CourseImage style={{ backgroundImage: `url(${course.image_url || defaultImage})` }} />
-              <IconContainer>{getIcon(course.category)}</IconContainer>
-              <CourseTitle>{course.title}</CourseTitle>
-              <Description>{course.description}</Description>
-              <Separator />
-              <CTAButton>View Course Details</CTAButton>
-            </CourseCard>
-          ))}
-        </GridContainer>
-      )}
+      <GridContainer
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {courses.map((course, index) => (
+          <CourseCard
+            key={course.id || index}
+            variants={cardVariants}
+            to={course.path || getPath(course.category)}
+          >
+            <CourseImage>
+              <SmartCoverImage
+                src={course.image_url || defaultImage}
+                alt={`${course.title} course`}
+                sizes="(max-width: 768px) 100vw, 380px"
+              />
+            </CourseImage>
+            <IconContainer>{getIcon(course.category)}</IconContainer>
+            <CourseTitle>{course.title}</CourseTitle>
+            <Description>{course.description}</Description>
+            <Separator />
+            <CTAButton>View Course Details</CTAButton>
+          </CourseCard>
+        ))}
+      </GridContainer>
     </PageContainer>
   );
 };

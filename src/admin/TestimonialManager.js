@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
+import { requestRevalidate } from '../utils/revalidatePublic';
 
 const Container = styled.div`
   padding: 10px 0;
@@ -146,6 +147,7 @@ const TestimonialManager = () => {
       else {
         setFormData(emptyFormData);
         setEditingId(null);
+        requestRevalidate(['/']);
         fetchTestimonials();
       }
     } else {
@@ -154,6 +156,7 @@ const TestimonialManager = () => {
         alert(error.message);
       } else {
         setFormData(emptyFormData);
+        requestRevalidate(['/']);
         fetchTestimonials();
       }
     }
@@ -174,7 +177,10 @@ const TestimonialManager = () => {
     if (!window.confirm('Delete this testimonial?')) return;
     const { error } = await supabase.from('testimonials').delete().eq('id', id);
     if (error) alert(error.message);
-    else fetchTestimonials();
+    else {
+      requestRevalidate(['/']);
+      fetchTestimonials();
+    }
   };
 
   return (

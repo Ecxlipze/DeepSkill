@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { supabase } from '../supabaseClient';
 import AdminLayout from '../components/AdminLayout';
+import { requestRevalidate } from '../utils/revalidatePublic';
 
 const Container = styled.div`
   padding: 10px 0;
@@ -164,6 +165,7 @@ const MediaPageManager = () => {
       else {
         setFormData({ title: '', description: '', media_url: '', type: 'project' });
         setEditingId(null);
+        requestRevalidate(['/media']);
         fetchItems();
       }
     } else {
@@ -171,6 +173,7 @@ const MediaPageManager = () => {
       if (error) alert(error.message);
       else {
         setFormData({ title: '', description: '', media_url: '', type: 'project' });
+        requestRevalidate(['/media']);
         fetchItems();
       }
     }
@@ -191,7 +194,10 @@ const MediaPageManager = () => {
     if (!window.confirm('Delete this item?')) return;
     const { error } = await supabase.from('media_items').delete().eq('id', id);
     if (error) alert(error.message);
-    else fetchItems();
+    else {
+      requestRevalidate(['/media']);
+      fetchItems();
+    }
   };
 
   const groupByType = (type) => items.filter(i => i.type === type);

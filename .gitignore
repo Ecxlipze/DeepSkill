@@ -12,6 +12,8 @@
 /build
 /.next
 /next-build
+/out
+/.export-stash
 /deepskills-cpanel
 /deepskills-deploy
 /deepskills-deploy 2

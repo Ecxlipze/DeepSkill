@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import Slider from 'react-slick';
@@ -264,10 +264,9 @@ const StayUpdatedSection = styled.section`
 
 const MediaPage = ({ initialItems = [] }) => {
   const { scrollYProgress } = useScroll();
-  const [items, setItems] = useState(() => (
-    initialItems.length > 0 ? [...initialItems, ...dummyData] : []
-  ));
-  const [loading, setLoading] = useState(initialItems.length === 0);
+  // Items arrive via getStaticProps (pages/media.js) so the gallery is present
+  // in the prerendered HTML; CMS edits reach the page through revalidation.
+  const items = initialItems.length > 0 ? [...initialItems, ...dummyData] : dummyData;
   
   const yParallax = useTransform(scrollYProgress, [0, 1], [0, 200]);
 
@@ -295,28 +294,9 @@ const MediaPage = ({ initialItems = [] }) => {
       spotlightY.set(`${e.clientY}px`);
     };
 
-    const fetchItems = async () => {
-      try {
-        const { supabase } = await import('./supabaseClient');
-        const { data, error } = await supabase.from('media_items').select('*').order('created_at', { ascending: true });
-        if (error) {
-          console.error('Supabase error:', error);
-          setItems(initialItems.length > 0 ? [...initialItems, ...dummyData] : dummyData);
-        } else {
-          setItems([...(data || []), ...dummyData]);
-        }
-      } catch (err) {
-        console.error('Fetch failed, using fallback data:', err);
-        setItems(initialItems.length > 0 ? [...initialItems, ...dummyData] : dummyData);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     window.addEventListener('mousemove', handleMouseMove);
-    fetchItems();
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [initialItems, mouseX, mouseY, spotlightX, spotlightY]);
+  }, [mouseX, mouseY, spotlightX, spotlightY]);
 
   const groupByType = (type) => items.filter(i => i.type === type);
 
@@ -373,12 +353,7 @@ const MediaPage = ({ initialItems = [] }) => {
 
   return (
     <>
-      <PageContainer
-        style={{ 
-          opacity: loading ? 0 : 1,
-          transition: 'opacity 0.6s ease'
-        }}
-      >
+      <PageContainer>
       <Spotlight style={{ '--x': spotlightX, '--y': spotlightY }} />
 
       <Banner>

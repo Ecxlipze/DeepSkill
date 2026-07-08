@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { FaBrain, FaRegHandPointer, FaWalking, FaLeaf } from "react-icons/fa";
 
 import RegisterButton from "./components/RegisterButton";
 import GlowCard from "./components/GlowCard";
+import SmartCoverImage from "../components/next/SmartCoverImage";
 
 // Import assets
 import traineeBg from "./assets/trainee-bg.png";
@@ -251,6 +252,7 @@ const DetailImageArea = styled(motion.div)`
   align-items: center;
 
   .img-container {
+    position: relative;
     width: 100%;
     max-width: 450px;
     border-radius: 25px;
@@ -413,24 +415,16 @@ const FeatureBottom = styled.div`
   }
 `;
 
-const TraineePage = () => {
-  const [instructors, setInstructors] = useState([]);
-  const [loading, setLoading] = useState(true);
+const TraineePage = ({ initialInstructors = null }) => {
+  // Instructors arrive via getStaticProps (pages/trainers.js) so they are present
+  // in the prerendered HTML; CMS edits reach the page through revalidation.
+  const instructors =
+    initialInstructors && initialInstructors.length > 0
+      ? [...initialInstructors, ...dummyInstructors]
+      : dummyInstructors;
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const fetchInstructors = async () => {
-      const { supabase } = await import("./supabaseClient");
-      const { data, error } = await supabase.from('instructors').select('*').order('created_at', { ascending: true });
-      if (error) {
-        console.error(error);
-        setInstructors(dummyInstructors);
-      } else {
-        setInstructors([...(data || []), ...dummyInstructors]);
-      }
-      setLoading(false);
-    };
-    fetchInstructors();
   }, []);
 
   const features = [
@@ -443,8 +437,8 @@ const TraineePage = () => {
   return (
     <>
       <PageContainer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: loading ? 0 : 1 }}
+        initial={false}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
         <InstructorSection>
@@ -478,7 +472,11 @@ const TraineePage = () => {
                 >
                   <InstructorCard style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}>
                     <ImageBox>
-                      <img src={inst.image_url || traineeImg} alt={inst.name} />
+                      <SmartCoverImage
+                        src={inst.image_url || traineeImg}
+                        alt={inst.name}
+                        sizes="(max-width: 768px) 100vw, 300px"
+                      />
                     </ImageBox>
                   </InstructorCard>
                 </GlowCard>
@@ -542,7 +540,11 @@ const TraineePage = () => {
                 transition={{ duration: 0.8 }}
               >
                 <div className="img-container">
-                  <img src={inst.image_url || founderImg} alt={inst.name} />
+                  <SmartCoverImage
+                    src={inst.image_url || founderImg}
+                    alt={inst.name}
+                    sizes="(max-width: 768px) 100vw, 450px"
+                  />
                 </div>
                 <div className="instructor-info">
                   <h3>{inst.name.toUpperCase()}</h3>
