@@ -2,12 +2,24 @@ DirectoryIndex index.html index.php
 ErrorDocument 404 /404.html
 RewriteEngine On
 
+# Never serve build/source artifacts or dotfiles (except ACME/.well-known).
+RewriteRule ^\.well-known/ - [L]
+RewriteRule (^|/)\. - [F]
+RewriteRule ^(node_modules|next-build|src|pages|lib|components|supabase|scripts)(/|$) - [F]
+RewriteRule \.(env|lock|log|md|sql|zip|tar\.gz)$ - [F]
+
 # Portal routes must always use the latest generated shell. Keep these before
 # the existing-file checks so stale nested folders cannot shadow new builds.
 RewriteRule ^admin(?:/(?!index\.html).*)?$ /admin/index.html [L]
 RewriteRule ^student(?:/(?!index\.html).*)?$ /student/index.html [L]
 RewriteRule ^teacher(?:/(?!index\.html).*)?$ /teacher/index.html [L]
+
+# Legacy URL redirects (mirrors next.config.js redirects, which are inert in
+# static-export builds).
 RewriteRule ^register/?$ /inquiry/ [R=301,L]
+RewriteRule ^blog/?$ /blogs/ [R=301,L]
+RewriteRule ^blog/(.+)$ /blogs/$1 [R=301,L]
+RewriteRule ^(full-stack-react|laravel-mastery|wordpress-mastery|graphic-design)/?$ /courses/$1/ [R=301,L]
 
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
