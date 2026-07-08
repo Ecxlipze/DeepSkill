@@ -243,9 +243,18 @@ const CounsellorPanel = ({ initialView }) => {
       counsellorName: user?.name || 'Counsellor'
     };
 
-    const { data, error } = await supabase.rpc('enroll_counsellor_student', { payload });
-    if (error) {
-      toast.error(error.message || 'Enrollment failed');
+    const { data: sessionData } = await supabase.auth.getSession();
+    const response = await fetch('/api/admin/enroll-counsellor-student.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData?.session?.access_token || ''}`
+      },
+      body: JSON.stringify({ payload })
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      toast.error(data?.message || 'Enrollment failed');
       return;
     }
     if (!data?.ok) {

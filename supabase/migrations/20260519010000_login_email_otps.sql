@@ -19,3 +19,11 @@ CREATE INDEX IF NOT EXISTS login_otps_cnic_created_idx ON login_otps (cnic, crea
 CREATE INDEX IF NOT EXISTS login_otps_expires_idx ON login_otps (expires_at);
 
 ALTER TABLE login_otps ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "login_otps_no_client_access" ON public.login_otps;
+CREATE POLICY "login_otps_no_client_access"
+ON public.login_otps
+FOR ALL
+TO anon, authenticated
+USING (false)
+WITH CHECK (false);

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { 
-  FaHistory, FaCheckCircle, 
+import {
+  FaHistory, FaCheckCircle,
   FaClock, FaExclamationCircle, FaUserTie
 } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
-import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 const TeacherFinance = () => {
@@ -16,28 +15,16 @@ const TeacherFinance = () => {
   const fetchTeacherFinance = useCallback(async () => {
     try {
       if (!user?.cnic) return;
-      const { data: teacher } = await supabase.from('teachers').select('id').eq('cnic', user.cnic).single();
-      if (!teacher) return;
-
-      const { data: config } = await supabase.from('teacher_salaries').select('*').eq('teacher_id', teacher.id).single();
-      
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('entity_id', teacher.id)
-        .eq('entity_type', 'teacher')
-        .order('paid_date', { ascending: false });
-
-      const lastPayment = payments?.[0];
-      const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-      const isPaidThisMonth = payments?.some(p => p.description?.includes(currentMonth) && p.status === 'paid');
-
-      setFinanceData({
-        monthlyAmount: config?.monthly_amount || 0,
-        status: isPaidThisMonth ? 'Paid' : 'Pending',
-        lastPaymentDate: lastPayment?.paid_date || 'N/A',
-        history: payments || []
+      const response = await fetch('/api/teacher/finance.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnic: user.cnic })
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.status === 'error') {
+        throw new Error(result.message || 'Failed to load salary details.');
+      }
+      setFinanceData(result.data);
     } catch (err) {
       console.error("Teacher finance error:", err);
     } finally {

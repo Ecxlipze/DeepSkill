@@ -1,10 +1,22 @@
 import { supabase } from '../supabaseClient';
-import { getTeacherByCnic } from './teacherUtils';
 import { buildJdDraft } from './hrJdBuilder';
 import { uploadHrAsset, uploadHrBlob } from './hrStorage';
 import { createNotification } from './notifications';
 
 const nowIso = () => new Date().toISOString();
+
+const teacherHrRequest = async (payload) => {
+  const response = await fetch('/api/hr/teacher.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result.status === 'error') {
+    throw new Error(result.message || 'HR request failed.');
+  }
+  return result.data;
+};
 
 const safeSingle = async (query) => {
   const { data, error } = await query.single();
@@ -24,85 +36,11 @@ const normalizeHrBundle = ({ profile, teacher, documents, jd, signature, files }
 });
 
 export const fetchTeacherHRApplication = async (cnic) => {
-  const teacher = await getTeacherByCnic(cnic);
-  if (!teacher) {
-    throw new Error('Teacher profile not found for this account.');
-  }
-
-  let profile = await safeSingle(
-    supabase
-      .from('hr_profiles')
-      .select('*')
-      .eq('teacher_id', teacher.id)
-  );
-
-  if (!profile) {
-    const payload = {
-      teacher_id: teacher.id,
-      full_name: teacher.name,
-      cnic: teacher.cnic,
-      personal_email: teacher.email || '',
-      specialization: teacher.specialization || '',
-      current_step: 1,
-      hr_status: 'pending',
-      created_at: nowIso(),
-      updated_at: nowIso()
-    };
-
-    const { data, error } = await supabase.from('hr_profiles').insert([payload]).select().single();
-    if (error) {
-      throw error;
-    }
-    profile = data;
-  }
-
-  const [documentsResponse, jd, signature, filesResponse] = await Promise.all([
-    supabase.from('hr_documents').select('*').eq('hr_profile_id', profile.id).order('uploaded_at', { ascending: true }),
-    safeSingle(supabase.from('hr_jds').select('*').eq('hr_profile_id', profile.id)),
-    safeSingle(supabase.from('hr_signatures').select('*').eq('hr_profile_id', profile.id)),
-    supabase.from('hr_files').select('*').eq('hr_profile_id', profile.id).order('generated_at', { ascending: false })
-  ]);
-
-  if (documentsResponse.error) {
-    throw documentsResponse.error;
-  }
-  if (filesResponse.error) {
-    throw filesResponse.error;
-  }
-
-  return normalizeHrBundle({
-    teacher,
-    profile,
-    documents: documentsResponse.data || [],
-    jd,
-    signature,
-    files: filesResponse.data || []
-  });
+  return normalizeHrBundle(await teacherHrRequest({ action: 'load', cnic }));
 };
 
-export const saveHRProfile = async (profile) => {
-  const payload = {
-    ...profile,
-    updated_at: nowIso()
-  };
-  const { data, error } = await supabase
-    .from('hr_profiles')
-    .upsert(payload, { onConflict: 'teacher_id' })
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  if ((data.current_step || 1) < 2) {
-    await supabase
-      .from('hr_profiles')
-      .update({ current_step: 2, updated_at: nowIso() })
-      .eq('id', data.id);
-    return { ...data, current_step: 2 };
-  }
-  return data;
+export const saveHRProfile = async (profile, cnic = profile?.cnic) => {
+  return teacherHrRequest({ action: 'save_profile', cnic, profile });
 };
 
 export const uploadHRDocument = async ({
@@ -112,7 +50,8 @@ export const uploadHRDocument = async ({
   docType,
   category,
   isRequired,
-  linkUrl
+  linkUrl,
+  cnic
 }) => {
   let fileMeta = {
     filePath: null,
@@ -132,48 +71,24 @@ export const uploadHRDocument = async ({
     });
   }
 
-  const insertPayload = {
-    hr_profile_id: profile.id,
+  return teacherHrRequest({
+    action: 'add_document',
+    cnic: cnic || profile?.cnic,
+    profileId: profile.id,
     category,
-    doc_type: docType,
-    file_name: fileMeta.fileName,
-    file_size: fileMeta.fileSize ? String(fileMeta.fileSize) : null,
-    file_url: fileMeta.fileUrl,
-    file_path: fileMeta.filePath,
-    mime_type: fileMeta.mimeType,
-    link_url: linkUrl || null,
-    is_required: Boolean(isRequired),
-    uploaded_at: nowIso()
-  };
-
-  const { data, error } = await supabase.from('hr_documents').insert([insertPayload]).select().single();
-  if (error) {
-    throw error;
-  }
-  return data;
+    docType,
+    isRequired,
+    linkUrl,
+    file: fileMeta
+  });
 };
 
-export const removeHRDocument = async (id) => {
-  const { error } = await supabase.from('hr_documents').delete().eq('id', id);
-  if (error) {
-    throw error;
-  }
+export const removeHRDocument = async (id, cnic) => {
+  return teacherHrRequest({ action: 'remove_document', cnic, documentId: id });
 };
 
-export const submitHRDocuments = async (profileId) => {
-  const { error } = await supabase
-    .from('hr_profiles')
-    .update({
-      current_step: 3,
-      hr_status: 'pending',
-      documents_submitted_at: nowIso(),
-      updated_at: nowIso()
-    })
-    .eq('id', profileId);
-
-  if (error) {
-    throw error;
-  }
+export const submitHRDocuments = async (profileId, cnic) => {
+  await teacherHrRequest({ action: 'submit_documents', cnic, profileId });
 
   await fetch('/api/hr/notify-admin.php', {
     method: 'POST',
@@ -182,83 +97,16 @@ export const submitHRDocuments = async (profileId) => {
   }).catch(() => null);
 };
 
-export const approveJD = async (jdId, profileId) => {
-  const approvedAt = nowIso();
-  const { error } = await supabase
-    .from('hr_jds')
-    .update({
-      teacher_status: 'approved',
-      approved_at: approvedAt,
-      updated_at: approvedAt
-    })
-    .eq('id', jdId);
-
-  if (error) {
-    throw error;
-  }
-
-  const { error: profileError } = await supabase
-    .from('hr_profiles')
-    .update({
-      current_step: 4,
-      hr_status: 'jd_approved',
-      updated_at: approvedAt
-    })
-    .eq('id', profileId);
-
-  if (profileError) {
-    throw profileError;
-  }
+export const approveJD = async (jdId, profileId, cnic) => {
+  return teacherHrRequest({ action: 'approve_jd', cnic, jdId, profileId });
 };
 
-export const requestJDChanges = async (jdId, message) => {
-  const { error } = await supabase
-    .from('hr_jds')
-    .update({
-      teacher_status: 'changes_requested',
-      change_request: message,
-      is_sent_to_teacher: false,
-      updated_at: nowIso()
-    })
-    .eq('id', jdId);
-
-  if (error) {
-    throw error;
-  }
+export const requestJDChanges = async (jdId, message, cnic) => {
+  return teacherHrRequest({ action: 'request_jd_changes', cnic, jdId, message });
 };
 
-export const saveSignature = async (profileId, payload) => {
-  const row = {
-    hr_profile_id: profileId,
-    signature_type: payload.signatureType,
-    signature_data: payload.signatureData,
-    signed_at: nowIso()
-  };
-
-  const existing = await safeSingle(supabase.from('hr_signatures').select('*').eq('hr_profile_id', profileId));
-  let response;
-  if (existing) {
-    response = await supabase.from('hr_signatures').update(row).eq('id', existing.id).select().single();
-  } else {
-    response = await supabase.from('hr_signatures').insert([row]).select().single();
-  }
-  if (response.error) {
-    throw response.error;
-  }
-
-  const { error: profileError } = await supabase
-    .from('hr_profiles')
-    .update({
-      current_step: 5,
-      hr_status: 'signed',
-      updated_at: nowIso()
-    })
-    .eq('id', profileId);
-  if (profileError) {
-    throw profileError;
-  }
-
-  return response.data;
+export const saveSignature = async (profileId, payload, cnic) => {
+  return teacherHrRequest({ action: 'save_signature', cnic, profileId, signature: payload });
 };
 
 export const fetchAdminHRApplications = async () => {

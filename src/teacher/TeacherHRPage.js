@@ -77,7 +77,7 @@ const TeacherHRPage = () => {
   const handleSaveProfile = async (formData) => {
     setSaving(true);
     try {
-      await saveHRProfile(formData);
+      await saveHRProfile(formData, user.cnic);
       toast.success('Profile saved successfully.');
       await load();
     } catch (error) {
@@ -96,7 +96,8 @@ const TeacherHRPage = () => {
         teacherId: bundle.teacher.id,
         docType: config.docType,
         category: config.category,
-        isRequired: config.required
+        isRequired: config.required,
+        cnic: user.cnic
       });
       toast.success(`${config.label} uploaded.`);
       await load();
@@ -110,7 +111,7 @@ const TeacherHRPage = () => {
   const handleRemoveDocument = async (id) => {
     setSaving(true);
     try {
-      await removeHRDocument(id);
+      await removeHRDocument(id, user.cnic);
       toast.success('Document removed.');
       await load();
     } catch (error) {
@@ -123,7 +124,7 @@ const TeacherHRPage = () => {
   const handleSubmitDocuments = async () => {
     setSaving(true);
     try {
-      await submitHRDocuments(bundle.profile.id);
+      await submitHRDocuments(bundle.profile.id, user.cnic);
       toast.success('Documents submitted successfully.');
       await load();
     } catch (error) {
@@ -136,7 +137,7 @@ const TeacherHRPage = () => {
   const handleApproveJd = async () => {
     setSaving(true);
     try {
-      await approveJD(bundle.jd.id, bundle.profile.id);
+      await approveJD(bundle.jd.id, bundle.profile.id, user.cnic);
       toast.success('Job description approved.');
       await load();
     } catch (error) {
@@ -149,7 +150,7 @@ const TeacherHRPage = () => {
   const handleRequestChanges = async (message) => {
     setSaving(true);
     try {
-      await requestJDChanges(bundle.jd.id, message);
+      await requestJDChanges(bundle.jd.id, message, user.cnic);
       toast.success('Change request submitted.');
       await load();
     } catch (error) {
@@ -162,7 +163,7 @@ const TeacherHRPage = () => {
   const handleSubmitSignature = async (signaturePayload) => {
     setSaving(true);
     try {
-      await saveSignature(bundle.profile.id, signaturePayload);
+      await saveSignature(bundle.profile.id, signaturePayload, user.cnic);
       toast.success('Signature saved successfully.');
       await load();
     } catch (error) {

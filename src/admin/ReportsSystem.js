@@ -187,7 +187,7 @@ function useReportData() {
       entries.forEach(([key, result]) => {
         data[key] = result.data;
         if (result.error && ['templates', 'schedules'].includes(key)) {
-          setupWarnings.push('Run the reports migration to enable saved templates and scheduled report storage.');
+          setupWarnings.push('Saved report storage is unavailable. Confirm the reports migration is applied and that you are using an authenticated admin session.');
         }
       });
       if (!data.templates?.length) data.templates = BUILTIN_TEMPLATES;

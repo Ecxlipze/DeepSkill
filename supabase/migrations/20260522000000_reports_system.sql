@@ -45,6 +45,34 @@ CREATE INDEX IF NOT EXISTS idx_report_templates_builtin ON report_templates(is_b
 CREATE INDEX IF NOT EXISTS idx_scheduled_reports_active ON scheduled_reports(is_active, next_send_at);
 CREATE INDEX IF NOT EXISTS idx_scheduled_report_log_schedule ON scheduled_report_log(schedule_id, sent_at DESC);
 
+ALTER TABLE public.report_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.scheduled_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.scheduled_report_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "report_templates_authenticated_admin_access" ON public.report_templates;
+CREATE POLICY "report_templates_authenticated_admin_access"
+ON public.report_templates
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "scheduled_reports_authenticated_admin_access" ON public.scheduled_reports;
+CREATE POLICY "scheduled_reports_authenticated_admin_access"
+ON public.scheduled_reports
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "scheduled_report_log_authenticated_admin_access" ON public.scheduled_report_log;
+CREATE POLICY "scheduled_report_log_authenticated_admin_access"
+ON public.scheduled_report_log
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
 INSERT INTO report_templates (name, description, is_builtin, departments, config)
 VALUES
   ('Monthly Summary', 'Cross-department overview for end of month', true, ARRAY['counsellor','finance','academic','management'], '{"timePeriod":"this_month","sections":["overview","counsellor","finance","academic","management"]}'::jsonb),

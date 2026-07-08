@@ -9,7 +9,6 @@ import {
   FaFileDownload, FaInfoCircle
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../supabaseClient';
 
 const Container = styled.div`
   padding: 20px 0;
@@ -150,46 +149,21 @@ const StudentResults = () => {
       if (!user) return;
       setLoading(true);
       try {
-        const { data: student } = await supabase
-          .from('admissions')
-          .select('id')
-          .eq('cnic', user.cnic)
-          .single();
-
-        if (!student) {
-          setResult(null);
-          setBatchStats({ avg: 0, highest: 0, count: 0 });
-          return;
+        const response = await fetch('/api/student/results.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cnic: user.cnic, examType })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.status === 'error') {
+          throw new Error(payload.message || 'Failed to load result.');
         }
-
-        const { data: resData } = await supabase
-          .from('results')
-          .select('*')
-          .eq('student_id', student.id)
-          .eq('exam_type', examType)
-          .single();
-
-        if (resData) {
-          setResult(resData);
-          
-          // Fetch batch stats
-          const { data: allResults } = await supabase
-            .from('results')
-            .select('total_marks')
-            .eq('batch_id', resData.batch_id)
-            .eq('exam_type', examType);
-          
-          if (allResults) {
-            const scores = allResults.map(r => r.total_marks);
-            setBatchStats({
-              avg: Math.round((scores.reduce((a,b) => a+b, 0) / scores.length) * 10) / 10,
-              highest: Math.max(...scores),
-              count: scores.length
-            });
-          }
-        }
+        setResult(payload.data?.result || null);
+        setBatchStats(payload.data?.batchStats || { avg: 0, highest: 0, count: 0 });
       } catch (err) {
         console.error("Result fetch error:", err);
+        setResult(null);
+        setBatchStats({ avg: 0, highest: 0, count: 0 });
       } finally {
         setLoading(false);
       }

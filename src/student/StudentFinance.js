@@ -6,7 +6,6 @@ import {
   FaExclamationCircle, FaInfoCircle, FaCalendarAlt
 } from 'react-icons/fa';
 import DashboardLayout from '../components/DashboardLayout';
-import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 const StudentFinance = () => {
@@ -17,27 +16,16 @@ const StudentFinance = () => {
   const fetchFeeData = useCallback(async () => {
     try {
       if (!user?.cnic) return;
-      const { data: student } = await supabase.from('admissions').select('id').eq('cnic', user.cnic).single();
-      if (!student) return;
-
-      const { data: plan } = await supabase.from('fee_plans').select('*').eq('student_id', student.id).single();
-      if (!plan) return;
-
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('entity_id', student.id)
-        .eq('entity_type', 'student')
-        .order('installment_number');
-      
-      const paidAmount = payments?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
-
-      setFeePlan({
-        ...plan,
-        paidAmount,
-        remainingAmount: plan.total_fee - paidAmount,
-        installments: payments || []
+      const response = await fetch('/api/student/finance.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnic: user.cnic })
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.status === 'error') {
+        throw new Error(result.message || 'Failed to load finance details.');
+      }
+      setFeePlan(result.data || null);
     } catch (err) {
       console.error("Fee fetch error:", err);
     } finally {

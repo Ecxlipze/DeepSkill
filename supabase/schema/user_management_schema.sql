@@ -59,6 +59,45 @@ CREATE INDEX IF NOT EXISTS idx_logs_type ON activity_logs(event_type);
 CREATE INDEX IF NOT EXISTS idx_logs_time ON activity_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_logs_role ON activity_logs(user_role);
 
+ALTER TABLE public.custom_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "custom_roles_authenticated_admin_access" ON public.custom_roles;
+CREATE POLICY "custom_roles_authenticated_admin_access"
+ON public.custom_roles
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "custom_roles_anon_login_read" ON public.custom_roles;
+
+DROP POLICY IF EXISTS "users_authenticated_admin_access" ON public.users;
+CREATE POLICY "users_authenticated_admin_access"
+ON public.users
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "users_anon_active_login_read" ON public.users;
+
+DROP POLICY IF EXISTS "activity_logs_authenticated_admin_access" ON public.activity_logs;
+CREATE POLICY "activity_logs_authenticated_admin_access"
+ON public.activity_logs
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "activity_logs_anon_insert" ON public.activity_logs;
+CREATE POLICY "activity_logs_anon_insert"
+ON public.activity_logs
+FOR INSERT
+TO anon
+WITH CHECK (true);
+
 INSERT INTO users (full_name, cnic, phone, email, role, status, created_at, updated_at)
 SELECT
   a.name,

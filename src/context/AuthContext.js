@@ -155,177 +155,18 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Email OTP verification is required before login.');
       }
 
-      await postJson('/api/auth/validate-token.php', {
+      const sessionResult = await postJson('/api/auth/validate-token.php', {
         cnic,
         verificationToken: options.verificationToken
       });
 
-      const [
-        supabase,
-        { logActivity, updateLastLogin },
-        { resolvePermissions }
-      ] = await Promise.all([
-        getSupabase(),
-        getActivityLogger(),
-        getPermissions()
-      ]);
-
-      const recordLoginAudit = (userData) => {
-        Promise.allSettled([
-          updateLastLogin(cnic),
-          logActivity({
-            userId: userData.id || null,
-            userName: userData.name,
-            userRole: userData.role,
-            eventType: 'login',
-            description: 'Logged in'
-          })
-        ]);
-      };
-
-      // 1. Check allowed_cnics first to determine role and existence.
-      // Registered students are intentionally not added here until admin approval.
-      const { data: roleData, error: roleError } = await supabase
-        .from('allowed_cnics')
-        .select('*')
-        .eq('cnic', cnic)
-        .maybeSingle();
-      
-      if (roleError || !roleData) {
-        const { data: latestAdmission } = await supabase
-          .from('admissions')
-          .select('status')
-          .eq('cnic', cnic)
-          .order('submitted_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        Promise.resolve(logActivity({
-          userId: null,
-          userName: cnic,
-          userRole: 'unknown',
-          eventType: 'warning',
-          description: `Failed login attempt with CNIC: ${cnic}`
-        }));
-
-        if (latestAdmission?.status) {
-          const status = latestAdmission.status.toLowerCase();
-          if (status === 'pending') {
-            throw new Error('Your registration is pending admin approval. You can log in after your admission is approved.');
-          }
-          throw new Error(`Your admission is ${status}. Please contact the administrator.`);
-        }
-
-        throw new Error('Access denied. No account found for this CNIC.');
+      const userData = sessionResult.user;
+      if (!userData) {
+        throw new Error('Login verified, but no user session was returned.');
       }
-
-      // 2. Role-specific logic
-      if (roleData.role === 'teacher') {
-        // Teachers: Check status in teachers table
-        const { data: teacherData, error: teacherError } = await supabase
-          .from('teachers')
-          .select('id,status')
-          .eq('cnic', cnic)
-          .single();
-        
-        if (teacherError || !teacherData) {
-          throw new Error('Teacher profile not found.');
-        }
-
-        if (teacherData.status !== 'Active') {
-          throw new Error(`Your account is ${teacherData.status.toLowerCase()}. Please contact the administrator.`);
-        }
-
-        const userData = {
-          ...roleData,
-          id: teacherData.id || roleData.id,
-          name: roleData.name,
-          status: teacherData.status,
-          authType: 'cnic',
-          permissions: {}
-        };
-        setUser(userData);
-        localStorage.setItem('deepskill_user', JSON.stringify(userData));
-        recordLoginAudit(userData);
-        return userData;
-
-      } else if (roleData.role === 'student') {
-        // Students: Check status in admissions table
-        const { data: admission, error: admError } = await supabase
-          .from('admissions')
-          .select('*')
-          .eq('cnic', cnic)
-          .in('status', ['Active', 'Graduated'])
-          .order('submitted_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (admError || !admission) {
-          throw new Error('Student admission record not found.');
-        }
-
-        if (!['Active', 'Graduated'].includes(admission.status)) {
-          throw new Error(`Your admission is ${admission.status.toLowerCase()}. Please contact the administrator.`);
-        }
-
-        const userData = {
-          ...roleData,
-          id: admission.id || roleData.id,
-          name: roleData.name,
-          assigned_course: admission.course || roleData.assigned_course,
-          course: admission.course || roleData.assigned_course,
-          batch: admission.batch || roleData.batch,
-          batch_timing: admission.batch_timing || roleData.batch_timing,
-          status: admission.status,
-          authType: 'cnic',
-          permissions: {}
-        };
-        setUser(userData);
-        localStorage.setItem('deepskill_user', JSON.stringify(userData));
-        recordLoginAudit(userData);
-        return userData;
-      } else {
-        const { data: directoryUser, error: userError } = await supabase
-          .from('users')
-          .select('*, custom_roles(*)')
-          .eq('cnic', cnic)
-          .maybeSingle();
-
-        if (userError || !directoryUser) {
-          Promise.resolve(logActivity({
-            userId: null,
-            userName: cnic,
-            userRole: roleData.role,
-            eventType: 'warning',
-            description: `Failed login attempt with CNIC: ${cnic}`
-          }));
-          throw new Error('User directory record not found.');
-        }
-
-        if (directoryUser.status !== 'active') {
-          throw new Error(`Your account is ${directoryUser.status}. Please contact the administrator.`);
-        }
-
-        const resolvedRole = directoryUser.custom_roles;
-
-        const userData = {
-          id: directoryUser.id,
-          cnic: directoryUser.cnic,
-          email: directoryUser.email,
-          phone: directoryUser.phone,
-          name: directoryUser.full_name,
-          role: directoryUser.role,
-          status: directoryUser.status,
-          customRoleId: directoryUser.custom_role_id,
-          permissions: resolvePermissions(directoryUser, resolvedRole),
-          authType: 'cnic'
-        };
-
-        setUser(userData);
-        localStorage.setItem('deepskill_user', JSON.stringify(userData));
-        recordLoginAudit(userData);
-        return userData;
-      }
+      setUser(userData);
+      localStorage.setItem('deepskill_user', JSON.stringify(userData));
+      return userData;
     } catch (error) {
       throw error;
     }
@@ -366,7 +207,7 @@ export const AuthProvider = ({ children }) => {
 
     if (user) {
       await logActivity({
-        userId: user.id || null,
+        userId: user.authType === 'cnic' && ['student', 'teacher'].includes(user.role) ? null : (user.id || null),
         userName: user.name || user.full_name || 'Unknown',
         userRole: user.role || 'unknown',
         eventType: 'logout',
